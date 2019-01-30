@@ -1,7 +1,7 @@
-# Rest Resource - Simplify your REST API resources
-Rest Resource is a simple library to help make your life simpler when calling REST API Endpoints.
+# REST Resource - Simplify your REST API resources
+REST Resource is a simple library to help make your life simpler when calling REST API Endpoints.
 
-Rest Resource Takes RESTful Resource/Service URIs and simplifies them into a Class that can be called with simple methods.
+REST Resource Takes RESTful Resource/Service URIs and simplifies them into a Class that can be called with simple methods.
 
 ## What is a REST Resource?
 REST is acronym for REpresentational State Transfer. It is architectural style for distributed hypermedia systems and was first presented by Roy Fielding in 2000 in his famous [dissertation](https://www.ics.uci.edu/~fielding/pubs/dissertation/rest_arch_style.htm).
@@ -53,7 +53,7 @@ UserResource.detail(123).then((arthur) => {
 ```
 
 # Supports Caching out of the box
-Rest Resource has a caching mechanism that caches objects returned by your API.
+REST Resource has a caching mechanism that caches objects returned by your API.
 
 ```javascript
 let user = await UserResource.detail(123)
@@ -108,7 +108,7 @@ console.log(user.attr('occupation'))
 ```
 
 ### Related Attribute Lookups with `getAttr()`
-Rest Resource automatically resolves properties from related lookups, then decides what it needs to call `resource.getRelated()`
+REST Resource automatically resolves properties from related lookups, then decides what it needs to call `resource.getRelated()`
 
 ```javascript
 let roger = await UserResource.detail(543)
@@ -121,32 +121,30 @@ console.log(title)
 // => Shrubber
 ```
 
-Furthermore, if an object is cached and is called upon from other related models, Rest Resource will save a request.
+Furthermore, if an object is cached and is called upon from other related models, REST Resource will save a request.
 
 In the example below, notice the `equipment` ids are the same (`1`):
 
 ```javascript
 let arthur = await UserResource.detail(123)
 console.log(arthur.attributes)
-
-// {
-//     id: 123,
-//     name: 'King Arthur',
-//     weapon: 'Sword',
-//     occupation: 1,
-//     equipment: 1
-// }
+// => {
+//        id: 123,
+//        name: 'King Arthur',
+//        weapon: 'Sword',
+//        occupation: 1,
+//        equipment: 1
+//    }
 
 let patsy = await UserResource.detail(654)
 console.log(patsy.attributes)
-
-// {
-//     id: 654,
-//     name: 'Brave Sir Robin',
-//     weapon: 'Sword',
-//     occupation: 2,
-//     equipment: 1 // Notice the equipment ID is the same
-// }
+// => {
+//        id: 654,
+//        name: 'Brave Sir Robin',
+//        weapon: 'Sword',
+//        occupation: 2,
+//        equipment: 1 // Notice the equipment ID is the same
+//    }
 
 let arthurTitle = arthur.getAttr('occupation.title')
 let arthurEquipment = arthur.getAttr('equipment.name')
@@ -164,149 +162,45 @@ console.log(patsyEquipment)
 // => Coconuts
 ```
 
-## How to build a REST API
-[Please see documentation](https://restfulapi.net/rest-api-design-tutorial-with-example/)
+# The `Client` Class
+The Client class is a simple request library that is meant to be customized to suit your needs. You should override the Client's `apiCall()` method and return a promise.
+
+#### REST Resource assumes your API is rendering JSON and authenticated endpoints are using a Bearer JWT
+
+For requests, REST Resource by default uses the `BearerClient` class in `src/client/jwt-bearer`
+
+## Assigning a Client
+You should override the Resource's `getClient()` method:
+
+```javascript
+import Resource from 'rest-resource'
+import BaseClient from 'rest-resource/client'
+
+class CustomClient extends BaseClient {
+    apiCall(path, opts) {
+        // Some custom stuff
+        return new Promise()
+    }
+}
+
+class CustomResource extends Resource {
+    static getClient() {
+        return new CustomClient('http://some-api.com')
+    }
+}
+
+// Or you can globally override the client
+Resource.getClient = () => new CustomClient('http://some-api.com')
+```
+
+### JSON Web Tokens (JWT) and Authenticated Endpoints
+Whenever the user wants to access a protected route or resource, the user agent should send the JWT, typically in the Authorization header using the Bearer schema. The content of the header should look like the following:
+
+```
+Authorization: Bearer <token>
+```
+
+For more information on how JWTs work, please see [JSON Web Token Documentation](https://jwt.io/introduction/)
 
 # Documentation
-
-### Table of Contents
-
-- [getAttr][1]
-  - [Parameters][2]
-- [cache][3]
-- [cacheResource][4]
-  - [Parameters][5]
-- [replaceCache][6]
-  - [Parameters][7]
-- [cacheDeltaSeconds][8]
-- [getCached][9]
-  - [Parameters][10]
-- [getClient][11]
-- [setClient][12]
-  - [Parameters][13]
-- [listRoutePath][14]
-  - [Parameters][15]
-- [detailRoutePath][16]
-  - [Parameters][17]
-- [list][18]
-  - [Parameters][19]
-
-## getAttr
-
-Persist getting an attribute and get related keys until a key can be found (or not found)
-TypeError in attr() will be thrown, we're just doing the getRelated() work for you...
-
-### Parameters
-
-- `key`  
-
-## cache
-
-Cache getter
-
-## cacheResource
-
-Cache a resource onto this class' cache for cacheMaxAge seconds
-
-### Parameters
-
-- `resource`  
-- `replace`  
-
-## replaceCache
-
-Replace attributes on a cached resource onto this class' cache for cacheMaxAge seconds (useful for bubbling up changes to states that may be already rendered)
-
-### Parameters
-
-- `resource`  
-
-## cacheDeltaSeconds
-
-Get time delta in seconds of cache expiry
-
-## getCached
-
-Get a cached resource by ID
-
-### Parameters
-
-- `id`  
-
-## getClient
-
-Get HTTP client for a resource Class
-This is meant to be overridden if we want to define a client at any time
-
-## setClient
-
-Set HTTP client
-
-### Parameters
-
-- `client`  instanceof Client
-
-## listRoutePath
-
-Get list route path (eg. /users) to be used with HTTP requests and allow a querystring object
-
-### Parameters
-
-- `query`  Querystring
-
-## detailRoutePath
-
-Get detail route path (eg. /users/123) to be used with HTTP requests
-
-### Parameters
-
-- `id`  
-- `query`  Querystring
-
-## list
-
-HTTP Get of resource's list route--returns a promise
-
-### Parameters
-
-- `options`  HTTP Request Options
-
-Returns **any** Promise
-
-[1]: #getattr
-
-[2]: #parameters
-
-[3]: #cache
-
-[4]: #cacheresource
-
-[5]: #parameters-1
-
-[6]: #replacecache
-
-[7]: #parameters-2
-
-[8]: #cachedeltaseconds
-
-[9]: #getcached
-
-[10]: #parameters-3
-
-[11]: #getclient
-
-[12]: #setclient
-
-[13]: #parameters-4
-
-[14]: #listroutepath
-
-[15]: #parameters-5
-
-[16]: #detailroutepath
-
-[17]: #parameters-6
-
-[18]: #list
-
-[19]: #parameters-7
+Please see [DOCUMENTATION.md](DOCUMENTATION.md)
