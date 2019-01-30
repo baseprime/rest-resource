@@ -48,7 +48,7 @@ UserResource().then((users) => {
 // Or, get details of a Resource
 // Sends a GET to /users/123
 UserResource.detail(123).then((arthur) => {
-	arthur.greet()
+    arthur.greet()
 })
 ```
 
@@ -58,10 +58,13 @@ Rest Resource has a caching mechanism that caches objects returned by your API.
 ```javascript
 let user = await UserResource.detail(123)
 // GET /users/123
+
 user.greet()
 // => I am Arthur, King of the Britons!
+
 let sameuser = await UserResource.detail(123)
 // Cache is still good, did not send GET to /users/123
+
 sameuser.greet()
 // => I am Arthur, King of the Britons!
 ```
@@ -73,18 +76,18 @@ You can also define related resources:
 import Resource from 'rest-resource'
 
 class OccupationResource extends Resource {
-	static endpont = '/occupations'
+    static endpont = '/occupations'
 }
 
 class EquipmentResource extends Resource {
-	static endpont = '/equipment'
+    static endpont = '/equipment'
 }
 
 class UserResource extends Resource {
     static endpoint = '/users'
     static related = {
-    	occupation: OccupationResource,
-    	equipment: EquipmentResource
+        occupation: OccupationResource,
+        equipment: EquipmentResource
     }
 }
 
@@ -93,6 +96,7 @@ let user = await UserResource.detail(321)
 await user.getRelated()
 // GET /occupations/<id>
 // GET /equipment/<id>
+
 // Using attr() gets the attribute `title `on related key `occupation`
 let title = user.attr('occupation.title')
 let name = user.attr('name')
@@ -109,8 +113,10 @@ Rest Resource automatically resolves properties from related lookups, then decid
 ```javascript
 let roger = await UserResource.detail(543)
 // GET /users/543
+
 let title = await roger.getAttr('occupation.title')
 // Doesn't need send GET /occupations/<id>
+
 console.log(title)
 // => Shrubber
 ```
@@ -122,6 +128,7 @@ In the example below, notice the `equipment` ids are the same (`1`):
 ```javascript
 let arthur = await UserResource.detail(123)
 console.log(arthur.attributes)
+
 // {
 //     id: 123,
 //     name: 'King Arthur',
@@ -129,8 +136,10 @@ console.log(arthur.attributes)
 //     occupation: 1,
 //     equipment: 1
 // }
+
 let patsy = await UserResource.detail(654)
 console.log(patsy.attributes)
+
 // {
 //     id: 654,
 //     name: 'Brave Sir Robin',
@@ -138,14 +147,19 @@ console.log(patsy.attributes)
 //     occupation: 2,
 //     equipment: 1 // Notice the equipment ID is the same
 // }
+
 let arthurTitle = arthur.getAttr('occupation.title')
 let arthurEquipment = arthur.getAttr('equipment.name')
+
 // GET /occupations/1
 // GET /equipment/1
+
 let patsyTitle = patsy.getAttr('occupation.title')
 let patsyEquipment = patsy.getAttr('equipment.name')
+
 // GET /occupations/2
 // Does not need to GET /occupations/1
+
 console.log(patsyEquipment)
 // => Coconuts
 ```
