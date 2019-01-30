@@ -1,0 +1,44 @@
+{
+  "name": "rest-resource",
+  "version": "0.1.0",
+  "description": "Simplify your REST API resources, supports automatic caching",
+  "main": "dist/index.js",
+  "scripts": {
+    "test": "npm test",
+    "dev": "tsc --watch",
+    "prettier": "./node_modules/prettier/bin-prettier.js --write ./src/**/*.ts ./src/*.ts"
+  },
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/baseprime/rest-resource.git"
+  },
+  "keywords": [
+    "rest",
+    "api",
+    "model",
+    "cache",
+    "caching",
+    "express",
+    "restify",
+    "vue"
+  ],
+  "author": "Greg Sabia Tucker <greg@narrowlabs.com> (http://basepri.me)",
+  "license": "MIT",
+  "bugs": {
+    "url": "https://github.com/baseprime/rest-resource/issues"
+  },
+  "homepage": "https://github.com/baseprime/rest-resource#readme",
+  "devDependencies": {
+    "@types/chai": "^4.1.7",
+    "@types/mocha": "^5.2.5",
+    "@types/node": "^10.12.19",
+    "chai": "^4.2.0",
+    "mocha": "^5.2.0",
+    "prettier": "^1.16.2"
+  },
+  "dependencies": {
+    "assert": "^1.4.1",
+    "http-errors": "^1.7.1",
+    "lodash": "^4.17.11"
+  }
+}
