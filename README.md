@@ -1,7 +1,11 @@
 # REST Resource - Simplify your REST API resources
-REST Resource is a simple library to help make your life simpler when calling REST API Endpoints.
+REST Resource is a simple library to help make your life simpler when calling REST API Endpoints. It takes RESTful Resource/Service URIs and simplifies them into a Class that can be called with simple methods.
 
-REST Resource Takes RESTful Resource/Service URIs and simplifies them into a Class that can be called with simple methods.
+#### Features:
+- Resource Caching
+- Supports Related Resources
+- Nested attribute resolution on Related Resources
+- Custom clients
 
 ## What is a REST Resource?
 REST is acronym for REpresentational State Transfer. It is architectural style for distributed hypermedia systems and was first presented by Roy Fielding in 2000 in his famous [dissertation](https://www.ics.uci.edu/~fielding/pubs/dissertation/rest_arch_style.htm).
