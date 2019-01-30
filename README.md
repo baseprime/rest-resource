@@ -195,6 +195,9 @@ class CustomResource extends Resource {
 
 // Or you can globally override the client
 Resource.getClient = () => new CustomClient('http://some-api.com')
+
+// Or you can set the client manually
+Resource.setClient(new CustomClient('http://some-api.com'))
 ```
 
 ### JSON Web Tokens (JWT) and Authenticated Endpoints

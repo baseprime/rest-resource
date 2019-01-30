@@ -3,6 +3,7 @@
   "version": "0.1.0",
   "description": "Simplify your REST API resources, supports automatic caching",
   "main": "dist/index.js",
+  "types": "types",
   "scripts": {
     "test": "npm test",
     "dev": "tsc --watch",

@@ -8,6 +8,8 @@
         "strictFunctionTypes": false,
         "jsx": "preserve",
         "importHelpers": true,
+        "declaration": true,
+        "declarationDir": "types",
         "moduleResolution": "node",
         "experimentalDecorators": true,
         "esModuleInterop": true,
