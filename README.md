@@ -166,7 +166,7 @@ let patsyGroup = patsy.getAttr('group.name')
 ```
 
 # Acts like a Model
-You can use REST Resource like a RESTful Model. REST Resource tracks changes in each Resource instance's attributes and utilized RESTful HTTP Verbs like `GET`, `POST`, `PUT`, `PATCH`, and `DELETE` so you can call to it like you would a model:
+You can use REST Resource like a RESTful Model. REST Resource tracks changes in each Resource instance's attributes and uses RESTful HTTP Verbs like `GET`, `POST`, `PUT`, `PATCH`, and `DELETE` accordingly:
 
 ```javascript
 let robin = new UserResource({
@@ -190,6 +190,24 @@ robin.update()
 robin.runAway()
 robin.delete()
 // DELETE /users/<robin-id>
+```
+
+## Resource Instance Defaults
+You can also specify the defaults that a Resource instance should have:
+
+```javascript
+class UserResource extends Resource {
+    static endpoint = '/users'
+    static defaults = {
+        name: 'Unknown User',
+        weapon: 'Hyperbolic Taunting',
+        group: 1
+    }
+}
+
+let unknown = new UserResource({ group: 2 })
+console.log(unknown.attr('name'))
+// => Unknown User
 ```
 
 # The `Client` Class
