@@ -25,10 +25,10 @@ Given the URIs:
 ```
 /users
 /users/<id>
-/occupations
-/occupations/<id>
-/equipment
-/equipment/<id>
+/roles
+/roles/<id>
+/groups
+/groups/<id>
 ```
 Code:
 
@@ -39,7 +39,7 @@ class UserResource extends Resource {
     static endpoint = '/users'
 
     greet() {
-        console.log('I am %s, %s!', this.attributes.name, this.attributes.occupation)
+        console.log('I am %s, %s!', this.attributes.name, this.attributes.role)
     }
 }
 
@@ -83,36 +83,36 @@ You can also define related resources:
 ```javascript
 import Resource from 'rest-resource'
 
-class OccupationResource extends Resource {
-    static endpont = '/occupations'
+class RoleResource extends Resource {
+    static endpont = '/roles'
 }
 
-class EquipmentResource extends Resource {
-    static endpont = '/equipment'
+class GroupResource extends Resource {
+    static endpont = '/groups'
 }
 
 class UserResource extends Resource {
     static endpoint = '/users'
     static related = {
-        occupation: OccupationResource,
-        equipment: EquipmentResource
+        role: RoleResource,
+        group: GroupResource
     }
 }
 
 // GET /users/321
 let user = await UserResource.detail(321)
 await user.getRelated()
-// GET /occupations/<id>
-// GET /equipment/<id>
+// GET /roles/<id>
+// GET /groups/<id>
 
-// Using attr() gets the attribute `title `on related key `occupation`
-let title = user.attr('occupation.title')
+// Using attr() gets the attribute `title `on related key `role`
+let title = user.attr('role.title')
 let name = user.attr('name')
 console.log('%s the %s!', name, title)
 // => Tim the Enchanter!
 
-console.log(user.attr('occupation'))
-// => OccupationResource({ id: 654, title: 'Enchanter' })
+console.log(user.attr('role'))
+// => RoleResource({ id: 654, title: 'Enchanter' })
 ```
 
 ### Related Attribute Lookups with `getAttr()`
@@ -122,8 +122,8 @@ REST Resource automatically resolves properties from related lookups, then decid
 let roger = await UserResource.detail(543)
 // GET /users/543
 
-let title = await roger.getAttr('occupation.title')
-// Doesn't need send GET /occupations/<id>
+let title = await roger.getAttr('role.title')
+// Doesn't need send GET /roles/<id>
 
 console.log(title)
 // => Shrubber
@@ -131,7 +131,7 @@ console.log(title)
 
 Furthermore, if an object is cached and is called upon from other related models, REST Resource will save a request.
 
-In the example below, notice the `equipment` ids are the same:
+In the example below, notice the `group` ids are the same:
 
 ```javascript
 let arthur = await UserResource.detail(123)
@@ -140,8 +140,8 @@ console.log(arthur.attributes)
 //        id: 123,
 //        name: 'King Arthur',
 //        weapon: 'Sword',
-//        occupation: 1,
-//        equipment: 1
+//        role: 1,
+//        group: 1
 //    }
 
 let patsy = await UserResource.detail(654)
@@ -150,19 +150,46 @@ console.log(patsy.attributes)
 //        id: 654,
 //        name: 'Patsy',
 //        weapon: 'Coconuts',
-//        occupation: 2,
-//        equipment: 1 // Notice this ID is the same as the one above
+//        role: 2,
+//        group: 1 // Notice this ID is the same as the one above
 //    }
 
-let arthurTitle = arthur.getAttr('occupation.title')
-let arthurEquipment = arthur.getAttr('equipment.name')
-// GET /occupations/1
-// GET /equipment/1
+let arthurTitle = arthur.getAttr('role.title')
+let arthurGroup = arthur.getAttr('group.name')
+// GET /roles/1
+// GET /groups/1
 
-let patsyTitle = patsy.getAttr('occupation.title')
-let patsyEquipment = patsy.getAttr('equipment.name')
-// GET /occupations/2
-// Does not need to GET /occupations/1
+let patsyTitle = patsy.getAttr('role.title')
+let patsyGroup = patsy.getAttr('group.name')
+// GET /roles/2
+// Does not need to GET /groups/1
+```
+
+# Acts like a Model
+You can use REST Resource like a RESTful Model. REST Resource tracks changes in each Resource instance's attributes and utilized RESTful HTTP Verbs like `GET`, `POST`, `PUT`, `PATCH`, and `DELETE` so you can call to it like you would a model:
+
+```javascript
+let robin = new UserResource({
+    name: 'Brave Sir Robin',
+    weapon: 'Sword'
+})
+
+await robin.save()
+// POST /users
+let knight = new RoleResource({ title: 'Knight of the Round Table' })
+await knight.save()
+// POST /roles
+
+robin.attr('role', knight.id)
+robin.save()
+// PATCH /users/<robin-id>
+
+robin.update()
+// GET /users/<robin-id>
+
+robin.runAway()
+robin.delete()
+// DELETE /users/<robin-id>
 ```
 
 # The `Client` Class
