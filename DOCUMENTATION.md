@@ -1,5 +1,103 @@
 # Documentation
 
+## Resource class
+
+```typescript
+static endpoint: string;
+static cacheMaxAge: number;
+static data: any;
+static _cache: any;
+static _client: Client;
+static queued: any;
+static uniqueKey: string;
+static defaults: any;
+static related: ResourceClassDict;
+_attributes: any;
+attributes: any;
+related: ResourceDict;
+changes: any;
+constructor(attributes?: any, options?: any);
+/**
+ * Cache getter
+ */
+static readonly cache: any;
+/**
+ * Cache a resource onto this class' cache for cacheMaxAge seconds
+ * @param resource
+ * @param replace
+ */
+static cacheResource(resource: ResourceLike, replace?: boolean): void;
+/**
+ * Replace attributes on a cached resource onto this class' cache for cacheMaxAge seconds (useful for bubbling up changes to states that may be already rendered)
+ * @param resource
+ */
+static replaceCache(resource: ResourceLike): void;
+/**
+ * Get time delta in seconds of cache expiry
+ */
+static cacheDeltaSeconds(): number;
+/**
+ * Get a cached resource by ID
+ * @param id
+ */
+static getCached(id: string): CachedResource | undefined;
+static getCachedAll(): CachedResource[];
+/**
+ * Get HTTP client for a resource Class
+ * This is meant to be overridden if we want to define a client at any time
+ */
+static getClient(): Client;
+/**
+ * Set HTTP client
+ * @param client instanceof Client
+ */
+static setClient(client: Client): void;
+/**
+ * Get list route path (eg. /users) to be used with HTTP requests and allow a querystring object
+ * @param query Querystring
+ */
+static listRoutePath(query?: RequestOptions['query']): string;
+/**
+ * Get detail route path (eg. /users/123) to be used with HTTP requests
+ * @param id
+ * @param query Querystring
+ */
+static detailRoutePath(id: string, query?: RequestOptions['query']): string;
+/**
+ * HTTP Get of resource's list route--returns a promise
+ * @param options HTTP Request Options
+ * @returns Promise
+ */
+static list(options?: RequestOptions): Promise<ResourceLike<T>[]>;
+static detail(id: string, options?: RequestOptions): Promise<T>;
+static getDetailRoute(id: string, options?: RequestOptions): Promise<ResourceResponse<ResourceLike<T>>>;
+static getListRoute(options?: RequestOptions): Promise<ResourceResponse<ResourceLike<T>>>;
+static parseResponse(result: any): ResourceResponse<T>;
+static getRelated(resource: ResourceLike, { deep, relatedKeys, relatedSubKeys }?: GetRelatedDict): Promise<ResourceDict>;
+static getRelatedDeep(resource: ResourceLike, options?: GetRelatedDict): Promise<ResourceDict<Resource>>;
+static toResourceName(): string;
+static getIdFromAttributes(attributes: any): string;
+attr(key?: string, value?: any): any;
+/**
+ * Persist getting an attribute and get related keys until a key can be found (or not found)
+ * TypeError in attr() will be thrown, we're just doing the getRelated() work for you...
+ * @param key
+ */
+getAttr(key: string): Promise<any>;
+getConstructor(): ResourceCtorLike;
+getRelated(options?: GetRelatedDict): Promise<ResourceDict>;
+getRelatedDeep(options?: GetRelatedDict): Promise<ResourceDict>;
+save(): Promise<ResourceLike>;
+update(): Promise<Resource>;
+hasRelatedDefined(relatedKey: string): boolean;
+cache(replace?: boolean): ResourceLike;
+getCached(): CachedResource | undefined;
+id: string;
+toString(): string;
+toResourceName(): string;
+toJSON(): any;
+```
+
 ### Table of Contents
 
 - [getAttr][1]
