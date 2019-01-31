@@ -2,7 +2,7 @@
 REST Resource is a simple library to help make your life simpler when calling REST API Endpoints. It takes RESTful Resource/Service URIs and simplifies them into a Class that can be called with simple methods.
 
 #### Features:
-- Resource Caching
+- Caching
 - Supports Related Resources
 - Nested attribute resolution on Related Resources
 - Custom clients
@@ -24,7 +24,11 @@ Given the URIs:
 
 ```
 /users
-/users/{id}
+/users/<id>
+/occupations
+/occupations/<id>
+/equipment
+/equipment/<id>
 ```
 Code:
 
@@ -127,7 +131,7 @@ console.log(title)
 
 Furthermore, if an object is cached and is called upon from other related models, REST Resource will save a request.
 
-In the example below, notice the `equipment` ids are the same (`1`):
+In the example below, notice the `equipment` ids are the same:
 
 ```javascript
 let arthur = await UserResource.detail(123)
@@ -144,26 +148,21 @@ let patsy = await UserResource.detail(654)
 console.log(patsy.attributes)
 // => {
 //        id: 654,
-//        name: 'Brave Sir Robin',
-//        weapon: 'Sword',
+//        name: 'Patsy',
+//        weapon: 'Coconuts',
 //        occupation: 2,
-//        equipment: 1 // Notice the equipment ID is the same
+//        equipment: 1 // Notice this ID is the same as the one above
 //    }
 
 let arthurTitle = arthur.getAttr('occupation.title')
 let arthurEquipment = arthur.getAttr('equipment.name')
-
 // GET /occupations/1
 // GET /equipment/1
 
 let patsyTitle = patsy.getAttr('occupation.title')
 let patsyEquipment = patsy.getAttr('equipment.name')
-
 // GET /occupations/2
 // Does not need to GET /occupations/1
-
-console.log(patsyEquipment)
-// => Coconuts
 ```
 
 # The `Client` Class
