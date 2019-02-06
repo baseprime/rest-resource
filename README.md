@@ -44,7 +44,7 @@ class UserResource extends Resource {
 }
 
 // Sends a GET to /users
-UserResource().then((users) => {
+UserResource.list().then((users) => {
     let user = users[0]
     user.greet()
     // => I am Arthur, King of the Britons!
