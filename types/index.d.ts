@@ -97,6 +97,7 @@ export default class Resource implements ResourceLike {
     static parseResponse<T extends ResourceLike = ResourceLike>(result: any): ResourceResponse<T>;
     static getRelated(resource: ResourceLike, { deep, relatedKeys, relatedSubKeys }?: GetRelatedDict): Promise<ResourceDict>;
     static getRelatedDeep(resource: ResourceLike, options?: GetRelatedDict): Promise<ResourceDict<Resource>>;
+    static rel(key: string): typeof Resource;
     static toResourceName(): string;
     static getIdFromAttributes(attributes: any): string;
     attr(key?: string, value?: any): any;
@@ -109,6 +110,7 @@ export default class Resource implements ResourceLike {
     getConstructor(): ResourceCtorLike;
     getRelated(options?: GetRelatedDict): Promise<ResourceDict>;
     getRelatedDeep(options?: GetRelatedDict): Promise<ResourceDict>;
+    rel(key: string): typeof Resource;
     save(): Promise<ResourceLike>;
     update(): Promise<Resource>;
     hasRelatedDefined(relatedKey: string): boolean;

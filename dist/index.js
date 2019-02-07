@@ -261,6 +261,9 @@ export default class Resource {
         const opts = Object.assign({ deep: true }, options);
         return this.getRelated(resource, opts);
     }
+    static rel(key) {
+        return this.related[key];
+    }
     static toResourceName() {
         return this.name;
     }
@@ -355,6 +358,9 @@ export default class Resource {
     getRelatedDeep(options) {
         const opts = Object.assign({ deep: true }, options || {});
         return this.getRelated(opts);
+    }
+    rel(key) {
+        return this.getConstructor().rel(key);
     }
     save() {
         let promise;

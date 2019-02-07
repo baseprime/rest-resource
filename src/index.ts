@@ -327,6 +327,10 @@ export default class Resource implements ResourceLike {
         return this.getRelated(resource, opts)
     }
 
+    static rel(key: string): typeof Resource {
+        return this.related[key]
+    }
+
     static toResourceName(): string {
         return this.name
     }
@@ -423,6 +427,10 @@ export default class Resource implements ResourceLike {
     getRelatedDeep(options?: GetRelatedDict): Promise<ResourceDict> {
         const opts = Object.assign({ deep: true }, options || {})
         return this.getRelated(opts)
+    }
+
+    rel(key: string): typeof Resource {
+        return this.getConstructor().rel(key)
     }
 
     save(): Promise<ResourceLike> {
