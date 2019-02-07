@@ -1,6 +1,6 @@
 {
   "parser": "typescript",
-  "printWidth": 200,
+  "printWidth": 300,
   "trailingComma": "es5",
   "bracketSpacing": true,
   "arrowParens": "always",

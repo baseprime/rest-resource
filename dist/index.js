@@ -1,4 +1,3 @@
-import * as exceptions from './exceptions';
 import { serializeToQueryString } from './util';
 const assert = require('assert');
 const isEqual = require('lodash').isEqual;
@@ -21,10 +20,7 @@ export default class Resource {
                 enumerable: true,
                 get: () => this._attributes[attrKey],
                 set: (value) => {
-                    if (!isEqual(this.attributes[attrKey], value)) {
-                        this.changes[attrKey] = value;
-                    }
-                    this._attributes[attrKey] = value;
+                    this.setValueDirect(attrKey, value);
                 },
             });
         }
@@ -216,19 +212,21 @@ export default class Resource {
                 const isMany = Array.isArray(resource.attributes[resourceKey]);
                 // Get resource ids -- coerce to list (even if it's 1 ID to get, it'll be [id])
                 const rids = [].concat(resource.attributes[resourceKey]);
+                if (isMany && !Array.isArray(resource.related[resourceKey])) {
+                    resource.related[resourceKey] = [];
+                }
                 // Now for all IDs...
                 rids.forEach((rid, idx) => {
                     // Create a promise getting the details
                     const promise = RelatedCls.detail(rid).then((instance) => {
                         assert(instance instanceof RelatedCls, `Related class detail() returned invalid instance on key ${this.name}.related.${resourceKey}: ${instance.getConstructor().name} (returned) !== ${RelatedCls.name} (related)`);
-                        let thisResourceList = resource.related[resourceKey];
                         if (isMany) {
                             // If it's a list, make sure the array property exists before pushing it onto the list
-                            if (!Array.isArray(thisResourceList)) {
-                                thisResourceList = [];
+                            if (!Array.isArray(resource.related[resourceKey])) {
+                                resource.related[resourceKey] = [];
                             }
                             // Finally, put this resource into the collection of other instances
-                            thisResourceList[idx] = instance;
+                            resource.related[resourceKey][idx] = instance;
                         }
                         else {
                             // The corresponding attribute is just a Primary Key, so no need to create a collection
@@ -261,6 +259,10 @@ export default class Resource {
         const opts = Object.assign({ deep: true }, options);
         return this.getRelated(resource, opts);
     }
+    /**
+     * Get related class by key
+     * @param key
+     */
     static rel(key) {
         return this.related[key];
     }
@@ -285,22 +287,25 @@ export default class Resource {
             // We're getting a value
             const pieces = key.split('.');
             const thisKey = String(pieces.shift());
+            const thisValue = this.attributes[thisKey];
             const relatedResource = this.related[thisKey];
             if (pieces.length > 0 && typeof relatedResource !== 'undefined') {
                 // We're not done getting attributes (it contains a ".") send it to related resource
                 if (Array.isArray(relatedResource)) {
-                    throw new exceptions.AttributeError(`Key: ${thisKey}: Can't use attr() on collection of Resources`);
+                    return relatedResource.map((thisResource) => {
+                        return thisResource.attr(pieces.join('.'));
+                    });
                 }
                 return relatedResource.attr(pieces.join('.'));
             }
-            if (pieces.length > 0 && typeof relatedResource === 'undefined' && this.hasRelatedDefined(thisKey)) {
+            if (pieces.length > 0 && thisValue && typeof relatedResource === 'undefined' && this.hasRelatedDefined(thisKey)) {
                 throw new TypeError(`Can't read related property ${thisKey} before getRelated() is called`);
             }
             else if (!pieces.length && typeof relatedResource !== 'undefined') {
                 return relatedResource;
             }
-            else if (!pieces.length && typeof this.attributes[thisKey] !== 'undefined') {
-                return this.attributes[thisKey];
+            else if (!pieces.length && typeof thisValue !== 'undefined') {
+                return thisValue;
             }
             else {
                 return undefined;
@@ -338,13 +343,55 @@ export default class Resource {
                     const pieces = key.split('.');
                     const thisKey = String(pieces.shift());
                     this.getRelated({ relatedKeys: [thisKey] }).then(() => {
-                        const relatedResource = this.attr(thisKey);
-                        resolve(relatedResource.getAttr(pieces.join('.')));
+                        let attrValue = this.attr(thisKey);
+                        let isMany = Array.isArray(attrValue);
+                        let relatedResources = [].concat(attrValue);
+                        let relatedKey = pieces.join('.');
+                        let promises = relatedResources.map((resource) => {
+                            return resource.getAttr(relatedKey);
+                        });
+                        Promise.all(promises).then((values) => {
+                            if (isMany) {
+                                resolve(values);
+                            }
+                            else if (values.length === 1) {
+                                resolve(values[0]);
+                            }
+                            else {
+                                resolve(values);
+                            }
+                        });
                     });
                 }
             }
         });
     }
+    /**
+     * Directly sets a value onto instance._attributes
+     * @param key
+     * @param value
+     */
+    setValueDirect(key, value) {
+        if (!isEqual(this.attributes[key], value)) {
+            // New value has changed -- set it in this.changed and this._attributes
+            let validRelatedKey = value instanceof Resource && value.getConstructor() === this.rel(key);
+            // Also resolve any related Resources back into foreign keys -- @todo What if it's a list of related Resources?
+            if (value && validRelatedKey) {
+                // Newly set value is an actual Resource instance
+                // this.related is a related resource or a list of related resources
+                let newRelatedResource = value;
+                this.related[key] = newRelatedResource;
+                // this._attributes is a list of IDs
+                value = newRelatedResource.id;
+            }
+            this.changes[key] = value;
+        }
+        this._attributes[key] = value;
+    }
+    /**
+     * Like calling instance.constructor but safer:
+     * changing objects down the line won't creep up the prototype chain and end up on native global objects like Function or Object
+     */
     getConstructor() {
         if (this.constructor === Function) {
             // Safe guard in case something goes wrong in subclasses, we don't want to change native Function
@@ -359,9 +406,16 @@ export default class Resource {
         const opts = Object.assign({ deep: true }, options || {});
         return this.getRelated(opts);
     }
+    /**
+     * Get related class by key
+     * @param key
+     */
     rel(key) {
         return this.getConstructor().rel(key);
     }
+    /**
+     * Saves the instance -- sends changes as a PATCH or sends whole object as a POST if it's new
+     */
     save() {
         let promise;
         const Ctor = this.getConstructor();

@@ -97,6 +97,10 @@ export default class Resource implements ResourceLike {
     static parseResponse<T extends ResourceLike = ResourceLike>(result: any): ResourceResponse<T>;
     static getRelated(resource: ResourceLike, { deep, relatedKeys, relatedSubKeys }?: GetRelatedDict): Promise<ResourceDict>;
     static getRelatedDeep(resource: ResourceLike, options?: GetRelatedDict): Promise<ResourceDict<Resource>>;
+    /**
+     * Get related class by key
+     * @param key
+     */
     static rel(key: string): typeof Resource;
     static toResourceName(): string;
     static getIdFromAttributes(attributes: any): string;
@@ -107,10 +111,27 @@ export default class Resource implements ResourceLike {
      * @param key
      */
     getAttr(key: string): Promise<any>;
+    /**
+     * Directly sets a value onto instance._attributes
+     * @param key
+     * @param value
+     */
+    setValueDirect(key: string, value: any): void;
+    /**
+     * Like calling instance.constructor but safer:
+     * changing objects down the line won't creep up the prototype chain and end up on native global objects like Function or Object
+     */
     getConstructor(): ResourceCtorLike;
     getRelated(options?: GetRelatedDict): Promise<ResourceDict>;
     getRelatedDeep(options?: GetRelatedDict): Promise<ResourceDict>;
+    /**
+     * Get related class by key
+     * @param key
+     */
     rel(key: string): typeof Resource;
+    /**
+     * Saves the instance -- sends changes as a PATCH or sends whole object as a POST if it's new
+     */
     save(): Promise<ResourceLike>;
     update(): Promise<Resource>;
     hasRelatedDefined(relatedKey: string): boolean;
