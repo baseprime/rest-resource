@@ -100,34 +100,104 @@ toJSON(): any;
 
 ### Table of Contents
 
-- [getAttr][1]
-  - [Parameters][2]
-- [cache][3]
-- [cacheResource][4]
-  - [Parameters][5]
-- [replaceCache][6]
-  - [Parameters][7]
-- [cacheDeltaSeconds][8]
-- [getCached][9]
-  - [Parameters][10]
-- [getClient][11]
-- [setClient][12]
-  - [Parameters][13]
-- [listRoutePath][14]
-  - [Parameters][15]
-- [detailRoutePath][16]
-  - [Parameters][17]
-- [list][18]
-  - [Parameters][19]
+-   [set][1]
+    -   [Parameters][2]
+-   [get][3]
+    -   [Parameters][4]
+-   [getAsync][5]
+    -   [Parameters][6]
+-   [setInternalValue][7]
+    -   [Parameters][8]
+-   [getInternalValue][9]
+    -   [Parameters][10]
+-   [getConstructor][11]
+-   [rel][12]
+    -   [Parameters][13]
+-   [save][14]
+-   [cache][15]
+-   [cacheResource][16]
+    -   [Parameters][17]
+-   [replaceCache][18]
+    -   [Parameters][19]
+-   [cacheDeltaSeconds][20]
+-   [getCached][21]
+    -   [Parameters][22]
+-   [getClient][23]
+-   [setClient][24]
+    -   [Parameters][25]
+-   [listRoutePath][26]
+    -   [Parameters][27]
+-   [detailRoutePath][28]
+    -   [Parameters][29]
+-   [list][30]
+    -   [Parameters][31]
+-   [rel][32]
+    -   [Parameters][33]
 
-## getAttr
+## set
 
-Persist getting an attribute and get related keys until a key can be found (or not found)
-TypeError in attr() will be thrown, we're just doing the getRelated() work for you...
+Set an attribute of Resource instance
 
 ### Parameters
 
-- `key`  
+-   `key`  
+-   `value`  
+
+## get
+
+Get an attribute of Resource instance
+You can use dot notation here -- eg. resource.get('user.username')
+
+### Parameters
+
+-   `key`  
+
+## getAsync
+
+Persist getting an attribute and get related keys until a key can be found (or not found)
+TypeError in get() will be thrown, we're just doing the getRelated() work for you...
+
+### Parameters
+
+-   `key`  
+
+## setInternalValue
+
+Mutate key/value on this.attributes[key] into an internal value
+Usually this is just setting a key/value but we want to be able to accept
+anything -- another Resource instance for example. If a Resource instance is
+provided, set the this.related[key] as the new instance, then set the
+this.attributes[key] field as just the primary key of the related Resource instance
+
+### Parameters
+
+-   `key`  
+-   `value`  
+
+## getInternalValue
+
+Like setInternalValue except the other way around
+
+### Parameters
+
+-   `key`  
+
+## getConstructor
+
+Like calling instance.constructor but safer:
+changing objects down the line won't creep up the prototype chain and end up on native global objects like Function or Object
+
+## rel
+
+Get related class by key
+
+### Parameters
+
+-   `key`  
+
+## save
+
+Saves the instance -- sends changes as a PATCH or sends whole object as a POST if it's new
 
 ## cache
 
@@ -139,8 +209,8 @@ Cache a resource onto this class' cache for cacheMaxAge seconds
 
 ### Parameters
 
-- `resource`  
-- `replace`  
+-   `resource`  
+-   `replace`  
 
 ## replaceCache
 
@@ -148,7 +218,7 @@ Replace attributes on a cached resource onto this class' cache for cacheMaxAge s
 
 ### Parameters
 
-- `resource`  
+-   `resource`  
 
 ## cacheDeltaSeconds
 
@@ -160,7 +230,7 @@ Get a cached resource by ID
 
 ### Parameters
 
-- `id`  
+-   `id`  
 
 ## getClient
 
@@ -173,7 +243,7 @@ Set HTTP client
 
 ### Parameters
 
-- `client`  instanceof Client
+-   `client`  instanceof Client
 
 ## listRoutePath
 
@@ -181,7 +251,7 @@ Get list route path (eg. /users) to be used with HTTP requests and allow a query
 
 ### Parameters
 
-- `query`  Querystring
+-   `query`  Querystring
 
 ## detailRoutePath
 
@@ -189,8 +259,8 @@ Get detail route path (eg. /users/123) to be used with HTTP requests
 
 ### Parameters
 
-- `id`  
-- `query`  Querystring
+-   `id`  
+-   `query`  Querystring
 
 ## list
 
@@ -198,44 +268,80 @@ HTTP Get of resource's list route--returns a promise
 
 ### Parameters
 
-- `options`  HTTP Request Options
+-   `options`  HTTP Request Options
 
 Returns **any** Promise
 
-[1]: #getattr
+## rel
+
+Get related class by key
+
+### Parameters
+
+-   `key`  
+
+[1]: #set
 
 [2]: #parameters
 
-[3]: #cache
+[3]: #get
 
-[4]: #cacheresource
+[4]: #parameters-1
 
-[5]: #parameters-1
+[5]: #getasync
 
-[6]: #replacecache
+[6]: #parameters-2
 
-[7]: #parameters-2
+[7]: #setinternalvalue
 
-[8]: #cachedeltaseconds
+[8]: #parameters-3
 
-[9]: #getcached
+[9]: #getinternalvalue
 
-[10]: #parameters-3
+[10]: #parameters-4
 
-[11]: #getclient
+[11]: #getconstructor
 
-[12]: #setclient
+[12]: #rel
 
-[13]: #parameters-4
+[13]: #parameters-5
 
-[14]: #listroutepath
+[14]: #save
 
-[15]: #parameters-5
+[15]: #cache
 
-[16]: #detailroutepath
+[16]: #cacheresource
 
 [17]: #parameters-6
 
-[18]: #list
+[18]: #replacecache
 
 [19]: #parameters-7
+
+[20]: #cachedeltaseconds
+
+[21]: #getcached
+
+[22]: #parameters-8
+
+[23]: #getclient
+
+[24]: #setclient
+
+[25]: #parameters-9
+
+[26]: #listroutepath
+
+[27]: #parameters-10
+
+[28]: #detailroutepath
+
+[29]: #parameters-11
+
+[30]: #list
+
+[31]: #parameters-12
+
+[32]: #rel-1
+
+[33]: #parameters-13

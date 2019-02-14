@@ -48,7 +48,7 @@ UserResource.list().then((users) => {
     let user = users[0]
     user.greet()
     // => I am Arthur, King of the Britons!
-    user.attr('weapon', 'Sword')
+    user.set('weapon', 'Sword')
     user.save()
     // PATCH { weapon: 'Sword' } to /users/123
 })
@@ -105,24 +105,24 @@ await user.getRelated()
 // GET /roles/<id>
 // GET /groups/<id>
 
-// Using attr() gets the attribute `title `on related key `role`
-let title = user.attr('role.title')
-let name = user.attr('name')
+// Using get() gets the attribute `title `on related key `role`
+let title = user.get('role.title')
+let name = user.get('name')
 console.log('%s the %s!', name, title)
 // => Tim the Enchanter!
 
-console.log(user.attr('role'))
+console.log(user.get('role'))
 // => RoleResource({ id: 654, title: 'Enchanter' })
 ```
 
-### Related Attribute Lookups with `getAttr()`
+### Related Attribute Lookups with `getAsync()`
 REST Resource automatically resolves properties from related lookups, then decides what it needs to call `resource.getRelated()`
 
 ```javascript
 let roger = await UserResource.detail(543)
 // GET /users/543
 
-let title = await roger.getAttr('role.title')
+let title = await roger.getAsync('role.title')
 // Doesn't need send GET /roles/<id>
 
 console.log(title)
@@ -154,13 +154,13 @@ console.log(patsy.attributes)
 //        group: 1 // Notice this ID is the same as the one above
 //    }
 
-let arthurTitle = arthur.getAttr('role.title')
-let arthurGroup = arthur.getAttr('group.name')
+let arthurTitle = arthur.getAsync('role.title')
+let arthurGroup = arthur.getAsync('group.name')
 // GET /roles/1
 // GET /groups/1
 
-let patsyTitle = patsy.getAttr('role.title')
-let patsyGroup = patsy.getAttr('group.name')
+let patsyTitle = patsy.getAsync('role.title')
+let patsyGroup = patsy.getAsync('group.name')
 // GET /roles/2
 // Does not need to GET /groups/1
 ```
@@ -180,7 +180,7 @@ let knight = new RoleResource({ title: 'Knight of the Round Table' })
 await knight.save()
 // POST /roles
 
-robin.attr('role', knight.id)
+robin.set('role', knight.id)
 robin.save()
 // PATCH /users/<robin-id>
 
@@ -206,7 +206,7 @@ class UserResource extends Resource {
 }
 
 let unknown = new UserResource({ group: 2 })
-console.log(unknown.attr('name'))
+console.log(unknown.get('name'))
 // => Unknown User
 ```
 

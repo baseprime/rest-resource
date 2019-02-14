@@ -7,7 +7,8 @@
   "scripts": {
     "test": "npm test",
     "dev": "tsc --watch",
-    "prettier": "./node_modules/prettier/bin-prettier.js --write ./src/**/*.ts ./src/*.ts"
+    "prettier": "./node_modules/prettier/bin-prettier.js --write ./src/**/*.ts ./src/*.ts",
+    "docs": "documentation build dist/index.js -f md"
   },
   "repository": {
     "type": "git",

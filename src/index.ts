@@ -340,6 +340,11 @@ export default class Resource implements ResourceLike {
         return id ? String(id) : ''
     }
 
+    /**
+     * Set an attribute of Resource instance
+     * @param key 
+     * @param value 
+     */
     set(key: string, value: any) {
         // We're setting a value -- setters in ctor takes care of changes
         const pieces = key.split('.')
@@ -351,6 +356,11 @@ export default class Resource implements ResourceLike {
         return this
     }
 
+    /**
+     * Get an attribute of Resource instance
+     * You can use dot notation here -- eg. resource.get('user.username')
+     * @param key 
+     */
     get(key?: string): any {
         if (typeof key !== 'undefined') {
             // We're simply getting a value

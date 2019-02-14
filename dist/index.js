@@ -274,6 +274,11 @@ export default class Resource {
         const id = attributes[this.uniqueKey];
         return id ? String(id) : '';
     }
+    /**
+     * Set an attribute of Resource instance
+     * @param key
+     * @param value
+     */
     set(key, value) {
         // We're setting a value -- setters in ctor takes care of changes
         const pieces = key.split('.');
@@ -283,6 +288,11 @@ export default class Resource {
         this.attributes[pieces[0]] = value;
         return this;
     }
+    /**
+     * Get an attribute of Resource instance
+     * You can use dot notation here -- eg. resource.get('user.username')
+     * @param key
+     */
     get(key) {
         if (typeof key !== 'undefined') {
             // We're simply getting a value

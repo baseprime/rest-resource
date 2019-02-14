@@ -104,7 +104,17 @@ export default class Resource implements ResourceLike {
     static rel(key: string): typeof Resource;
     static toResourceName(): string;
     static getIdFromAttributes(attributes: any): string;
+    /**
+     * Set an attribute of Resource instance
+     * @param key
+     * @param value
+     */
     set(key: string, value: any): this;
+    /**
+     * Get an attribute of Resource instance
+     * You can use dot notation here -- eg. resource.get('user.username')
+     * @param key
+     */
     get(key?: string): any;
     /**
      * Persist getting an attribute and get related keys until a key can be found (or not found)
