@@ -36,7 +36,8 @@
     "@types/node": "^10.12.19",
     "chai": "^4.2.0",
     "mocha": "^5.2.0",
-    "prettier": "^1.16.2"
+    "prettier": "^1.16.2",
+    "tslib": "^1.9.3"
   },
   "dependencies": {
     "assert": "^1.4.1",
