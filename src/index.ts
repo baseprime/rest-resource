@@ -1,21 +1,13 @@
 import * as exceptions from './exceptions'
-import Client from './client'
-import { serializeToQueryString } from './util'
-import { RequestOptions } from './client'
+import { stringify } from 'querystring'
+import { DefaultClient, RequestConfig, ResourceResponse } from './client'
+import { AxiosResponse } from 'axios';
 
 const assert = require('assert')
 const isEqual = require('lodash').isEqual
 
 export type ResourceLike<T extends Resource = Resource> = T | Resource
 export type ResourceCtorLike<T extends typeof Resource = typeof Resource> = T | typeof Resource
-
-export interface ResourceResponse<T extends ResourceLike = ResourceLike> {
-    objects: T[]
-    response: any
-    count?: number
-    previous?: () => ResourceResponse<T>
-    next?: () => ResourceResponse<T>
-}
 
 export interface GetRelatedDict {
     deep?: boolean
@@ -41,7 +33,7 @@ export default class Resource implements ResourceLike {
     static cacheMaxAge: number = 60
     static data: any = {}
     static _cache: any = {}
-    static _client: Client
+    static _client: DefaultClient
     static queued: any = {}
     static uniqueKey = 'id'
     static defaults: any = {}
@@ -61,14 +53,7 @@ export default class Resource implements ResourceLike {
         this._attributes = Object.assign({}, Ctor.defaults || {}, attributes || {})
         // Add getters/setters for attributes
         for (let attrKey of Object.keys(this._attributes)) {
-            Object.defineProperty(this.attributes, attrKey, {
-                configurable: true,
-                enumerable: true,
-                get: () => this.getInternalValue(attrKey),
-                set: (value) => {
-                    this._attributes[attrKey] = this.setInternalValue(attrKey, value)
-                }
-            })
+            this.set(attrKey, this._attributes[attrKey])
         }
 
         if (this.id) {
@@ -93,13 +78,17 @@ export default class Resource implements ResourceLike {
      * @param replace
      */
     static cacheResource(resource: ResourceLike, replace: boolean = false) {
-        if (replace) {
-            this.replaceCache(resource)
-        } else {
-            this.cache[resource.id] = {
-                resource,
-                expires: this.cacheDeltaSeconds(),
-            }
+        if(!resource.id) {
+            throw new exceptions.CacheError(`Can't cache ${resource.toResourceName()} resource without ${resource.getConstructor().uniqueKey} field`)
+        } else if (replace) {
+            try {
+                return this.replaceCache(resource)
+            } catch(e) {}
+        }
+
+        this.cache[resource.id] = {
+            resource,
+            expires: this.cacheDeltaSeconds(),
         }
     }
 
@@ -145,7 +134,7 @@ export default class Resource implements ResourceLike {
      * Get HTTP client for a resource Class
      * This is meant to be overridden if we want to define a client at any time
      */
-    static getClient(): Client {
+    static getClient(): DefaultClient {
         if (!this._client) {
             throw new exceptions.ImproperlyConfiguredError('Resource client class not defined. Did you try Resource.setClient or overriding Resource.getClient?')
         }
@@ -156,7 +145,7 @@ export default class Resource implements ResourceLike {
      * Set HTTP client
      * @param client instanceof Client
      */
-    static setClient(client: Client) {
+    static setClient(client: DefaultClient) {
         this._client = client
     }
 
@@ -164,9 +153,10 @@ export default class Resource implements ResourceLike {
      * Get list route path (eg. /users) to be used with HTTP requests and allow a querystring object
      * @param query Querystring
      */
-    static listRoutePath(query?: RequestOptions['query']): string {
+    static getListRoutePath(query?: any): string {
         if (query) {
-            return `${this.endpoint}?${serializeToQueryString(query)}`
+            let qs = stringify(query)
+            return `${this.endpoint}?${qs}`
         }
         return this.endpoint
     }
@@ -176,8 +166,9 @@ export default class Resource implements ResourceLike {
      * @param id
      * @param query Querystring
      */
-    static detailRoutePath(id: string, query?: RequestOptions['query']): string {
-        return `${this.endpoint}/${id}${query ? '?' : ''}${serializeToQueryString(query)}`
+    static getDetailRoutePath(id: string, query?: any): string {
+        let qs = stringify(query)
+        return `${this.endpoint}/${id}${query ? '?' : ''}${qs}`
     }
 
     /**
@@ -185,18 +176,18 @@ export default class Resource implements ResourceLike {
      * @param options HTTP Request Options
      * @returns Promise
      */
-    static list<T extends ResourceLike = ResourceLike>(options: RequestOptions = {}): Promise<ResourceLike<T>[]> {
+    static list<T extends ResourceLike = ResourceLike>(options: RequestConfig = {}): Promise<ResourceLike<T>[]> {
         return this.getListRoute(options).then((results: ResourceResponse) => results.objects)
     }
 
-    static detail<T extends ResourceLike = ResourceLike>(id: string, options: RequestOptions = {}): Promise<T> {
+    static detail<T extends ResourceLike = ResourceLike>(id: string, options: RequestConfig = {}): Promise<T> {
         // Check cache first
         const cached: CachedResource<ResourceLike<T>> = this.getCached(String(id))
         return new Promise((resolve) => {
             // Do we want to use cache?
             if (!cached || options.useCache === false) {
                 // Set a hash key for the queue (keeps it organized by type+id)
-                const queueHashKey = btoa(`${this.name}:${id}`)
+                const queueHashKey = (new Buffer(`${this.name}:${id}`)).toString('base64')
                 // If we want to use cache and cache wasn't found...
                 if (!cached && !this.queued[queueHashKey]) {
                     // We want to use cached and a resource with this ID hasn't been requested yet
@@ -228,22 +219,22 @@ export default class Resource implements ResourceLike {
         })
     }
 
-    static getDetailRoute<T extends ResourceLike = ResourceLike>(id: string, options: RequestOptions = {}): Promise<ResourceResponse<ResourceLike<T>>> {
+    static getDetailRoute<T extends ResourceLike = ResourceLike>(id: string, options: RequestConfig = {}): Promise<ResourceResponse<ResourceLike<T>>> {
         return this.getClient()
-            .apiCall(this.detailRoutePath(id), options)
-            .then(this.parseResponse.bind(this))
+            .get(this.getDetailRoutePath(id), options)
+            .then(this.extractObjectsFromResponse.bind(this))
     }
 
-    static getListRoute<T extends ResourceLike = ResourceLike>(options: RequestOptions = {}): Promise<ResourceResponse<ResourceLike<T>>> {
+    static getListRoute<T extends ResourceLike = ResourceLike>(options: RequestConfig = {}): Promise<ResourceResponse<ResourceLike<T>>> {
         return this.getClient()
-            .apiCall(this.listRoutePath(options.query), options)
-            .then(this.parseResponse.bind(this))
+            .get(this.getListRoutePath(options.query), options)
+            .then(this.extractObjectsFromResponse.bind(this))
     }
 
-    static parseResponse<T extends ResourceLike = ResourceLike>(result: any): ResourceResponse<T> {
+    static extractObjectsFromResponse<T extends ResourceLike = ResourceLike>(result: any): ResourceResponse<T> {
         let objects: T[] = []
-        const body: any = result.json
-        const Cls = this
+        const body: any = result.data
+        const Cls = <ResourceCtorLike>this
 
         if (body && body.results) {
             body.results.forEach((obj: any) => {
@@ -335,11 +326,6 @@ export default class Resource implements ResourceLike {
         return this.name
     }
 
-    static getIdFromAttributes(attributes: any): string {
-        const id = attributes[this.uniqueKey]
-        return id ? String(id) : ''
-    }
-
     /**
      * Set an attribute of Resource instance
      * @param key 
@@ -352,7 +338,17 @@ export default class Resource implements ResourceLike {
             throw new exceptions.AttributeError("Can't use dot notation when setting value of nested resource")
         }
 
-        this.attributes[pieces[0]] = value
+        Object.defineProperty(this.attributes, key, {
+            configurable: true,
+            enumerable: true,
+            get: () => this.fromInternalValue(key),
+            set: (newVal) => {
+                this._attributes[key] = this.toInternalValue(key, newVal)
+            }
+        })
+
+        this.attributes[key] = value
+
         return this
     }
 
@@ -450,7 +446,7 @@ export default class Resource implements ResourceLike {
      * @param key 
      * @param value 
      */
-    setInternalValue(key: string, value: any): any {
+    toInternalValue(key: string, value: any): any {
         if (!isEqual(this.attributes[key], value)) {
             // New value has changed -- set it in this.changed and this._attributes
             let validRelatedKey = value instanceof Resource && value.getConstructor() === this.rel(key)
@@ -471,10 +467,10 @@ export default class Resource implements ResourceLike {
     }
 
     /**
-     * Like setInternalValue except the other way around
+     * Like toInternalValue except the other way around
      * @param key 
      */
-    getInternalValue(key: string) {
+    fromInternalValue(key: string) {
         return this._attributes[key]
     }
 
@@ -515,15 +511,15 @@ export default class Resource implements ResourceLike {
         const Ctor = this.getConstructor()
 
         if (!this.id) {
-            promise = Ctor.getClient().post(Ctor.listRoutePath(), this.attributes)
+            promise = Ctor.getClient().post(Ctor.getListRoutePath(), this.attributes)
         } else {
-            promise = Ctor.getClient().patch(Ctor.detailRoutePath(this.id), this.changes)
+            promise = Ctor.getClient().patch(Ctor.getDetailRoutePath(this.id), this.changes)
         }
 
-        return promise.then((response) => {
+        return promise.then((response: AxiosResponse) => {
             this.changes = {}
-            for (const resKey in response.json) {
-                this.attributes[resKey] = response.json[resKey]
+            for (const resKey in response.data) {
+                this.set(resKey, response.data[resKey])
             }
             return this.cache(true)
         })
@@ -547,7 +543,8 @@ export default class Resource implements ResourceLike {
     }
 
     get id(): string {
-        return this.getConstructor().getIdFromAttributes(this.attributes)
+        let uniqueKey =  this.getConstructor().uniqueKey
+        return this.attributes[uniqueKey]
     }
 
     set id(value) {

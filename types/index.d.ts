@@ -1,14 +1,6 @@
-import Client from './client';
-import { RequestOptions } from './client';
+import { DefaultClient, RequestConfig, ResourceResponse } from './client';
 export declare type ResourceLike<T extends Resource = Resource> = T | Resource;
 export declare type ResourceCtorLike<T extends typeof Resource = typeof Resource> = T | typeof Resource;
-export interface ResourceResponse<T extends ResourceLike = ResourceLike> {
-    objects: T[];
-    response: any;
-    count?: number;
-    previous?: () => ResourceResponse<T>;
-    next?: () => ResourceResponse<T>;
-}
 export interface GetRelatedDict {
     deep?: boolean;
     relatedKeys?: string[];
@@ -29,7 +21,7 @@ export default class Resource implements ResourceLike {
     static cacheMaxAge: number;
     static data: any;
     static _cache: any;
-    static _client: Client;
+    static _client: DefaultClient;
     static queued: any;
     static uniqueKey: string;
     static defaults: any;
@@ -68,33 +60,33 @@ export default class Resource implements ResourceLike {
      * Get HTTP client for a resource Class
      * This is meant to be overridden if we want to define a client at any time
      */
-    static getClient(): Client;
+    static getClient(): DefaultClient;
     /**
      * Set HTTP client
      * @param client instanceof Client
      */
-    static setClient(client: Client): void;
+    static setClient(client: DefaultClient): void;
     /**
      * Get list route path (eg. /users) to be used with HTTP requests and allow a querystring object
      * @param query Querystring
      */
-    static listRoutePath(query?: RequestOptions['query']): string;
+    static getListRoutePath(query?: any): string;
     /**
      * Get detail route path (eg. /users/123) to be used with HTTP requests
      * @param id
      * @param query Querystring
      */
-    static detailRoutePath(id: string, query?: RequestOptions['query']): string;
+    static getDetailRoutePath(id: string, query?: any): string;
     /**
      * HTTP Get of resource's list route--returns a promise
      * @param options HTTP Request Options
      * @returns Promise
      */
-    static list<T extends ResourceLike = ResourceLike>(options?: RequestOptions): Promise<ResourceLike<T>[]>;
-    static detail<T extends ResourceLike = ResourceLike>(id: string, options?: RequestOptions): Promise<T>;
-    static getDetailRoute<T extends ResourceLike = ResourceLike>(id: string, options?: RequestOptions): Promise<ResourceResponse<ResourceLike<T>>>;
-    static getListRoute<T extends ResourceLike = ResourceLike>(options?: RequestOptions): Promise<ResourceResponse<ResourceLike<T>>>;
-    static parseResponse<T extends ResourceLike = ResourceLike>(result: any): ResourceResponse<T>;
+    static list<T extends ResourceLike = ResourceLike>(options?: RequestConfig): Promise<ResourceLike<T>[]>;
+    static detail<T extends ResourceLike = ResourceLike>(id: string, options?: RequestConfig): Promise<T>;
+    static getDetailRoute<T extends ResourceLike = ResourceLike>(id: string, options?: RequestConfig): Promise<ResourceResponse<ResourceLike<T>>>;
+    static getListRoute<T extends ResourceLike = ResourceLike>(options?: RequestConfig): Promise<ResourceResponse<ResourceLike<T>>>;
+    static extractObjectsFromResponse<T extends ResourceLike = ResourceLike>(result: any): ResourceResponse<T>;
     static getRelated(resource: ResourceLike, { deep, relatedKeys, relatedSubKeys }?: GetRelatedDict): Promise<Resource>;
     static getRelatedDeep(resource: ResourceLike, options?: GetRelatedDict): Promise<Resource>;
     /**
@@ -103,7 +95,6 @@ export default class Resource implements ResourceLike {
      */
     static rel(key: string): typeof Resource;
     static toResourceName(): string;
-    static getIdFromAttributes(attributes: any): string;
     /**
      * Set an attribute of Resource instance
      * @param key
@@ -131,12 +122,12 @@ export default class Resource implements ResourceLike {
      * @param key
      * @param value
      */
-    setInternalValue(key: string, value: any): any;
+    toInternalValue(key: string, value: any): any;
     /**
-     * Like setInternalValue except the other way around
+     * Like toInternalValue except the other way around
      * @param key
      */
-    getInternalValue(key: string): any;
+    fromInternalValue(key: string): any;
     /**
      * Like calling instance.constructor but safer:
      * changing objects down the line won't creep up the prototype chain and end up on native global objects like Function or Object

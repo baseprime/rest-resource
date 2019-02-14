@@ -5,7 +5,7 @@
   "main": "dist/index.js",
   "types": "types",
   "scripts": {
-    "test": "npm test",
+    "test": "mocha ./dist/tests",
     "dev": "tsc --watch",
     "prettier": "./node_modules/prettier/bin-prettier.js --write ./src/**/*.ts ./src/*.ts",
     "docs": "documentation build dist/index.js -f md"
@@ -41,7 +41,7 @@
   },
   "dependencies": {
     "assert": "^1.4.1",
-    "http-errors": "^1.7.1",
+    "axios": "^0.18.0",
     "lodash": "^4.17.11"
   }
 }
