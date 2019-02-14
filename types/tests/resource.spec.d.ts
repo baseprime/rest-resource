@@ -1,7 +1,7 @@
 import Resource from '../index';
 import { DefaultClient } from '../client';
 export declare class BaseTestingResource extends Resource {
-    static getClient(): DefaultClient;
+    static client: DefaultClient;
 }
 export declare class UserResource extends BaseTestingResource {
     static endpoint: string;

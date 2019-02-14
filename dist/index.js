@@ -3,6 +3,7 @@ Object.defineProperty(exports, "__esModule", { value: true });
 var tslib_1 = require("tslib");
 var exceptions = tslib_1.__importStar(require("./exceptions"));
 var querystring_1 = require("querystring");
+var client_1 = require("./client");
 var assert = require('assert');
 var isEqual = require('lodash').isEqual;
 var Resource = /** @class */ (function () {
@@ -100,17 +101,17 @@ var Resource = /** @class */ (function () {
      * This is meant to be overridden if we want to define a client at any time
      */
     Resource.getClient = function () {
-        if (!this._client) {
+        if (!this.client) {
             throw new exceptions.ImproperlyConfiguredError('Resource client class not defined. Did you try Resource.setClient or overriding Resource.getClient?');
         }
-        return this._client;
+        return this.client;
     };
     /**
      * Set HTTP client
      * @param client instanceof Client
      */
     Resource.setClient = function (client) {
-        this._client = client;
+        this.client = client;
     };
     /**
      * Get list route path (eg. /users) to be used with HTTP requests and allow a querystring object
@@ -520,6 +521,7 @@ var Resource = /** @class */ (function () {
     Resource.cacheMaxAge = 60;
     Resource.data = {};
     Resource._cache = {};
+    Resource.client = new client_1.DefaultClient('/');
     Resource.queued = {};
     Resource.uniqueKey = 'id';
     Resource.defaults = {};

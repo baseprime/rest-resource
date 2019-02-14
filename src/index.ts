@@ -33,7 +33,7 @@ export default class Resource implements ResourceLike {
     static cacheMaxAge: number = 60
     static data: any = {}
     static _cache: any = {}
-    static _client: DefaultClient
+    static client: DefaultClient = new DefaultClient('/')
     static queued: any = {}
     static uniqueKey = 'id'
     static defaults: any = {}
@@ -135,10 +135,10 @@ export default class Resource implements ResourceLike {
      * This is meant to be overridden if we want to define a client at any time
      */
     static getClient(): DefaultClient {
-        if (!this._client) {
+        if (!this.client) {
             throw new exceptions.ImproperlyConfiguredError('Resource client class not defined. Did you try Resource.setClient or overriding Resource.getClient?')
         }
-        return this._client
+        return this.client
     }
 
     /**
@@ -146,7 +146,7 @@ export default class Resource implements ResourceLike {
      * @param client instanceof Client
      */
     static setClient(client: DefaultClient) {
-        this._client = client
+        this.client = client
     }
 
     /**

@@ -211,30 +211,31 @@ console.log(unknown.get('name'))
 ```
 
 # The `Client` Class
-The Client class is a simple request library that is meant to be customized to suit your needs. You should override the Client's `apiCall()` method and return a promise.
+The Client class is a simple request library that is meant to be customized to suit your needs.
 
-#### REST Resource assumes your API is rendering JSON and authenticated endpoints are using a Bearer JWT
+#### REST Resource assumes the API you are consuming is rendering JSON and authenticated endpoints are using a Bearer JWT
 
-For requests, REST Resource by default uses the `BearerClient` class in `src/client/jwt-bearer`
+For requests, REST Resource uses a basic [Axios](https://www.npmjs.com/package/axios) client (`JWTBearerClient` class in `src/client`). You can override this by creating a custom client.
 
-## Assigning a Client
+For more information on how Axios works, [please refer to Axios documentation](https://github.com/axios/axios)
+
+## Assigning a Custom Client
 You should override the Resource's `getClient()` method:
 
 ```javascript
 import Resource from 'rest-resource'
-import BaseClient from 'rest-resource/client'
+import { DefaultClient } from 'rest-resource/client'
 
-class CustomClient extends BaseClient {
-    apiCall(path, opts) {
+class CustomClient extends DefaultClient {
+    get(path, opts) {
         // Some custom stuff
         return new Promise()
     }
+    // get(), put(), post(), patch(), delete(), etc.
 }
 
 class CustomResource extends Resource {
-    static getClient() {
-        return new CustomClient('http://some-api.com')
-    }
+    static client = new CustomClient('http://some-api.com')
 }
 
 // Or you can globally override the client

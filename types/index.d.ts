@@ -21,7 +21,7 @@ export default class Resource implements ResourceLike {
     static cacheMaxAge: number;
     static data: any;
     static _cache: any;
-    static _client: DefaultClient;
+    static client: DefaultClient;
     static queued: any;
     static uniqueKey: string;
     static defaults: any;

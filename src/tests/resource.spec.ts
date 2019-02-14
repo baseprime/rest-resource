@@ -3,9 +3,7 @@ import Resource from '../index'
 import { DefaultClient } from '../client'
 
 export class BaseTestingResource extends Resource {
-    static getClient() {
-        return new DefaultClient('https://jsonplaceholder.typicode.com')
-    }
+    static client = new DefaultClient('https://jsonplaceholder.typicode.com')
 }
 
 export class UserResource extends BaseTestingResource {

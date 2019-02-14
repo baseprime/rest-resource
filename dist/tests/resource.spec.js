@@ -10,9 +10,7 @@ var BaseTestingResource = /** @class */ (function (_super) {
     function BaseTestingResource() {
         return _super !== null && _super.apply(this, arguments) || this;
     }
-    BaseTestingResource.getClient = function () {
-        return new client_1.DefaultClient('https://jsonplaceholder.typicode.com');
-    };
+    BaseTestingResource.client = new client_1.DefaultClient('https://jsonplaceholder.typicode.com');
     return BaseTestingResource;
 }(index_1.default));
 exports.BaseTestingResource = BaseTestingResource;
