@@ -112,11 +112,20 @@ export default class Resource implements ResourceLike {
      */
     getAttr(key: string): Promise<any>;
     /**
-     * Directly sets a value onto instance._attributes
+     * Mutate key/value on this.attributes[key] into an internal value
+     * Usually this is just setting a key/value but we want to be able to accept
+     * anything -- another Resource instance for example. If a Resource instance is
+     * provided, set the this.related[key] as the new instance, then set the
+     * this.attributes[key] field as just the primary key of the related Resource instance
      * @param key
      * @param value
      */
-    setValueDirect(key: string, value: any): void;
+    toInternal(key: string, value: any): any;
+    /**
+     * This is like toInternal except the other way around
+     * @param key
+     */
+    fromInternal(key: string): any;
     /**
      * Like calling instance.constructor but safer:
      * changing objects down the line won't creep up the prototype chain and end up on native global objects like Function or Object

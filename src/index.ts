@@ -54,7 +54,7 @@ export default class Resource implements ResourceLike {
     constructor(attributes?: any, options?: any) {
         const Ctor = this.getConstructor()
         if (typeof Ctor.getClient() !== 'object') {
-            throw Error("Resource can't be used without Client class instance")
+            throw new exceptions.ImproperlyConfiguredError("Resource can't be used without Client class instance")
         }
 
         // Set up attributes and defaults
@@ -64,10 +64,10 @@ export default class Resource implements ResourceLike {
             Object.defineProperty(this.attributes, attrKey, {
                 configurable: true,
                 enumerable: true,
-                get: () => this._attributes[attrKey],
+                get: () => this.fromInternal(attrKey),
                 set: (value) => {
-                    this.setValueDirect(attrKey, value)
-                },
+                    this._attributes[attrKey] = this.toInternal(attrKey, value)
+                }
             })
         }
 
@@ -109,7 +109,7 @@ export default class Resource implements ResourceLike {
      */
     static replaceCache(resource: ResourceLike) {
         if (!this.cache[resource.id]) {
-            throw new TypeError("Can't replace cache: resource doesn't exist")
+            throw new exceptions.CacheError("Can't replace cache: resource doesn't exist")
         }
 
         Object.assign(this.cache[resource.id].resource.attributes, resource.attributes)
@@ -147,7 +147,7 @@ export default class Resource implements ResourceLike {
      */
     static getClient(): Client {
         if (!this._client) {
-            throw new Error('Resource client class not defined. Did you try Resource.setClient or overriding Resource.getClient?')
+            throw new exceptions.ImproperlyConfiguredError('Resource client class not defined. Did you try Resource.setClient or overriding Resource.getClient?')
         }
         return this._client
     }
@@ -345,7 +345,7 @@ export default class Resource implements ResourceLike {
             // We're setting a value -- setters in ctor takes care of changes
             const pieces = key.split('.')
             if (pieces.length > 1) {
-                throw new Error("Can't use dot notation when setting value of nested resource")
+                throw new exceptions.AttributeError("Can't use dot notation when setting value of nested resource")
             }
 
             this.attributes[pieces[0]] = value
@@ -367,7 +367,7 @@ export default class Resource implements ResourceLike {
                 return relatedResource.attr(pieces.join('.'))
             }
             if (pieces.length > 0 && thisValue && typeof relatedResource === 'undefined' && this.hasRelatedDefined(thisKey)) {
-                throw new TypeError(`Can't read related property ${thisKey} before getRelated() is called`)
+                throw new exceptions.AttributeError(`Can't read related property ${thisKey} before getRelated() is called`)
             } else if (!pieces.length && typeof relatedResource !== 'undefined') {
                 return relatedResource
             } else if (!pieces.length && typeof thisValue !== 'undefined') {
@@ -402,7 +402,7 @@ export default class Resource implements ResourceLike {
             try {
                 resolve(this.attr(key))
             } catch (e) {
-                if (e instanceof TypeError) {
+                if (e instanceof exceptions.AttributeError) {
                     const pieces = key.split('.')
                     const thisKey = String(pieces.shift())
 
@@ -431,11 +431,15 @@ export default class Resource implements ResourceLike {
     }
 
     /**
-     * Directly sets a value onto instance._attributes
+     * Mutate key/value on this.attributes[key] into an internal value
+     * Usually this is just setting a key/value but we want to be able to accept 
+     * anything -- another Resource instance for example. If a Resource instance is
+     * provided, set the this.related[key] as the new instance, then set the 
+     * this.attributes[key] field as just the primary key of the related Resource instance
      * @param key 
      * @param value 
      */
-    setValueDirect(key: string, value: any) {
+    toInternal(key: string, value: any) {
         if (!isEqual(this.attributes[key], value)) {
             // New value has changed -- set it in this.changed and this._attributes
             let validRelatedKey = value instanceof Resource && value.getConstructor() === this.rel(key)
@@ -452,7 +456,15 @@ export default class Resource implements ResourceLike {
             this.changes[key] = value
         }
 
-        this._attributes[key] = value
+        return value
+    }
+
+    /**
+     * This is like toInternal except the other way around
+     * @param key 
+     */
+    fromInternal(key: string) {
+        return this._attributes[key]
     }
 
     /**
@@ -528,7 +540,7 @@ export default class Resource implements ResourceLike {
     }
 
     set id(value) {
-        throw new Error('Cannot set ID manually. Set ID by using attributes[id] = value')
+        throw new exceptions.AttributeError('Cannot set ID manually. Set ID by using attributes[id] = value')
     }
 
     toString(): string {

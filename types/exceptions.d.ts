@@ -1,4 +1,6 @@
-export declare class CacheException extends Error {
+export declare class ImproperlyConfiguredError extends Error {
 }
-export declare class AttributeError extends Error {
+export declare class CacheError extends Error {
+}
+export declare class AttributeError extends TypeError {
 }

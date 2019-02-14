@@ -1,2 +1,3 @@
-export class CacheException extends Error {}
-export class AttributeError extends Error {}
+export class ImproperlyConfiguredError extends Error {}
+export class CacheError extends Error {}
+export class AttributeError extends TypeError {}

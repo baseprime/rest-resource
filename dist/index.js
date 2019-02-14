@@ -1,3 +1,4 @@
+import * as exceptions from './exceptions';
 import { serializeToQueryString } from './util';
 const assert = require('assert');
 const isEqual = require('lodash').isEqual;
@@ -9,7 +10,7 @@ export default class Resource {
         this.changes = {};
         const Ctor = this.getConstructor();
         if (typeof Ctor.getClient() !== 'object') {
-            throw Error("Resource can't be used without Client class instance");
+            throw new exceptions.ImproperlyConfiguredError("Resource can't be used without Client class instance");
         }
         // Set up attributes and defaults
         this._attributes = Object.assign({}, Ctor.defaults || {}, attributes || {});
@@ -18,10 +19,10 @@ export default class Resource {
             Object.defineProperty(this.attributes, attrKey, {
                 configurable: true,
                 enumerable: true,
-                get: () => this._attributes[attrKey],
+                get: () => this.fromInternal(attrKey),
                 set: (value) => {
-                    this.setValueDirect(attrKey, value);
-                },
+                    this._attributes[attrKey] = this.toInternal(attrKey, value);
+                }
             });
         }
         if (this.id) {
@@ -60,7 +61,7 @@ export default class Resource {
      */
     static replaceCache(resource) {
         if (!this.cache[resource.id]) {
-            throw new TypeError("Can't replace cache: resource doesn't exist");
+            throw new exceptions.CacheError("Can't replace cache: resource doesn't exist");
         }
         Object.assign(this.cache[resource.id].resource.attributes, resource.attributes);
         this.cache[resource.id].expires = this.cacheDeltaSeconds();
@@ -93,7 +94,7 @@ export default class Resource {
      */
     static getClient() {
         if (!this._client) {
-            throw new Error('Resource client class not defined. Did you try Resource.setClient or overriding Resource.getClient?');
+            throw new exceptions.ImproperlyConfiguredError('Resource client class not defined. Did you try Resource.setClient or overriding Resource.getClient?');
         }
         return this._client;
     }
@@ -278,7 +279,7 @@ export default class Resource {
             // We're setting a value -- setters in ctor takes care of changes
             const pieces = key.split('.');
             if (pieces.length > 1) {
-                throw new Error("Can't use dot notation when setting value of nested resource");
+                throw new exceptions.AttributeError("Can't use dot notation when setting value of nested resource");
             }
             this.attributes[pieces[0]] = value;
             return this;
@@ -299,7 +300,7 @@ export default class Resource {
                 return relatedResource.attr(pieces.join('.'));
             }
             if (pieces.length > 0 && thisValue && typeof relatedResource === 'undefined' && this.hasRelatedDefined(thisKey)) {
-                throw new TypeError(`Can't read related property ${thisKey} before getRelated() is called`);
+                throw new exceptions.AttributeError(`Can't read related property ${thisKey} before getRelated() is called`);
             }
             else if (!pieces.length && typeof relatedResource !== 'undefined') {
                 return relatedResource;
@@ -339,7 +340,7 @@ export default class Resource {
                 resolve(this.attr(key));
             }
             catch (e) {
-                if (e instanceof TypeError) {
+                if (e instanceof exceptions.AttributeError) {
                     const pieces = key.split('.');
                     const thisKey = String(pieces.shift());
                     this.getRelated({ relatedKeys: [thisKey] }).then(() => {
@@ -367,11 +368,15 @@ export default class Resource {
         });
     }
     /**
-     * Directly sets a value onto instance._attributes
+     * Mutate key/value on this.attributes[key] into an internal value
+     * Usually this is just setting a key/value but we want to be able to accept
+     * anything -- another Resource instance for example. If a Resource instance is
+     * provided, set the this.related[key] as the new instance, then set the
+     * this.attributes[key] field as just the primary key of the related Resource instance
      * @param key
      * @param value
      */
-    setValueDirect(key, value) {
+    toInternal(key, value) {
         if (!isEqual(this.attributes[key], value)) {
             // New value has changed -- set it in this.changed and this._attributes
             let validRelatedKey = value instanceof Resource && value.getConstructor() === this.rel(key);
@@ -386,7 +391,14 @@ export default class Resource {
             }
             this.changes[key] = value;
         }
-        this._attributes[key] = value;
+        return value;
+    }
+    /**
+     * This is like toInternal except the other way around
+     * @param key
+     */
+    fromInternal(key) {
+        return this._attributes[key];
     }
     /**
      * Like calling instance.constructor but safer:
@@ -450,7 +462,7 @@ export default class Resource {
         return this.getConstructor().getIdFromAttributes(this.attributes);
     }
     set id(value) {
-        throw new Error('Cannot set ID manually. Set ID by using attributes[id] = value');
+        throw new exceptions.AttributeError('Cannot set ID manually. Set ID by using attributes[id] = value');
     }
     toString() {
         return `${this.toResourceName()} ${this.id}`;
