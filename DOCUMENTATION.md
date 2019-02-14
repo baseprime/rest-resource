@@ -7,7 +7,7 @@ static endpoint: string;
 static cacheMaxAge: number;
 static data: any;
 static _cache: any;
-static _client: Client;
+static _client: DefaultClient;
 static queued: any;
 static uniqueKey: string;
 static defaults: any;
@@ -46,47 +46,89 @@ static getCachedAll(): CachedResource[];
  * Get HTTP client for a resource Class
  * This is meant to be overridden if we want to define a client at any time
  */
-static getClient(): Client;
+static getClient(): DefaultClient;
 /**
  * Set HTTP client
  * @param client instanceof Client
  */
-static setClient(client: Client): void;
+static setClient(client: DefaultClient): void;
 /**
  * Get list route path (eg. /users) to be used with HTTP requests and allow a querystring object
  * @param query Querystring
  */
-static listRoutePath(query?: RequestOptions['query']): string;
+static getListRoutePath(query?: any): string;
 /**
  * Get detail route path (eg. /users/123) to be used with HTTP requests
  * @param id
  * @param query Querystring
  */
-static detailRoutePath(id: string, query?: RequestOptions['query']): string;
+static getDetailRoutePath(id: string, query?: any): string;
 /**
  * HTTP Get of resource's list route--returns a promise
  * @param options HTTP Request Options
  * @returns Promise
  */
-static list(options?: RequestOptions): Promise<ResourceLike<T>[]>;
-static detail(id: string, options?: RequestOptions): Promise<T>;
-static getDetailRoute(id: string, options?: RequestOptions): Promise<ResourceResponse<ResourceLike<T>>>;
-static getListRoute(options?: RequestOptions): Promise<ResourceResponse<ResourceLike<T>>>;
-static parseResponse(result: any): ResourceResponse<T>;
-static getRelated(resource: ResourceLike, { deep, relatedKeys, relatedSubKeys }?: GetRelatedDict): Promise<ResourceDict>;
-static getRelatedDeep(resource: ResourceLike, options?: GetRelatedDict): Promise<ResourceDict<Resource>>;
-static toResourceName(): string;
-static getIdFromAttributes(attributes: any): string;
-attr(key?: string, value?: any): any;
+static list<T extends ResourceLike = ResourceLike>(options?: RequestConfig): Promise<ResourceLike<T>[]>;
+static detail<T extends ResourceLike = ResourceLike>(id: string, options?: RequestConfig): Promise<T>;
+static getDetailRoute<T extends ResourceLike = ResourceLike>(id: string, options?: RequestConfig): Promise<ResourceResponse<ResourceLike<T>>>;
+static getListRoute<T extends ResourceLike = ResourceLike>(options?: RequestConfig): Promise<ResourceResponse<ResourceLike<T>>>;
+static extractObjectsFromResponse<T extends ResourceLike = ResourceLike>(result: any): ResourceResponse<T>;
+static getRelated(resource: ResourceLike, { deep, relatedKeys, relatedSubKeys }?: GetRelatedDict): Promise<Resource>;
+static getRelatedDeep(resource: ResourceLike, options?: GetRelatedDict): Promise<Resource>;
 /**
- * Persist getting an attribute and get related keys until a key can be found (or not found)
- * TypeError in attr() will be thrown, we're just doing the getRelated() work for you...
+ * Get related class by key
  * @param key
  */
-getAttr(key: string): Promise<any>;
+static rel(key: string): typeof Resource;
+static toResourceName(): string;
+/**
+ * Set an attribute of Resource instance
+ * @param key
+ * @param value
+ */
+set(key: string, value: any): this;
+/**
+ * Get an attribute of Resource instance
+ * You can use dot notation here -- eg. resource.get('user.username')
+ * @param key
+ */
+get(key?: string): any;
+/**
+ * Persist getting an attribute and get related keys until a key can be found (or not found)
+ * TypeError in get() will be thrown, we're just doing the getRelated() work for you...
+ * @param key
+ */
+getAsync(key: string): Promise<any>;
+/**
+ * Mutate key/value on this.attributes[key] into an internal value
+ * Usually this is just setting a key/value but we want to be able to accept
+ * anything -- another Resource instance for example. If a Resource instance is
+ * provided, set the this.related[key] as the new instance, then set the
+ * this.attributes[key] field as just the primary key of the related Resource instance
+ * @param key
+ * @param value
+ */
+toInternalValue(key: string, value: any): any;
+/**
+ * Like toInternalValue except the other way around
+ * @param key
+ */
+fromInternalValue(key: string): any;
+/**
+ * Like calling instance.constructor but safer:
+ * changing objects down the line won't creep up the prototype chain and end up on native global objects like Function or Object
+ */
 getConstructor(): ResourceCtorLike;
-getRelated(options?: GetRelatedDict): Promise<ResourceDict>;
-getRelatedDeep(options?: GetRelatedDict): Promise<ResourceDict>;
+getRelated(options?: GetRelatedDict): Promise<Resource>;
+getRelatedDeep(options?: GetRelatedDict): Promise<Resource>;
+/**
+ * Get related class by key
+ * @param key
+ */
+rel(key: string): typeof Resource;
+/**
+ * Saves the instance -- sends changes as a PATCH or sends whole object as a POST if it's new
+ */
 save(): Promise<ResourceLike>;
 update(): Promise<Resource>;
 hasRelatedDefined(relatedKey: string): boolean;
@@ -100,68 +142,74 @@ toJSON(): any;
 
 ### Table of Contents
 
--   [set][1]
-    -   [Parameters][2]
--   [get][3]
-    -   [Parameters][4]
--   [getAsync][5]
-    -   [Parameters][6]
--   [setInternalValue][7]
-    -   [Parameters][8]
--   [getInternalValue][9]
-    -   [Parameters][10]
--   [getConstructor][11]
--   [rel][12]
-    -   [Parameters][13]
--   [save][14]
--   [cache][15]
--   [cacheResource][16]
-    -   [Parameters][17]
--   [replaceCache][18]
-    -   [Parameters][19]
--   [cacheDeltaSeconds][20]
--   [getCached][21]
-    -   [Parameters][22]
--   [getClient][23]
--   [setClient][24]
-    -   [Parameters][25]
--   [listRoutePath][26]
-    -   [Parameters][27]
--   [detailRoutePath][28]
-    -   [Parameters][29]
--   [list][30]
-    -   [Parameters][31]
--   [rel][32]
-    -   [Parameters][33]
+-   [Resource][1]
+    -   [set][2]
+        -   [Parameters][3]
+    -   [get][4]
+        -   [Parameters][5]
+    -   [getAsync][6]
+        -   [Parameters][7]
+    -   [toInternalValue][8]
+        -   [Parameters][9]
+    -   [fromInternalValue][10]
+        -   [Parameters][11]
+    -   [getConstructor][12]
+    -   [rel][13]
+        -   [Parameters][14]
+    -   [save][15]
+    -   [cacheResource][16]
+        -   [Parameters][17]
+    -   [replaceCache][18]
+        -   [Parameters][19]
+    -   [cacheDeltaSeconds][20]
+    -   [getCached][21]
+        -   [Parameters][22]
+    -   [getClient][23]
+    -   [setClient][24]
+        -   [Parameters][25]
+    -   [getListRoutePath][26]
+        -   [Parameters][27]
+    -   [getDetailRoutePath][28]
+        -   [Parameters][29]
+    -   [list][30]
+        -   [Parameters][31]
+    -   [rel][32]
+        -   [Parameters][33]
+-   [get][34]
+-   [Error][35]
+-   [Error][36]
+-   [TypeError][37]
 
-## set
+## Resource
+
+### set
 
 Set an attribute of Resource instance
 
-### Parameters
+#### Parameters
 
 -   `key`  
 -   `value`  
 
-## get
+### get
 
 Get an attribute of Resource instance
 You can use dot notation here -- eg. resource.get('user.username')
 
-### Parameters
+#### Parameters
 
 -   `key`  
 
-## getAsync
+### getAsync
 
 Persist getting an attribute and get related keys until a key can be found (or not found)
 TypeError in get() will be thrown, we're just doing the getRelated() work for you...
 
-### Parameters
+#### Parameters
 
 -   `key`  
 
-## setInternalValue
+### toInternalValue
 
 Mutate key/value on this.attributes[key] into an internal value
 Usually this is just setting a key/value but we want to be able to accept
@@ -169,146 +217,152 @@ anything -- another Resource instance for example. If a Resource instance is
 provided, set the this.related[key] as the new instance, then set the
 this.attributes[key] field as just the primary key of the related Resource instance
 
-### Parameters
+#### Parameters
 
 -   `key`  
 -   `value`  
 
-## getInternalValue
+### fromInternalValue
 
-Like setInternalValue except the other way around
+Like toInternalValue except the other way around
 
-### Parameters
+#### Parameters
 
 -   `key`  
 
-## getConstructor
+### getConstructor
 
 Like calling instance.constructor but safer:
 changing objects down the line won't creep up the prototype chain and end up on native global objects like Function or Object
 
-## rel
+### rel
 
 Get related class by key
 
-### Parameters
+#### Parameters
 
 -   `key`  
 
-## save
+### save
 
 Saves the instance -- sends changes as a PATCH or sends whole object as a POST if it's new
 
-## cache
-
-Cache getter
-
-## cacheResource
+### cacheResource
 
 Cache a resource onto this class' cache for cacheMaxAge seconds
 
-### Parameters
+#### Parameters
 
 -   `resource`  
 -   `replace`  
 
-## replaceCache
+### replaceCache
 
 Replace attributes on a cached resource onto this class' cache for cacheMaxAge seconds (useful for bubbling up changes to states that may be already rendered)
 
-### Parameters
+#### Parameters
 
 -   `resource`  
 
-## cacheDeltaSeconds
+### cacheDeltaSeconds
 
 Get time delta in seconds of cache expiry
 
-## getCached
+### getCached
 
 Get a cached resource by ID
 
-### Parameters
+#### Parameters
 
 -   `id`  
 
-## getClient
+### getClient
 
 Get HTTP client for a resource Class
 This is meant to be overridden if we want to define a client at any time
 
-## setClient
+### setClient
 
 Set HTTP client
 
-### Parameters
+#### Parameters
 
 -   `client`  instanceof Client
 
-## listRoutePath
+### getListRoutePath
 
 Get list route path (eg. /users) to be used with HTTP requests and allow a querystring object
 
-### Parameters
+#### Parameters
 
 -   `query`  Querystring
 
-## detailRoutePath
+### getDetailRoutePath
 
 Get detail route path (eg. /users/123) to be used with HTTP requests
 
-### Parameters
+#### Parameters
 
 -   `id`  
 -   `query`  Querystring
 
-## list
+### list
 
 HTTP Get of resource's list route--returns a promise
 
-### Parameters
+#### Parameters
 
 -   `options`  HTTP Request Options
 
 Returns **any** Promise
 
-## rel
+### rel
 
 Get related class by key
 
-### Parameters
+#### Parameters
 
 -   `key`  
 
-[1]: #set
+## get
 
-[2]: #parameters
+Cache getter
 
-[3]: #get
+## Error
 
-[4]: #parameters-1
+## Error
 
-[5]: #getasync
+## TypeError
 
-[6]: #parameters-2
+[1]: #resource
 
-[7]: #setinternalvalue
+[2]: #set
 
-[8]: #parameters-3
+[3]: #parameters
 
-[9]: #getinternalvalue
+[4]: #get
 
-[10]: #parameters-4
+[5]: #parameters-1
 
-[11]: #getconstructor
+[6]: #getasync
 
-[12]: #rel
+[7]: #parameters-2
 
-[13]: #parameters-5
+[8]: #tointernalvalue
 
-[14]: #save
+[9]: #parameters-3
 
-[15]: #cache
+[10]: #frominternalvalue
+
+[11]: #parameters-4
+
+[12]: #getconstructor
+
+[13]: #rel
+
+[14]: #parameters-5
+
+[15]: #save
 
 [16]: #cacheresource
 
@@ -330,11 +384,11 @@ Get related class by key
 
 [25]: #parameters-9
 
-[26]: #listroutepath
+[26]: #getlistroutepath
 
 [27]: #parameters-10
 
-[28]: #detailroutepath
+[28]: #getdetailroutepath
 
 [29]: #parameters-11
 
@@ -345,3 +399,11 @@ Get related class by key
 [32]: #rel-1
 
 [33]: #parameters-13
+
+[34]: #get-1
+
+[35]: #error
+
+[36]: #error-1
+
+[37]: #typeerror
