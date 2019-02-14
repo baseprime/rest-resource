@@ -120,12 +120,12 @@ export default class Resource implements ResourceLike {
      * @param key
      * @param value
      */
-    toInternal(key: string, value: any): any;
+    setInternalValue(key: string, value: any): any;
     /**
      * This is like toInternal except the other way around
      * @param key
      */
-    fromInternal(key: string): any;
+    getInternalValue(key: string): any;
     /**
      * Like calling instance.constructor but safer:
      * changing objects down the line won't creep up the prototype chain and end up on native global objects like Function or Object

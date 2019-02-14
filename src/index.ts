@@ -64,9 +64,9 @@ export default class Resource implements ResourceLike {
             Object.defineProperty(this.attributes, attrKey, {
                 configurable: true,
                 enumerable: true,
-                get: () => this.fromInternal(attrKey),
+                get: () => this.getInternalValue(attrKey),
                 set: (value) => {
-                    this._attributes[attrKey] = this.toInternal(attrKey, value)
+                    this._attributes[attrKey] = this.setInternalValue(attrKey, value)
                 }
             })
         }
@@ -439,7 +439,7 @@ export default class Resource implements ResourceLike {
      * @param key 
      * @param value 
      */
-    toInternal(key: string, value: any) {
+    setInternalValue(key: string, value: any) {
         if (!isEqual(this.attributes[key], value)) {
             // New value has changed -- set it in this.changed and this._attributes
             let validRelatedKey = value instanceof Resource && value.getConstructor() === this.rel(key)
@@ -463,7 +463,7 @@ export default class Resource implements ResourceLike {
      * This is like toInternal except the other way around
      * @param key 
      */
-    fromInternal(key: string) {
+    getInternalValue(key: string) {
         return this._attributes[key]
     }
 
