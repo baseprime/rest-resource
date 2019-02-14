@@ -274,18 +274,18 @@ export default class Resource {
         const id = attributes[this.uniqueKey];
         return id ? String(id) : '';
     }
-    attr(key, value) {
-        if (typeof key !== 'undefined' && typeof value !== 'undefined') {
-            // We're setting a value -- setters in ctor takes care of changes
-            const pieces = key.split('.');
-            if (pieces.length > 1) {
-                throw new exceptions.AttributeError("Can't use dot notation when setting value of nested resource");
-            }
-            this.attributes[pieces[0]] = value;
-            return this;
+    set(key, value) {
+        // We're setting a value -- setters in ctor takes care of changes
+        const pieces = key.split('.');
+        if (pieces.length > 1) {
+            throw new exceptions.AttributeError("Can't use dot notation when setting value of nested resource");
         }
-        if (typeof key !== 'undefined' && typeof value === 'undefined') {
-            // We're getting a value
+        this.attributes[pieces[0]] = value;
+        return this;
+    }
+    get(key) {
+        if (typeof key !== 'undefined') {
+            // We're simply getting a value
             const pieces = key.split('.');
             const thisKey = String(pieces.shift());
             const thisValue = this.attributes[thisKey];
@@ -294,10 +294,10 @@ export default class Resource {
                 // We're not done getting attributes (it contains a ".") send it to related resource
                 if (Array.isArray(relatedResource)) {
                     return relatedResource.map((thisResource) => {
-                        return thisResource.attr(pieces.join('.'));
+                        return thisResource.get(pieces.join('.'));
                     });
                 }
-                return relatedResource.attr(pieces.join('.'));
+                return relatedResource.get(pieces.join('.'));
             }
             if (pieces.length > 0 && thisValue && typeof relatedResource === 'undefined' && this.hasRelatedDefined(thisKey)) {
                 throw new exceptions.AttributeError(`Can't read related property ${thisKey} before getRelated() is called`);
@@ -320,10 +320,10 @@ export default class Resource {
                 const key = String(related.shift());
                 const relatedResource = this.related[key];
                 if (Array.isArray(relatedResource)) {
-                    obj[key] = relatedResource.map((subResource) => subResource.attr());
+                    obj[key] = relatedResource.map((subResource) => subResource.get());
                 }
                 else {
-                    obj[key] = relatedResource.attr();
+                    obj[key] = relatedResource.get();
                 }
             }
             return obj;
@@ -331,25 +331,25 @@ export default class Resource {
     }
     /**
      * Persist getting an attribute and get related keys until a key can be found (or not found)
-     * TypeError in attr() will be thrown, we're just doing the getRelated() work for you...
+     * TypeError in get() will be thrown, we're just doing the getRelated() work for you...
      * @param key
      */
-    getAttr(key) {
+    getAsync(key) {
         return new Promise((resolve) => {
             try {
-                resolve(this.attr(key));
+                resolve(this.get(key));
             }
             catch (e) {
                 if (e instanceof exceptions.AttributeError) {
                     const pieces = key.split('.');
                     const thisKey = String(pieces.shift());
                     this.getRelated({ relatedKeys: [thisKey] }).then(() => {
-                        let attrValue = this.attr(thisKey);
+                        let attrValue = this.get(thisKey);
                         let isMany = Array.isArray(attrValue);
                         let relatedResources = [].concat(attrValue);
                         let relatedKey = pieces.join('.');
                         let promises = relatedResources.map((resource) => {
-                            return resource.getAttr(relatedKey);
+                            return resource.getAsync(relatedKey);
                         });
                         Promise.all(promises).then((values) => {
                             if (isMany) {
@@ -394,7 +394,7 @@ export default class Resource {
         return value;
     }
     /**
-     * This is like toInternal except the other way around
+     * Like setInternalValue except the other way around
      * @param key
      */
     getInternalValue(key) {
@@ -465,13 +465,13 @@ export default class Resource {
         throw new exceptions.AttributeError('Cannot set ID manually. Set ID by using attributes[id] = value');
     }
     toString() {
-        return `${this.toResourceName()} ${this.id}`;
+        return `${this.toResourceName()} ${this.id || '(New)'}`;
     }
     toResourceName() {
         return this.getConstructor().toResourceName();
     }
     toJSON() {
-        return this.attributes;
+        return this.get();
     }
 }
 Resource.endpoint = '';

@@ -104,13 +104,14 @@ export default class Resource implements ResourceLike {
     static rel(key: string): typeof Resource;
     static toResourceName(): string;
     static getIdFromAttributes(attributes: any): string;
-    attr(key?: string, value?: any): any;
+    set(key: string, value: any): this;
+    get(key?: string): any;
     /**
      * Persist getting an attribute and get related keys until a key can be found (or not found)
-     * TypeError in attr() will be thrown, we're just doing the getRelated() work for you...
+     * TypeError in get() will be thrown, we're just doing the getRelated() work for you...
      * @param key
      */
-    getAttr(key: string): Promise<any>;
+    getAsync(key: string): Promise<any>;
     /**
      * Mutate key/value on this.attributes[key] into an internal value
      * Usually this is just setting a key/value but we want to be able to accept
@@ -122,7 +123,7 @@ export default class Resource implements ResourceLike {
      */
     setInternalValue(key: string, value: any): any;
     /**
-     * This is like toInternal except the other way around
+     * Like setInternalValue except the other way around
      * @param key
      */
     getInternalValue(key: string): any;

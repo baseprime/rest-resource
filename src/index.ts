@@ -340,19 +340,20 @@ export default class Resource implements ResourceLike {
         return id ? String(id) : ''
     }
 
-    attr(key?: string, value?: any): any {
-        if (typeof key !== 'undefined' && typeof value !== 'undefined') {
-            // We're setting a value -- setters in ctor takes care of changes
-            const pieces = key.split('.')
-            if (pieces.length > 1) {
-                throw new exceptions.AttributeError("Can't use dot notation when setting value of nested resource")
-            }
-
-            this.attributes[pieces[0]] = value
-            return this
+    set(key: string, value: any) {
+        // We're setting a value -- setters in ctor takes care of changes
+        const pieces = key.split('.')
+        if (pieces.length > 1) {
+            throw new exceptions.AttributeError("Can't use dot notation when setting value of nested resource")
         }
-        if (typeof key !== 'undefined' && typeof value === 'undefined') {
-            // We're getting a value
+
+        this.attributes[pieces[0]] = value
+        return this
+    }
+
+    get(key?: string): any {
+        if (typeof key !== 'undefined') {
+            // We're simply getting a value
             const pieces = key.split('.')
             const thisKey = String(pieces.shift())
             const thisValue = this.attributes[thisKey]
@@ -361,10 +362,10 @@ export default class Resource implements ResourceLike {
                 // We're not done getting attributes (it contains a ".") send it to related resource
                 if (Array.isArray(relatedResource)) {
                     return relatedResource.map((thisResource) => {
-                        return thisResource.attr(pieces.join('.'))
+                        return thisResource.get(pieces.join('.'))
                     })
                 }
-                return relatedResource.attr(pieces.join('.'))
+                return relatedResource.get(pieces.join('.'))
             }
             if (pieces.length > 0 && thisValue && typeof relatedResource === 'undefined' && this.hasRelatedDefined(thisKey)) {
                 throw new exceptions.AttributeError(`Can't read related property ${thisKey} before getRelated() is called`)
@@ -383,9 +384,9 @@ export default class Resource implements ResourceLike {
                 const key = String(related.shift())
                 const relatedResource = this.related[key]
                 if (Array.isArray(relatedResource)) {
-                    obj[key] = relatedResource.map((subResource) => subResource.attr())
+                    obj[key] = relatedResource.map((subResource) => subResource.get())
                 } else {
-                    obj[key] = relatedResource.attr()
+                    obj[key] = relatedResource.get()
                 }
             }
             return obj
@@ -394,25 +395,25 @@ export default class Resource implements ResourceLike {
 
     /**
      * Persist getting an attribute and get related keys until a key can be found (or not found)
-     * TypeError in attr() will be thrown, we're just doing the getRelated() work for you...
+     * TypeError in get() will be thrown, we're just doing the getRelated() work for you...
      * @param key
      */
-    getAttr(key: string): Promise<any> {
+    getAsync(key: string): Promise<any> {
         return new Promise((resolve) => {
             try {
-                resolve(this.attr(key))
+                resolve(this.get(key))
             } catch (e) {
                 if (e instanceof exceptions.AttributeError) {
                     const pieces = key.split('.')
                     const thisKey = String(pieces.shift())
 
                     this.getRelated({ relatedKeys: [thisKey] }).then(() => {
-                        let attrValue = this.attr(thisKey)
+                        let attrValue = this.get(thisKey)
                         let isMany = Array.isArray(attrValue)
                         let relatedResources = [].concat(attrValue)
                         let relatedKey = pieces.join('.')
                         let promises = relatedResources.map((resource) => {
-                            return resource.getAttr(relatedKey)
+                            return resource.getAsync(relatedKey)
                         })
                         
                         Promise.all(promises).then((values) => {
@@ -439,7 +440,7 @@ export default class Resource implements ResourceLike {
      * @param key 
      * @param value 
      */
-    setInternalValue(key: string, value: any) {
+    setInternalValue(key: string, value: any): any {
         if (!isEqual(this.attributes[key], value)) {
             // New value has changed -- set it in this.changed and this._attributes
             let validRelatedKey = value instanceof Resource && value.getConstructor() === this.rel(key)
@@ -460,7 +461,7 @@ export default class Resource implements ResourceLike {
     }
 
     /**
-     * This is like toInternal except the other way around
+     * Like setInternalValue except the other way around
      * @param key 
      */
     getInternalValue(key: string) {
@@ -544,7 +545,7 @@ export default class Resource implements ResourceLike {
     }
 
     toString(): string {
-        return `${this.toResourceName()} ${this.id}`
+        return `${this.toResourceName()} ${this.id||'(New)'}`
     }
 
     toResourceName(): string {
@@ -552,6 +553,6 @@ export default class Resource implements ResourceLike {
     }
 
     toJSON(): any {
-        return this.attributes
+        return this.get()
     }
 }
