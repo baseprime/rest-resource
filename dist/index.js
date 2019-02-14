@@ -254,7 +254,7 @@ export default class Resource {
             }
         }
         // Run all promises then return related resources
-        return Promise.all(promises).then(() => resource.related);
+        return Promise.all(promises).then(() => resource);
     }
     static getRelatedDeep(resource, options) {
         const opts = Object.assign({ deep: true }, options);

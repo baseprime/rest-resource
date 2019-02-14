@@ -259,7 +259,7 @@ export default class Resource implements ResourceLike {
         }
     }
 
-    static getRelated(resource: ResourceLike, { deep = false, relatedKeys = undefined, relatedSubKeys = undefined }: GetRelatedDict = {}): Promise<ResourceDict> {
+    static getRelated(resource: ResourceLike, { deep = false, relatedKeys = undefined, relatedSubKeys = undefined }: GetRelatedDict = {}): Promise<Resource> {
         const promises: Promise<ResourceDict>[] = []
         for (const resourceKey in this.related) {
             // Allow specification of keys to related resources they want to get
@@ -315,7 +315,7 @@ export default class Resource implements ResourceLike {
             }
         }
         // Run all promises then return related resources
-        return Promise.all(promises).then(() => <ResourceDict>resource.related)
+        return Promise.all(promises).then(() => resource)
     }
 
     static getRelatedDeep(resource: ResourceLike, options?: GetRelatedDict) {
@@ -479,11 +479,11 @@ export default class Resource implements ResourceLike {
         return <ResourceCtorLike>this.constructor
     }
 
-    getRelated(options?: GetRelatedDict): Promise<ResourceDict> {
+    getRelated(options?: GetRelatedDict): Promise<Resource> {
         return this.getConstructor().getRelated(this, options)
     }
 
-    getRelatedDeep(options?: GetRelatedDict): Promise<ResourceDict> {
+    getRelatedDeep(options?: GetRelatedDict): Promise<Resource> {
         const opts = Object.assign({ deep: true }, options || {})
         return this.getRelated(opts)
     }

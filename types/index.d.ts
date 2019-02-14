@@ -95,8 +95,8 @@ export default class Resource implements ResourceLike {
     static getDetailRoute<T extends ResourceLike = ResourceLike>(id: string, options?: RequestOptions): Promise<ResourceResponse<ResourceLike<T>>>;
     static getListRoute<T extends ResourceLike = ResourceLike>(options?: RequestOptions): Promise<ResourceResponse<ResourceLike<T>>>;
     static parseResponse<T extends ResourceLike = ResourceLike>(result: any): ResourceResponse<T>;
-    static getRelated(resource: ResourceLike, { deep, relatedKeys, relatedSubKeys }?: GetRelatedDict): Promise<ResourceDict>;
-    static getRelatedDeep(resource: ResourceLike, options?: GetRelatedDict): Promise<ResourceDict<Resource>>;
+    static getRelated(resource: ResourceLike, { deep, relatedKeys, relatedSubKeys }?: GetRelatedDict): Promise<Resource>;
+    static getRelatedDeep(resource: ResourceLike, options?: GetRelatedDict): Promise<Resource>;
     /**
      * Get related class by key
      * @param key
@@ -131,8 +131,8 @@ export default class Resource implements ResourceLike {
      * changing objects down the line won't creep up the prototype chain and end up on native global objects like Function or Object
      */
     getConstructor(): ResourceCtorLike;
-    getRelated(options?: GetRelatedDict): Promise<ResourceDict>;
-    getRelatedDeep(options?: GetRelatedDict): Promise<ResourceDict>;
+    getRelated(options?: GetRelatedDict): Promise<Resource>;
+    getRelatedDeep(options?: GetRelatedDict): Promise<Resource>;
     /**
      * Get related class by key
      * @param key
