@@ -2,10 +2,10 @@
   "name": "rest-resource",
   "version": "0.3.2",
   "description": "Simplify your REST API resources, supports automatic caching",
-  "main": "dist/index.js",
+  "main": "./dist/index.js",
   "types": "types",
   "scripts": {
-    "test": "mocha ./dist/tests",
+    "test": "mocha -r ts-node/register ./tests/**/*.ts",
     "dev": "tsc --watch",
     "prettier": "./node_modules/prettier/bin-prettier.js --write ./src/**/*.ts ./src/*.ts",
     "docs": "documentation build dist/index.js -f md"
@@ -37,7 +37,9 @@
     "chai": "^4.2.0",
     "mocha": "^5.2.0",
     "prettier": "^1.16.2",
-    "tslib": "^1.9.3"
+    "ts-node": "^8.0.2",
+    "tslib": "^1.9.3",
+    "typescript": "^3.3.3"
   },
   "dependencies": {
     "assert": "^1.4.1",

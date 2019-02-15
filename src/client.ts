@@ -1,5 +1,5 @@
 import { ResourceLike } from './index'
-import axios, { AxiosPromise, AxiosRequestConfig } from 'axios'
+import axios, { AxiosPromise, AxiosRequestConfig, AxiosResponse } from 'axios'
 
 export interface RequestConfig extends AxiosRequestConfig {
     useCache?: boolean
@@ -7,7 +7,7 @@ export interface RequestConfig extends AxiosRequestConfig {
 }
 
 export interface ResourceResponse<T extends ResourceLike = ResourceLike> {
-    response: any
+    response: AxiosResponse
     objects: T[]
 }
 

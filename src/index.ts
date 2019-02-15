@@ -1,8 +1,8 @@
-import * as exceptions from './exceptions'
 import { stringify } from 'querystring'
 import { DefaultClient, RequestConfig, ResourceResponse } from './client'
 import { AxiosResponse } from 'axios';
 
+const exceptions = require('./exceptions')
 const assert = require('assert')
 const isEqual = require('lodash').isEqual
 
@@ -219,19 +219,19 @@ export default class Resource implements ResourceLike {
         })
     }
 
-    static getDetailRoute<T extends ResourceLike = ResourceLike>(id: string, options: RequestConfig = {}): Promise<ResourceResponse<ResourceLike<T>>> {
+    static getDetailRoute(id: string, options: RequestConfig = {}): Promise<any> {
         return this.getClient()
             .get(this.getDetailRoutePath(id), options)
             .then(this.extractObjectsFromResponse.bind(this))
     }
 
-    static getListRoute<T extends ResourceLike = ResourceLike>(options: RequestConfig = {}): Promise<ResourceResponse<ResourceLike<T>>> {
+    static getListRoute<T extends ResourceLike = ResourceLike>(options: RequestConfig = {}): Promise<any> {
         return this.getClient()
             .get(this.getListRoutePath(options.query), options)
             .then(this.extractObjectsFromResponse.bind(this))
     }
 
-    static extractObjectsFromResponse<T extends ResourceLike = ResourceLike>(result: any): ResourceResponse<T> {
+    static extractObjectsFromResponse<T extends ResourceLike = ResourceLike>(result: ResourceResponse['response']): ResourceResponse<T> {
         let objects: T[] = []
         const body: any = result.data
         const Cls = <ResourceCtorLike>this
@@ -247,7 +247,7 @@ export default class Resource implements ResourceLike {
         return {
             response: result,
             objects,
-        }
+        } as ResourceResponse<T>
     }
 
     static getRelated(resource: ResourceLike, { deep = false, relatedKeys = undefined, relatedSubKeys = undefined }: GetRelatedDict = {}): Promise<Resource> {

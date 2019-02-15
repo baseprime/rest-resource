@@ -1,11 +1,11 @@
 import { ResourceLike } from './index';
-import { AxiosPromise, AxiosRequestConfig } from 'axios';
+import { AxiosPromise, AxiosRequestConfig, AxiosResponse } from 'axios';
 export interface RequestConfig extends AxiosRequestConfig {
     useCache?: boolean;
     query?: any;
 }
 export interface ResourceResponse<T extends ResourceLike = ResourceLike> {
-    response: any;
+    response: AxiosResponse;
     objects: T[];
 }
 export declare class DefaultClient {

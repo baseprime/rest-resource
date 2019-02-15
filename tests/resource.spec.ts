@@ -1,19 +1,28 @@
 import { expect } from 'chai'
-import Resource from '../index'
-import { DefaultClient } from '../client'
+import Resource from '../src/index'
+import { DefaultClient } from '../src/client'
 
-export class BaseTestingResource extends Resource {
-    static client = new DefaultClient('https://jsonplaceholder.typicode.com')
+class BaseTestingResource extends Resource {
+    static get client() {
+        return new DefaultClient('https://jsonplaceholder.typicode.com')
+    }
 }
 
-export class UserResource extends BaseTestingResource {
-    static endpoint = '/users'
+class UserResource extends BaseTestingResource {
+    static get endpoint() {
+        return '/users'
+    }
 }
 
-export class PostResource extends BaseTestingResource {
-    static endpoint = '/posts'
-    static related = {
-        userId: UserResource
+class PostResource extends BaseTestingResource {
+    static get endpoint() {
+        return '/posts'
+    }
+
+    static get related() {
+        return {
+            userId: UserResource
+        }
     }
 }
 

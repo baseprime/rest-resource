@@ -84,9 +84,9 @@ export default class Resource implements ResourceLike {
      */
     static list<T extends ResourceLike = ResourceLike>(options?: RequestConfig): Promise<ResourceLike<T>[]>;
     static detail<T extends ResourceLike = ResourceLike>(id: string, options?: RequestConfig): Promise<T>;
-    static getDetailRoute<T extends ResourceLike = ResourceLike>(id: string, options?: RequestConfig): Promise<ResourceResponse<ResourceLike<T>>>;
-    static getListRoute<T extends ResourceLike = ResourceLike>(options?: RequestConfig): Promise<ResourceResponse<ResourceLike<T>>>;
-    static extractObjectsFromResponse<T extends ResourceLike = ResourceLike>(result: any): ResourceResponse<T>;
+    static getDetailRoute(id: string, options?: RequestConfig): Promise<any>;
+    static getListRoute<T extends ResourceLike = ResourceLike>(options?: RequestConfig): Promise<any>;
+    static extractObjectsFromResponse<T extends ResourceLike = ResourceLike>(result: ResourceResponse['response']): ResourceResponse<T>;
     static getRelated(resource: ResourceLike, { deep, relatedKeys, relatedSubKeys }?: GetRelatedDict): Promise<Resource>;
     static getRelatedDeep(resource: ResourceLike, options?: GetRelatedDict): Promise<Resource>;
     /**
