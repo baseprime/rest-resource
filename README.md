@@ -219,30 +219,43 @@ For requests, REST Resource uses a basic [Axios](https://www.npmjs.com/package/a
 
 For more information on how Axios works, [please refer to Axios documentation](https://github.com/axios/axios)
 
+## Creating a custom client
+When creating a custom client, you can override any methods you'd like. One method in particular you'll need to focus on is `negotiateContent()` which should return a function that parses the body of the response into a list of objects.
+
 ## Assigning a Custom Client
-You should override the Resource's `getClient()` method:
+There are a number of ways you can set the client:
 
 ```javascript
 import Resource from 'rest-resource'
 import { DefaultClient } from 'rest-resource/client'
 
 class CustomClient extends DefaultClient {
-    get(path, opts) {
-        // Some custom stuff
-        return new Promise()
+    negotiateContent(ResourceClass) {
+        return (response) => {
+            let objects = []
+            if(Array.isArray(response.data)) {
+                response.data.forEach((attributes) => objects.push(new ResourceClass(attributes)))
+            } else {
+                objects.push(new ResourceClass(response.data))
+            }
+
+            return {
+                response,
+                objects,
+                pages: () => response.headers['Pagination-Count'],
+                currentPage: () => response.headers['Pagination-Page'],
+                perPage: () => response.headers['Pagination-Limit'],
+            }
+        }
     }
-    // get(), put(), post(), patch(), delete(), etc.
 }
 
 class CustomResource extends Resource {
     static client = new CustomClient('http://some-api.com')
 }
 
-// Or you can globally override the client
-Resource.getClient = () => new CustomClient('http://some-api.com')
-
-// Or you can set the client manually
-Resource.setClient(new CustomClient('http://some-api.com'))
+// Or: (this method can also be used to override client globally by replacing "CustomResource" with "Resource")
+CustomResource.client = new CustomClient('http://some-api.com')
 ```
 
 ### JSON Web Tokens (JWT) and Authenticated Endpoints

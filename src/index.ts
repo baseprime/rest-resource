@@ -7,7 +7,7 @@ const assert = require('assert')
 const isEqual = require('lodash').isEqual
 
 export type ResourceLike<T extends Resource = Resource> = T | Resource
-export type ResourceCtorLike<T extends typeof Resource = typeof Resource> = T | typeof Resource
+export type ResourceClassLike<T extends typeof Resource = typeof Resource> = T | typeof Resource
 
 export interface GetRelatedDict {
     deep?: boolean
@@ -16,7 +16,7 @@ export interface GetRelatedDict {
 }
 
 export interface ResourceClassDict {
-    [key: string]: ResourceCtorLike
+    [key: string]: ResourceClassLike
 }
 
 export interface ResourceDict<T extends ResourceLike = ResourceLike> {
@@ -28,14 +28,19 @@ export interface CachedResource<T extends ResourceLike = ResourceLike> {
     resource: T
 }
 
+export interface SaveOptions {
+    partial?: boolean
+}
+
 export default class Resource implements ResourceLike {
     static endpoint: string = ''
     static cacheMaxAge: number = 60
     static data: any = {}
     static _cache: any = {}
-    static client: DefaultClient = new DefaultClient('/')
+    static _client: DefaultClient = new DefaultClient('/')
     static queued: any = {}
     static uniqueKey = 'id'
+    static perPage: number | null = null
     static defaults: any = {}
     static related: ResourceClassDict = {}
     _attributes: any = {}
@@ -45,7 +50,7 @@ export default class Resource implements ResourceLike {
 
     constructor(attributes?: any, options?: any) {
         const Ctor = this.getConstructor()
-        if (typeof Ctor.getClient() !== 'object') {
+        if (typeof Ctor.client !== 'object') {
             throw new exceptions.ImproperlyConfiguredError("Resource can't be used without Client class instance")
         }
 
@@ -134,19 +139,19 @@ export default class Resource implements ResourceLike {
      * Get HTTP client for a resource Class
      * This is meant to be overridden if we want to define a client at any time
      */
-    static getClient(): DefaultClient {
-        if (!this.client) {
+    static get client() {
+        if (!this._client) {
             throw new exceptions.ImproperlyConfiguredError('Resource client class not defined. Did you try Resource.setClient or overriding Resource.getClient?')
         }
-        return this.client
+        return this._client
     }
 
     /**
      * Set HTTP client
      * @param client instanceof Client
      */
-    static setClient(client: DefaultClient) {
-        this.client = client
+    static set client(client) {
+        this._client = client
     }
 
     /**
@@ -154,7 +159,7 @@ export default class Resource implements ResourceLike {
      * @param query Querystring
      */
     static getListRoutePath(query?: any): string {
-        if (query) {
+        if (query && Object.keys(query).length) {
             let qs = stringify(query)
             return `${this.endpoint}?${qs}`
         }
@@ -168,7 +173,7 @@ export default class Resource implements ResourceLike {
      */
     static getDetailRoutePath(id: string, query?: any): string {
         let qs = stringify(query)
-        return `${this.endpoint}/${id}${query ? '?' : ''}${qs}`
+        return `${this.endpoint}/${id}${(query && Object.keys(query).length) ? '?' : ''}${qs}`
     }
 
     /**
@@ -176,8 +181,8 @@ export default class Resource implements ResourceLike {
      * @param options HTTP Request Options
      * @returns Promise
      */
-    static list<T extends ResourceLike = ResourceLike>(options: RequestConfig = {}): Promise<ResourceLike<T>[]> {
-        return this.getListRoute(options).then((results: ResourceResponse) => results.objects)
+    static list(options: RequestConfig = {}): Promise<ResourceResponse> {
+        return this.client.list(this, options)
     }
 
     static detail<T extends ResourceLike = ResourceLike>(id: string, options: RequestConfig = {}): Promise<T> {
@@ -192,9 +197,9 @@ export default class Resource implements ResourceLike {
                 if (!cached && !this.queued[queueHashKey]) {
                     // We want to use cached and a resource with this ID hasn't been requested yet
                     this.queued[queueHashKey] = []
-                    this.getDetailRoute(id).then((response) => {
+                    this.client.detail(this, id).then((result) => {
                         // Get detail route and get resource from response
-                        const correctResource = <T>response.objects.pop()
+                        const correctResource = <T>result.resources.pop()
                         // Resolve first-sent request
                         resolve(<T>correctResource)
                         // Then resolve any deferred requests if there are any
@@ -219,37 +224,6 @@ export default class Resource implements ResourceLike {
         })
     }
 
-    static getDetailRoute(id: string, options: RequestConfig = {}): Promise<any> {
-        return this.getClient()
-            .get(this.getDetailRoutePath(id), options)
-            .then(this.extractObjectsFromResponse.bind(this))
-    }
-
-    static getListRoute<T extends ResourceLike = ResourceLike>(options: RequestConfig = {}): Promise<any> {
-        return this.getClient()
-            .get(this.getListRoutePath(options.query), options)
-            .then(this.extractObjectsFromResponse.bind(this))
-    }
-
-    static extractObjectsFromResponse<T extends ResourceLike = ResourceLike>(result: ResourceResponse['response']): ResourceResponse<T> {
-        let objects: T[] = []
-        const body: any = result.data
-        const Cls = <ResourceCtorLike>this
-
-        if (body && body.results) {
-            body.results.forEach((obj: any) => {
-                objects.push(<T>new Cls(obj))
-            })
-        } else {
-            objects = <T[]>[new Cls(body)]
-        }
-
-        return {
-            response: result,
-            objects,
-        } as ResourceResponse<T>
-    }
-
     static getRelated(resource: ResourceLike, { deep = false, relatedKeys = undefined, relatedSubKeys = undefined }: GetRelatedDict = {}): Promise<Resource> {
         const promises: Promise<ResourceDict>[] = []
         for (const resourceKey in this.related) {
@@ -260,7 +234,7 @@ export default class Resource implements ResourceLike {
             // If this resource key exists on the resource's attributes, and it's not null
             if (resource.attributes[resourceKey] !== 'undefined' && resource.attributes[resourceKey] !== null) {
                 // Get related Resource class
-                const RelatedCls: ResourceCtorLike = this.related[resourceKey]
+                const RelatedCls: ResourceClassLike = this.related[resourceKey]
                 // If the property of the attributes is a list of IDs, we need to return a collection of Resources
                 const isMany = Array.isArray(resource.attributes[resourceKey])
                 // Get resource ids -- coerce to list (even if it's 1 ID to get, it'll be [id])
@@ -478,12 +452,12 @@ export default class Resource implements ResourceLike {
      * Like calling instance.constructor but safer:
      * changing objects down the line won't creep up the prototype chain and end up on native global objects like Function or Object
      */
-    getConstructor(): ResourceCtorLike {
+    getConstructor(): ResourceClassLike {
         if (this.constructor === Function) {
             // Safe guard in case something goes wrong in subclasses, we don't want to change native Function
             return Resource
         }
-        return <ResourceCtorLike>this.constructor
+        return <ResourceClassLike>this.constructor
     }
 
     getRelated(options?: GetRelatedDict): Promise<Resource> {
@@ -506,14 +480,16 @@ export default class Resource implements ResourceLike {
     /**
      * Saves the instance -- sends changes as a PATCH or sends whole object as a POST if it's new
      */
-    save(): Promise<ResourceLike> {
+    save(options: SaveOptions = {}): Promise<ResourceLike> {
         let promise
         const Ctor = this.getConstructor()
 
         if (!this.id) {
-            promise = Ctor.getClient().post(Ctor.getListRoutePath(), this.attributes)
+            promise = Ctor.client.post(Ctor.getListRoutePath(), this.attributes)
+        } else if(options.partial === false) {
+            promise = Ctor.client.put(Ctor.getDetailRoutePath(this.id), this.attributes)
         } else {
-            promise = Ctor.getClient().patch(Ctor.getDetailRoutePath(this.id), this.changes)
+            promise = Ctor.client.patch(Ctor.getDetailRoutePath(this.id), this.changes)
         }
 
         return promise.then((response: AxiosResponse) => {

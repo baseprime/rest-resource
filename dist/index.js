@@ -10,7 +10,7 @@ export default class Resource {
         this.related = {};
         this.changes = {};
         const Ctor = this.getConstructor();
-        if (typeof Ctor.getClient() !== 'object') {
+        if (typeof Ctor.client !== 'object') {
             throw new exceptions.ImproperlyConfiguredError("Resource can't be used without Client class instance");
         }
         // Set up attributes and defaults
@@ -90,25 +90,25 @@ export default class Resource {
      * Get HTTP client for a resource Class
      * This is meant to be overridden if we want to define a client at any time
      */
-    static getClient() {
-        if (!this.client) {
+    static get client() {
+        if (!this._client) {
             throw new exceptions.ImproperlyConfiguredError('Resource client class not defined. Did you try Resource.setClient or overriding Resource.getClient?');
         }
-        return this.client;
+        return this._client;
     }
     /**
      * Set HTTP client
      * @param client instanceof Client
      */
-    static setClient(client) {
-        this.client = client;
+    static set client(client) {
+        this._client = client;
     }
     /**
      * Get list route path (eg. /users) to be used with HTTP requests and allow a querystring object
      * @param query Querystring
      */
     static getListRoutePath(query) {
-        if (query) {
+        if (query && Object.keys(query).length) {
             let qs = stringify(query);
             return `${this.endpoint}?${qs}`;
         }
@@ -121,7 +121,7 @@ export default class Resource {
      */
     static getDetailRoutePath(id, query) {
         let qs = stringify(query);
-        return `${this.endpoint}/${id}${query ? '?' : ''}${qs}`;
+        return `${this.endpoint}/${id}${(query && Object.keys(query).length) ? '?' : ''}${qs}`;
     }
     /**
      * HTTP Get of resource's list route--returns a promise
@@ -129,7 +129,7 @@ export default class Resource {
      * @returns Promise
      */
     static list(options = {}) {
-        return this.getListRoute(options).then((results) => results.objects);
+        return this.client.list(this, options);
     }
     static detail(id, options = {}) {
         // Check cache first
@@ -143,9 +143,9 @@ export default class Resource {
                 if (!cached && !this.queued[queueHashKey]) {
                     // We want to use cached and a resource with this ID hasn't been requested yet
                     this.queued[queueHashKey] = [];
-                    this.getDetailRoute(id).then((response) => {
+                    this.client.detail(this, id).then((result) => {
                         // Get detail route and get resource from response
-                        const correctResource = response.objects.pop();
+                        const correctResource = result.resources.pop();
                         // Resolve first-sent request
                         resolve(correctResource);
                         // Then resolve any deferred requests if there are any
@@ -170,33 +170,6 @@ export default class Resource {
                 resolve(cached.resource);
             }
         });
-    }
-    static getDetailRoute(id, options = {}) {
-        return this.getClient()
-            .get(this.getDetailRoutePath(id), options)
-            .then(this.extractObjectsFromResponse.bind(this));
-    }
-    static getListRoute(options = {}) {
-        return this.getClient()
-            .get(this.getListRoutePath(options.query), options)
-            .then(this.extractObjectsFromResponse.bind(this));
-    }
-    static extractObjectsFromResponse(result) {
-        let objects = [];
-        const body = result.data;
-        const Cls = this;
-        if (body && body.results) {
-            body.results.forEach((obj) => {
-                objects.push(new Cls(obj));
-            });
-        }
-        else {
-            objects = [new Cls(body)];
-        }
-        return {
-            response: result,
-            objects,
-        };
     }
     static getRelated(resource, { deep = false, relatedKeys = undefined, relatedSubKeys = undefined } = {}) {
         const promises = [];
@@ -442,14 +415,17 @@ export default class Resource {
     /**
      * Saves the instance -- sends changes as a PATCH or sends whole object as a POST if it's new
      */
-    save() {
+    save(options = {}) {
         let promise;
         const Ctor = this.getConstructor();
         if (!this.id) {
-            promise = Ctor.getClient().post(Ctor.getListRoutePath(), this.attributes);
+            promise = Ctor.client.post(Ctor.getListRoutePath(), this.attributes);
+        }
+        else if (options.partial === false) {
+            promise = Ctor.client.put(Ctor.getDetailRoutePath(this.id), this.attributes);
         }
         else {
-            promise = Ctor.getClient().patch(Ctor.getDetailRoutePath(this.id), this.changes);
+            promise = Ctor.client.patch(Ctor.getDetailRoutePath(this.id), this.changes);
         }
         return promise.then((response) => {
             this.changes = {};
@@ -493,9 +469,10 @@ Resource.endpoint = '';
 Resource.cacheMaxAge = 60;
 Resource.data = {};
 Resource._cache = {};
-Resource.client = new DefaultClient('/');
+Resource._client = new DefaultClient('/');
 Resource.queued = {};
 Resource.uniqueKey = 'id';
+Resource.perPage = null;
 Resource.defaults = {};
 Resource.related = {};
 //# sourceMappingURL=index.js.map

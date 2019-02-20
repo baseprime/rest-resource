@@ -1,13 +1,13 @@
 import { DefaultClient, RequestConfig, ResourceResponse } from './client';
 export declare type ResourceLike<T extends Resource = Resource> = T | Resource;
-export declare type ResourceCtorLike<T extends typeof Resource = typeof Resource> = T | typeof Resource;
+export declare type ResourceClassLike<T extends typeof Resource = typeof Resource> = T | typeof Resource;
 export interface GetRelatedDict {
     deep?: boolean;
     relatedKeys?: string[];
     relatedSubKeys?: string[];
 }
 export interface ResourceClassDict {
-    [key: string]: ResourceCtorLike;
+    [key: string]: ResourceClassLike;
 }
 export interface ResourceDict<T extends ResourceLike = ResourceLike> {
     [key: string]: T | T[];
@@ -16,14 +16,18 @@ export interface CachedResource<T extends ResourceLike = ResourceLike> {
     expires: number;
     resource: T;
 }
+export interface SaveOptions {
+    partial?: boolean;
+}
 export default class Resource implements ResourceLike {
     static endpoint: string;
     static cacheMaxAge: number;
     static data: any;
     static _cache: any;
-    static client: DefaultClient;
+    static _client: DefaultClient;
     static queued: any;
     static uniqueKey: string;
+    static perPage: number | null;
     static defaults: any;
     static related: ResourceClassDict;
     _attributes: any;
@@ -60,12 +64,11 @@ export default class Resource implements ResourceLike {
      * Get HTTP client for a resource Class
      * This is meant to be overridden if we want to define a client at any time
      */
-    static getClient(): DefaultClient;
     /**
-     * Set HTTP client
-     * @param client instanceof Client
-     */
-    static setClient(client: DefaultClient): void;
+    * Set HTTP client
+    * @param client instanceof Client
+    */
+    static client: DefaultClient;
     /**
      * Get list route path (eg. /users) to be used with HTTP requests and allow a querystring object
      * @param query Querystring
@@ -82,11 +85,8 @@ export default class Resource implements ResourceLike {
      * @param options HTTP Request Options
      * @returns Promise
      */
-    static list<T extends ResourceLike = ResourceLike>(options?: RequestConfig): Promise<ResourceLike<T>[]>;
+    static list(options?: RequestConfig): Promise<ResourceResponse>;
     static detail<T extends ResourceLike = ResourceLike>(id: string, options?: RequestConfig): Promise<T>;
-    static getDetailRoute(id: string, options?: RequestConfig): Promise<any>;
-    static getListRoute<T extends ResourceLike = ResourceLike>(options?: RequestConfig): Promise<any>;
-    static extractObjectsFromResponse<T extends ResourceLike = ResourceLike>(result: ResourceResponse['response']): ResourceResponse<T>;
     static getRelated(resource: ResourceLike, { deep, relatedKeys, relatedSubKeys }?: GetRelatedDict): Promise<Resource>;
     static getRelatedDeep(resource: ResourceLike, options?: GetRelatedDict): Promise<Resource>;
     /**
@@ -132,7 +132,7 @@ export default class Resource implements ResourceLike {
      * Like calling instance.constructor but safer:
      * changing objects down the line won't creep up the prototype chain and end up on native global objects like Function or Object
      */
-    getConstructor(): ResourceCtorLike;
+    getConstructor(): ResourceClassLike;
     getRelated(options?: GetRelatedDict): Promise<Resource>;
     getRelatedDeep(options?: GetRelatedDict): Promise<Resource>;
     /**
@@ -143,7 +143,7 @@ export default class Resource implements ResourceLike {
     /**
      * Saves the instance -- sends changes as a PATCH or sends whole object as a POST if it's new
      */
-    save(): Promise<ResourceLike>;
+    save(options?: SaveOptions): Promise<ResourceLike>;
     update(): Promise<Resource>;
     hasRelatedDefined(relatedKey: string): boolean;
     cache(replace?: boolean): ResourceLike;
