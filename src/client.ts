@@ -19,9 +19,11 @@ export type ExtractorFunction<T extends ResourceLike = ResourceLike> = (result: 
 
 export class DefaultClient {
     axios: any
+    hostname: string
 
     constructor(baseURL: string, config: AxiosRequestConfig = {}) {
         let opts = Object.assign({ baseURL }, config)
+        this.hostname = opts.baseURL
         this.axios = axios.create(opts)
     }
 
@@ -87,6 +89,7 @@ export class DefaultClient {
 }
 
 export class JWTBearerClient extends DefaultClient {
+    token: string
     // This is just a basic client except we're including a token in the requests
     constructor(baseURL: string, token: string = '', options: RequestConfig = {}) {
         let headers = Object.assign({
@@ -94,5 +97,6 @@ export class JWTBearerClient extends DefaultClient {
         }, options.headers)
         options.headers = headers
         super(baseURL, options)
+        this.token = token
     }
 }

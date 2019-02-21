@@ -2,6 +2,7 @@ import axios from 'axios';
 export class DefaultClient {
     constructor(baseURL, config = {}) {
         let opts = Object.assign({ baseURL }, config);
+        this.hostname = opts.baseURL;
         this.axios = axios.create(opts);
     }
     negotiateContent(ResourceClass) {
@@ -63,6 +64,7 @@ export class JWTBearerClient extends DefaultClient {
         }, options.headers);
         options.headers = headers;
         super(baseURL, options);
+        this.token = token;
     }
 }
 //# sourceMappingURL=client.js.map
