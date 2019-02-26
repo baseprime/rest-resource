@@ -1,6 +1,7 @@
 import { stringify } from 'querystring'
 import { DefaultClient, RequestConfig, ResourceResponse } from './client'
 import { AxiosResponse } from 'axios';
+import { AttributeError } from './exceptions';
 
 const exceptions = require('./exceptions')
 const assert = require('assert')
@@ -423,15 +424,17 @@ export default class Resource implements ResourceLike {
     toInternalValue(key: string, value: any): any {
         if (!isEqual(this.attributes[key], value)) {
             // New value has changed -- set it in this.changed and this._attributes
-            let validRelatedKey = value instanceof Resource && value.getConstructor() === this.rel(key)
+            let translateValueToPk = this.shouldTranslateValueToPrimaryKey(key, value)
             // Also resolve any related Resources back into foreign keys -- @todo What if it's a list of related Resources?
-            if(value && validRelatedKey) {
+            if(value && translateValueToPk) {
                 // Newly set value is an actual Resource instance
                 // this.related is a related resource or a list of related resources
                 let newRelatedResource: Resource = value
                 this.related[key] = newRelatedResource
                 // this._attributes is a list of IDs
                 value = newRelatedResource.id
+            } else if(value instanceof Resource && !translateValueToPk) {
+                throw new AttributeError(`Can't accept a Related Resource on field "${key}": try using Resource's primary key or assign a value of "${key}" on ${this.getConstructor().name}.related`)
             }
 
             this.changes[key] = value
@@ -446,6 +449,16 @@ export default class Resource implements ResourceLike {
      */
     fromInternalValue(key: string) {
         return this._attributes[key]
+    }
+
+    /**
+     * Used to check if an incoming attribute (key)'s value should be translated from
+     * a Related Resource (defined in Resource.related) to a primary key (the ID)
+     * @param key 
+     * @param value 
+     */
+    shouldTranslateValueToPrimaryKey(key: string, value: any) {
+        return !!(value instanceof Resource && value.getConstructor() === this.rel(key))
     }
 
     /**

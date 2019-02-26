@@ -129,6 +129,13 @@ export default class Resource implements ResourceLike {
      */
     fromInternalValue(key: string): any;
     /**
+     * Used to check if an incoming attribute (key)'s value should be translated from
+     * a Related Resource (defined in Resource.related) to a primary key (the ID)
+     * @param key
+     * @param value
+     */
+    shouldTranslateValueToPrimaryKey(key: string, value: any): boolean;
+    /**
      * Like calling instance.constructor but safer:
      * changing objects down the line won't creep up the prototype chain and end up on native global objects like Function or Object
      */
