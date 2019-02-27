@@ -96,7 +96,8 @@ export default class Resource implements ResourceLike {
     static rel(key: string): typeof Resource;
     static toResourceName(): string;
     /**
-     * Set an attribute of Resource instance
+     * Set an attribute of Resource instance and apply getters/setters
+     * Do not use Dot Notation here
      * @param key
      * @param value
      */
@@ -155,6 +156,7 @@ export default class Resource implements ResourceLike {
     hasRelatedDefined(relatedKey: string): boolean;
     cache(replace?: boolean): ResourceLike;
     getCached(): CachedResource | undefined;
+    isNew(): boolean;
     id: string;
     toString(): string;
     toResourceName(): string;

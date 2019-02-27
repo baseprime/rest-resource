@@ -302,17 +302,18 @@ export default class Resource implements ResourceLike {
     }
 
     /**
-     * Set an attribute of Resource instance
+     * Set an attribute of Resource instance and apply getters/setters
+     * Do not use Dot Notation here
      * @param key 
      * @param value 
      */
     set(key: string, value: any) {
-        // We're setting a value -- setters in ctor takes care of changes
+        // Don't accept dot notation here
         const pieces = key.split('.')
         if (pieces.length > 1) {
             throw new exceptions.AttributeError("Can't use dot notation when setting value of nested resource")
         }
-
+        // Define Getters/Setters on this property
         Object.defineProperty(this.attributes, key, {
             configurable: true,
             enumerable: true,
@@ -431,8 +432,12 @@ export default class Resource implements ResourceLike {
             // Also resolve any related Resources back into foreign keys -- @todo What if it's a list of related Resources?
             if(value && translateValueToPk) {
                 // Newly set value is an actual Resource instance
-                // this.related is a related resource or a list of related resources
                 let relatedResource: Resource = value
+                // Don't accept any resources that aren't saved
+                if(!relatedResource.id) {
+                    throw new AttributeError(`Can't append Related Resource on field "${key}": Related Resource ${relatedResource.getConstructor().name} must be saved first`)
+                }
+                // this.related is a related resource or a list of related resources
                 this.related[key] = relatedResource
                 // this._attributes is a list of IDs
                 value = relatedResource.id
@@ -500,7 +505,7 @@ export default class Resource implements ResourceLike {
         let promise
         const Ctor = this.getConstructor()
 
-        if (!this.id) {
+        if (this.isNew()) {
             promise = Ctor.client.post(Ctor.getListRoutePath(), this.attributes)
         } else if(options.partial === false) {
             promise = Ctor.client.put(Ctor.getDetailRoutePath(this.id), this.attributes)
@@ -532,6 +537,10 @@ export default class Resource implements ResourceLike {
 
     getCached(): CachedResource | undefined {
         return this.getConstructor().getCached(this.id)
+    }
+
+    isNew(): boolean {
+        return !this.id
     }
 
     get id(): string {
