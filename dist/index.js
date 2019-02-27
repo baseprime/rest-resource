@@ -323,7 +323,7 @@ export default class Resource {
      * @param key
      */
     getAsync(key) {
-        return new Promise((resolve) => {
+        return new Promise((resolve, reject) => {
             try {
                 resolve(this.get(key));
             }
@@ -352,11 +352,14 @@ export default class Resource {
                         });
                     });
                 }
+                else {
+                    reject(e);
+                }
             }
         });
     }
     /**
-     * Mutate key/value on this.attributes[key] into an internal value
+     * Translate this.attributes[key] into an internal value
      * Usually this is just setting a key/value but we want to be able to accept
      * anything -- another Resource instance for example. If a Resource instance is
      * provided, set the this.related[key] as the new instance, then set the
@@ -365,17 +368,18 @@ export default class Resource {
      * @param value
      */
     toInternalValue(key, value) {
-        if (!isEqual(this.attributes[key], value)) {
+        let currentValue = this.fromInternalValue(key);
+        if (!isEqual(currentValue, value)) {
             // New value has changed -- set it in this.changed and this._attributes
             let translateValueToPk = this.shouldTranslateValueToPrimaryKey(key, value);
             // Also resolve any related Resources back into foreign keys -- @todo What if it's a list of related Resources?
             if (value && translateValueToPk) {
                 // Newly set value is an actual Resource instance
                 // this.related is a related resource or a list of related resources
-                let newRelatedResource = value;
-                this.related[key] = newRelatedResource;
+                let relatedResource = value;
+                this.related[key] = relatedResource;
                 // this._attributes is a list of IDs
-                value = newRelatedResource.id;
+                value = relatedResource.id;
             }
             else if (value instanceof Resource && !translateValueToPk) {
                 throw new AttributeError(`Can't accept a Related Resource on field "${key}": try using Resource's primary key or assign a value of "${key}" on ${this.getConstructor().name}.related`);

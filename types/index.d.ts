@@ -114,7 +114,7 @@ export default class Resource implements ResourceLike {
      */
     getAsync(key: string): Promise<any>;
     /**
-     * Mutate key/value on this.attributes[key] into an internal value
+     * Translate this.attributes[key] into an internal value
      * Usually this is just setting a key/value but we want to be able to accept
      * anything -- another Resource instance for example. If a Resource instance is
      * provided, set the this.related[key] as the new instance, then set the
