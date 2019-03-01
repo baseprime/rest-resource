@@ -15,9 +15,9 @@ export default class Resource {
             throw new exceptions.ImproperlyConfiguredError("Resource can't be used without Client class instance");
         }
         // Set up attributes and defaults
-        this._attributes = Object.assign({}, Ctor.defaults || {}, attributes || {});
+        this._attributes = Object.assign({}, Ctor.makeDefaultsObject(), attributes || {});
         // Add getters/setters for attributes
-        for (let attrKey of Object.keys(this._attributes)) {
+        for (let attrKey in this._attributes) {
             this.set(attrKey, this._attributes[attrKey]);
         }
         if (this.id) {
@@ -243,6 +243,19 @@ export default class Resource {
     }
     static toResourceName() {
         return this.name;
+    }
+    static makeDefaultsObject() {
+        let defaults = {};
+        for (let key in this.defaults) {
+            let thisDefault = this.defaults[key];
+            if ('function' === typeof thisDefault) {
+                defaults[key] = thisDefault.call(null);
+            }
+            else {
+                defaults[key] = thisDefault;
+            }
+        }
+        return defaults;
     }
     /**
      * Set an attribute of Resource instance and apply getters/setters
