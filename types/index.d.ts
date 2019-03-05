@@ -18,6 +18,7 @@ export interface CachedResource<T extends ResourceLike = ResourceLike> {
 }
 export interface SaveOptions {
     partial?: boolean;
+    replaceCache?: boolean;
 }
 export default class Resource implements ResourceLike {
     static endpoint: string;
@@ -126,11 +127,6 @@ export default class Resource implements ResourceLike {
      */
     toInternalValue(key: string, value: any): any;
     /**
-     * Like toInternalValue except the other way around
-     * @param key
-     */
-    fromInternalValue(key: string): any;
-    /**
      * Used to check if an incoming attribute (key)'s value should be translated from
      * a Related Resource (defined in Resource.related) to a primary key (the ID)
      * @param key
@@ -152,8 +148,21 @@ export default class Resource implements ResourceLike {
     /**
      * Saves the instance -- sends changes as a PATCH or sends whole object as a POST if it's new
      */
-    save(options?: SaveOptions): Promise<ResourceLike>;
+    save(options?: SaveOptions): Promise<ResourceResponse>;
+    /**
+     * Validate attributes -- returns empty if no errors exist
+     * @returns `Error[]` Array of Exceptions
+     */
+    validate(): Error[];
+    /**
+     * Check if key/value pair is valid -- you can return true/false or throw new errors here
+     * @param key Attribute Key
+     * @param value Attribute Value
+     * @returns `boolean`
+     */
+    fieldIsValid(key: string, value: any): boolean;
     update(): Promise<Resource>;
+    delete(options?: RequestConfig): any;
     hasRelatedDefined(relatedKey: string): boolean;
     cache(replace?: boolean): ResourceLike;
     getCached(): CachedResource | undefined;

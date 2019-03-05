@@ -1,11 +1,10 @@
 import { stringify } from 'querystring';
 import { DefaultClient } from './client';
-import { AttributeError } from './exceptions';
 const exceptions = require('./exceptions');
 const assert = require('assert');
 const isEqual = require('lodash').isEqual;
 export default class Resource {
-    constructor(attributes, options) {
+    constructor(attributes = {}, options = {}) {
         this._attributes = {};
         this.attributes = {};
         this.related = {};
@@ -15,11 +14,20 @@ export default class Resource {
             throw new exceptions.ImproperlyConfiguredError("Resource can't be used without Client class instance");
         }
         // Set up attributes and defaults
-        this._attributes = Object.assign({}, Ctor.makeDefaultsObject(), attributes || {});
-        // Add getters/setters for attributes
-        for (let attrKey in this._attributes) {
-            this.set(attrKey, this._attributes[attrKey]);
-        }
+        this._attributes = Object.assign({}, Ctor.makeDefaultsObject(), attributes);
+        // Set up Proxy to this._attributes
+        this.attributes = new Proxy(this._attributes, {
+            set: (receiver, key, value) => {
+                receiver[key] = this.toInternalValue(key, value);
+                return true;
+            },
+            get: (receiver, key) => {
+                return receiver[key];
+            },
+            defineProperty: (target, prop, descriptor) => {
+                return Reflect.defineProperty(target, prop, descriptor);
+            }
+        });
         if (this.id) {
             Ctor.cacheResource(this);
         }
@@ -264,20 +272,6 @@ export default class Resource {
      * @param value
      */
     set(key, value) {
-        // Don't accept dot notation here
-        const pieces = key.split('.');
-        if (pieces.length > 1) {
-            throw new exceptions.AttributeError("Can't use dot notation when setting value of nested resource");
-        }
-        // Define Getters/Setters on this property
-        Object.defineProperty(this.attributes, key, {
-            configurable: true,
-            enumerable: true,
-            get: () => this.fromInternalValue(key),
-            set: (newVal) => {
-                this._attributes[key] = this.toInternalValue(key, newVal);
-            }
-        });
         this.attributes[key] = value;
         return this;
     }
@@ -383,7 +377,7 @@ export default class Resource {
      * @param value
      */
     toInternalValue(key, value) {
-        let currentValue = this.fromInternalValue(key);
+        let currentValue = this.attributes[key];
         if (!isEqual(currentValue, value)) {
             // New value has changed -- set it in this.changed and this._attributes
             let translateValueToPk = this.shouldTranslateValueToPrimaryKey(key, value);
@@ -393,7 +387,7 @@ export default class Resource {
                 let relatedResource = value;
                 // Don't accept any resources that aren't saved
                 if (!relatedResource.id) {
-                    throw new AttributeError(`Can't append Related Resource on field "${key}": Related Resource ${relatedResource.getConstructor().name} must be saved first`);
+                    throw new exceptions.AttributeError(`Can't append Related Resource on field "${key}": Related Resource ${relatedResource.getConstructor().name} must be saved first`);
                 }
                 // this.related is a related resource or a list of related resources
                 this.related[key] = relatedResource;
@@ -401,18 +395,11 @@ export default class Resource {
                 value = relatedResource.id;
             }
             else if (value instanceof Resource && !translateValueToPk) {
-                throw new AttributeError(`Can't accept a Related Resource on field "${key}": try using Resource's primary key or assign a value of "${key}" on ${this.getConstructor().name}.related`);
+                throw new exceptions.AttributeError(`Can't accept a Related Resource on field "${key}": try using Resource's primary key or assign a value of "${key}" on ${this.getConstructor().name}.related`);
             }
             this.changes[key] = value;
         }
         return value;
-    }
-    /**
-     * Like toInternalValue except the other way around
-     * @param key
-     */
-    fromInternalValue(key) {
-        return this._attributes[key];
     }
     /**
      * Used to check if an incoming attribute (key)'s value should be translated from
@@ -454,6 +441,10 @@ export default class Resource {
     save(options = {}) {
         let promise;
         const Ctor = this.getConstructor();
+        let errors = this.validate();
+        if (errors.length > 0) {
+            throw new exceptions.ValidationError(errors);
+        }
         if (this.isNew()) {
             promise = Ctor.client.post(Ctor.getListRoutePath(), this.attributes);
         }
@@ -468,11 +459,51 @@ export default class Resource {
             for (const resKey in response.data) {
                 this.set(resKey, response.data[resKey]);
             }
-            return this.cache(true);
+            // Replace cache
+            this.cache((options.replaceCache === false) ? false : true);
+            return {
+                response,
+                resources: [this],
+            };
         });
+    }
+    /**
+     * Validate attributes -- returns empty if no errors exist
+     * @returns `Error[]` Array of Exceptions
+     */
+    validate() {
+        let errs = [];
+        for (let attrKey in this.attributes) {
+            try {
+                let valid = this.fieldIsValid(attrKey, this.attributes[attrKey]);
+                if (!valid) {
+                    throw new exceptions.ValidationError(attrKey);
+                }
+            }
+            catch (e) {
+                // This should only work if fieldIsValid is implemented
+                if (!(e instanceof exceptions.ImproperlyConfiguredError)) {
+                    errs.push(e);
+                }
+            }
+        }
+        return errs;
+    }
+    /**
+     * Check if key/value pair is valid -- you can return true/false or throw new errors here
+     * @param key Attribute Key
+     * @param value Attribute Value
+     * @returns `boolean`
+     */
+    fieldIsValid(key, value) {
+        // This method is meant to be overridden
+        throw new exceptions.ImproperlyConfiguredError(`Method "fieldIsValid" must be overridden`);
     }
     update() {
         return this.getConstructor().detail(this.id);
+    }
+    delete(options) {
+        return this.getConstructor().client.delete(this.getConstructor().getDetailRoutePath(this.id), options);
     }
     hasRelatedDefined(relatedKey) {
         return this.getConstructor().related[relatedKey] && !this.related[relatedKey];

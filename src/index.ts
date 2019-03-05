@@ -1,7 +1,7 @@
 import { stringify } from 'querystring'
 import { DefaultClient, RequestConfig, ResourceResponse } from './client'
 import { AxiosResponse } from 'axios';
-import { AttributeError } from './exceptions';
+import { RequestOptions } from 'https';
 
 const exceptions = require('./exceptions')
 const assert = require('assert')
@@ -31,6 +31,7 @@ export interface CachedResource<T extends ResourceLike = ResourceLike> {
 
 export interface SaveOptions {
     partial?: boolean
+    replaceCache?: boolean
 }
 
 export default class Resource implements ResourceLike {
@@ -49,17 +50,26 @@ export default class Resource implements ResourceLike {
     related: ResourceDict = {}
     changes: any = {}
 
-    constructor(attributes?: any, options?: any) {
+    constructor(attributes: any = {}, options: any = {}) {
         const Ctor = this.getConstructor()
         if (typeof Ctor.client !== 'object') {
             throw new exceptions.ImproperlyConfiguredError("Resource can't be used without Client class instance")
         }
         // Set up attributes and defaults
-        this._attributes = Object.assign({}, Ctor.makeDefaultsObject(), attributes || {})
-        // Add getters/setters for attributes
-        for (let attrKey in this._attributes) {
-            this.set(attrKey, this._attributes[attrKey])
-        }
+        this._attributes = Object.assign({}, Ctor.makeDefaultsObject(), attributes)
+        // Set up Proxy to this._attributes
+        this.attributes = new Proxy(this._attributes, {
+            set: (receiver: any, key: string, value: any) => {
+                receiver[key] = this.toInternalValue(key, value)
+                return true
+            },
+            get: (receiver: any, key: string) => {
+                return receiver[key]
+            },
+            defineProperty: (target, prop, descriptor) => {
+                return Reflect.defineProperty(target, prop, descriptor)
+            }
+        });
 
         if (this.id) {
             Ctor.cacheResource(this)
@@ -320,23 +330,7 @@ export default class Resource implements ResourceLike {
      * @param value 
      */
     set(key: string, value: any) {
-        // Don't accept dot notation here
-        const pieces = key.split('.')
-        if (pieces.length > 1) {
-            throw new exceptions.AttributeError("Can't use dot notation when setting value of nested resource")
-        }
-        // Define Getters/Setters on this property
-        Object.defineProperty(this.attributes, key, {
-            configurable: true,
-            enumerable: true,
-            get: () => this.fromInternalValue(key),
-            set: (newVal) => {
-                this._attributes[key] = this.toInternalValue(key, newVal)
-            }
-        })
-
         this.attributes[key] = value
-
         return this
     }
 
@@ -437,7 +431,7 @@ export default class Resource implements ResourceLike {
      * @param value 
      */
     toInternalValue(key: string, value: any): any {
-        let currentValue = this.fromInternalValue(key)
+        let currentValue = this.attributes[key]
         if (!isEqual(currentValue, value)) {
             // New value has changed -- set it in this.changed and this._attributes
             let translateValueToPk = this.shouldTranslateValueToPrimaryKey(key, value)
@@ -447,28 +441,20 @@ export default class Resource implements ResourceLike {
                 let relatedResource: Resource = value
                 // Don't accept any resources that aren't saved
                 if(!relatedResource.id) {
-                    throw new AttributeError(`Can't append Related Resource on field "${key}": Related Resource ${relatedResource.getConstructor().name} must be saved first`)
+                    throw new exceptions.AttributeError(`Can't append Related Resource on field "${key}": Related Resource ${relatedResource.getConstructor().name} must be saved first`)
                 }
                 // this.related is a related resource or a list of related resources
                 this.related[key] = relatedResource
                 // this._attributes is a list of IDs
                 value = relatedResource.id
             } else if(value instanceof Resource && !translateValueToPk) {
-                throw new AttributeError(`Can't accept a Related Resource on field "${key}": try using Resource's primary key or assign a value of "${key}" on ${this.getConstructor().name}.related`)
+                throw new exceptions.AttributeError(`Can't accept a Related Resource on field "${key}": try using Resource's primary key or assign a value of "${key}" on ${this.getConstructor().name}.related`)
             }
 
             this.changes[key] = value
         }
 
         return value
-    }
-
-    /**
-     * Like toInternalValue except the other way around
-     * @param key 
-     */
-    fromInternalValue(key: string) {
-        return this._attributes[key]
     }
 
     /**
@@ -513,9 +499,15 @@ export default class Resource implements ResourceLike {
     /**
      * Saves the instance -- sends changes as a PATCH or sends whole object as a POST if it's new
      */
-    save(options: SaveOptions = {}): Promise<ResourceLike> {
+    save(options: SaveOptions = {}): Promise<ResourceResponse> {
         let promise
         const Ctor = this.getConstructor()
+        
+        let errors = this.validate()
+
+        if(errors.length > 0) {
+            throw new exceptions.ValidationError(errors)
+        }
 
         if (this.isNew()) {
             promise = Ctor.client.post(Ctor.getListRoutePath(), this.attributes)
@@ -530,12 +522,55 @@ export default class Resource implements ResourceLike {
             for (const resKey in response.data) {
                 this.set(resKey, response.data[resKey])
             }
-            return this.cache(true)
+            // Replace cache
+            this.cache((options.replaceCache === false) ? false : true)
+            return {
+                response,
+                resources: [this],
+            }
         })
+    }
+
+    /**
+     * Validate attributes -- returns empty if no errors exist
+     * @returns `Error[]` Array of Exceptions
+     */
+    validate(): Error[] {
+        let errs = []
+        for(let attrKey in this.attributes) {
+            try {
+                let valid = this.fieldIsValid(attrKey, this.attributes[attrKey])
+                if(!valid) {
+                    throw new exceptions.ValidationError(attrKey)
+                }
+            } catch(e) {
+                // This should only work if fieldIsValid is implemented
+                if(!(e instanceof exceptions.ImproperlyConfiguredError)) {
+                    errs.push(e)
+                }
+            }
+        }
+
+        return errs
+    }
+
+    /**
+     * Check if key/value pair is valid -- you can return true/false or throw new errors here
+     * @param key Attribute Key
+     * @param value Attribute Value
+     * @returns `boolean`
+     */
+    fieldIsValid(key: string, value: any): boolean {
+        // This method is meant to be overridden
+        throw new exceptions.ImproperlyConfiguredError(`Method "fieldIsValid" must be overridden`)
     }
 
     update() {
         return this.getConstructor().detail(this.id)
+    }
+
+    delete(options?: RequestConfig) {
+        return this.getConstructor().client.delete(this.getConstructor().getDetailRoutePath(this.id), options)
     }
 
     hasRelatedDefined(relatedKey: string) {
