@@ -1,4 +1,5 @@
 import axios from 'axios';
+export * from 'axios';
 export class DefaultClient {
     constructor(baseURL, config = {}) {
         let opts = Object.assign({ baseURL }, config);
@@ -50,6 +51,7 @@ export class DefaultClient {
         return this.axios.head(path, options).catch((e) => this.onError(e));
     }
     options(path, options = {}) {
+        // @ts-ignore -- Axios forgot to add options to AxiosInstance interface
         return this.axios.options(path, options).catch((e) => this.onError(e));
     }
     onError(exception) {

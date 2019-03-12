@@ -1,7 +1,6 @@
 import { stringify } from 'querystring'
 import { DefaultClient, RequestConfig, ResourceResponse } from './client'
 import { AxiosResponse } from 'axios';
-import { RequestOptions } from 'https';
 
 const exceptions = require('./exceptions')
 const assert = require('assert')
@@ -9,6 +8,7 @@ const isEqual = require('lodash').isEqual
 
 export type ResourceLike<T extends Resource = Resource> = T | Resource
 export type ResourceClassLike<T extends typeof Resource = typeof Resource> = T | typeof Resource
+export type IterableDict = { [index: string]: any }
 
 export interface GetRelatedDict {
     deep?: boolean
@@ -16,12 +16,16 @@ export interface GetRelatedDict {
     relatedSubKeys?: string[]
 }
 
-export interface ResourceClassDict {
+export interface ResourceClassDict extends IterableDict {
     [key: string]: ResourceClassLike
 }
 
 export interface ResourceDict<T extends ResourceLike = ResourceLike> {
     [key: string]: T | T[]
+}
+
+export interface ValidatorDict extends IterableDict {
+    [key: string]: (resource: ResourceLike, value: any) => void
 }
 
 export interface CachedResource<T extends ResourceLike = ResourceLike> {
@@ -37,18 +41,18 @@ export interface SaveOptions {
 export default class Resource implements ResourceLike {
     static endpoint: string = ''
     static cacheMaxAge: number = 60
-    static data: any = {}
     static _cache: any = {}
     static _client: DefaultClient = new DefaultClient('/')
-    static queued: any = {}
-    static uniqueKey = 'id'
+    static queued: IterableDict = {}
+    static uniqueKey: string = 'id'
     static perPage: number | null = null
-    static defaults: any = {}
+    static defaults: IterableDict = {}
+    static validators: ValidatorDict = {}
     static related: ResourceClassDict = {}
-    _attributes: any = {}
-    attributes: any = {}
+    _attributes: IterableDict = {}
+    attributes: IterableDict = {}
     related: ResourceDict = {}
-    changes: any = {}
+    changes: IterableDict = {}
 
     constructor(attributes: any = {}, options: any = {}) {
         const Ctor = this.getConstructor()
@@ -532,37 +536,28 @@ export default class Resource implements ResourceLike {
     }
 
     /**
-     * Validate attributes -- returns empty if no errors exist
+     * Validate attributes -- returns empty if no errors exist -- you should throw new errors here
      * @returns `Error[]` Array of Exceptions
      */
     validate(): Error[] {
         let errs = []
-        for(let attrKey in this.attributes) {
+        let validators = this.getConstructor().validators
+        for(let key in validators) {
             try {
-                let valid = this.fieldIsValid(attrKey, this.attributes[attrKey])
-                if(!valid) {
-                    throw new exceptions.ValidationError(attrKey)
+                if('function' === typeof validators[key]) {
+                    validators[key].call(null, this, this.attributes[key])
                 }
             } catch(e) {
-                // This should only work if fieldIsValid is implemented
-                if(!(e instanceof exceptions.ImproperlyConfiguredError)) {
+                // This is one downside of using Webpack
+                if((e.name && e.name === 'ValidationError') || e instanceof exceptions.ValidationError) {
                     errs.push(e)
+                } else {
+                    throw e
                 }
             }
         }
 
         return errs
-    }
-
-    /**
-     * Check if key/value pair is valid -- you can return true/false or throw new errors here
-     * @param key Attribute Key
-     * @param value Attribute Value
-     * @returns `boolean`
-     */
-    fieldIsValid(key: string, value: any): boolean {
-        // This method is meant to be overridden
-        throw new exceptions.ImproperlyConfiguredError(`Method "fieldIsValid" must be overridden`)
     }
 
     update() {

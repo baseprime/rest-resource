@@ -1,5 +1,7 @@
 import { ResourceLike, ResourceClassLike } from './index'
-import axios, { AxiosPromise, AxiosRequestConfig, AxiosResponse } from 'axios'
+import axios, { AxiosPromise, AxiosRequestConfig, AxiosResponse, AxiosError, AxiosInstance } from 'axios'
+
+export * from 'axios'
 
 export interface RequestConfig extends AxiosRequestConfig {
     useCache?: boolean
@@ -18,7 +20,7 @@ export interface ResourceResponse<T extends ResourceLike = ResourceLike> {
 export type ExtractorFunction<T extends ResourceLike = ResourceLike> = (result: ResourceResponse['response']) => ResourceResponse<T>
 
 export class DefaultClient {
-    axios: any
+    axios: AxiosInstance
     hostname: string
 
     constructor(baseURL: string, config: AxiosRequestConfig = {}) {
@@ -80,10 +82,11 @@ export class DefaultClient {
     }
 
     options(path: string, options: AxiosRequestConfig = {}) {
+        // @ts-ignore -- Axios forgot to add options to AxiosInstance interface
         return this.axios.options(path, options).catch((e: Error) => this.onError(e))
     }
 
-    onError(exception: Error) {
+    onError(exception: Error | AxiosError): any {
         throw exception
     }
 }

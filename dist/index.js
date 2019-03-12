@@ -468,36 +468,29 @@ export default class Resource {
         });
     }
     /**
-     * Validate attributes -- returns empty if no errors exist
+     * Validate attributes -- returns empty if no errors exist -- you should throw new errors here
      * @returns `Error[]` Array of Exceptions
      */
     validate() {
         let errs = [];
-        for (let attrKey in this.attributes) {
+        let validators = this.getConstructor().validators;
+        for (let key in validators) {
             try {
-                let valid = this.fieldIsValid(attrKey, this.attributes[attrKey]);
-                if (!valid) {
-                    throw new exceptions.ValidationError(attrKey);
+                if ('function' === typeof validators[key]) {
+                    validators[key].call(null, this, this.attributes[key]);
                 }
             }
             catch (e) {
-                // This should only work if fieldIsValid is implemented
-                if (!(e instanceof exceptions.ImproperlyConfiguredError)) {
+                // This is one downside of using Webpack
+                if ((e.name && e.name === 'ValidationError') || e instanceof exceptions.ValidationError) {
                     errs.push(e);
+                }
+                else {
+                    throw e;
                 }
             }
         }
         return errs;
-    }
-    /**
-     * Check if key/value pair is valid -- you can return true/false or throw new errors here
-     * @param key Attribute Key
-     * @param value Attribute Value
-     * @returns `boolean`
-     */
-    fieldIsValid(key, value) {
-        // This method is meant to be overridden
-        throw new exceptions.ImproperlyConfiguredError(`Method "fieldIsValid" must be overridden`);
     }
     update() {
         return this.getConstructor().detail(this.id);
@@ -537,12 +530,12 @@ export default class Resource {
 }
 Resource.endpoint = '';
 Resource.cacheMaxAge = 60;
-Resource.data = {};
 Resource._cache = {};
 Resource._client = new DefaultClient('/');
 Resource.queued = {};
 Resource.uniqueKey = 'id';
 Resource.perPage = null;
 Resource.defaults = {};
+Resource.validators = {};
 Resource.related = {};
 //# sourceMappingURL=index.js.map

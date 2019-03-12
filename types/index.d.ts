@@ -1,16 +1,22 @@
 import { DefaultClient, RequestConfig, ResourceResponse } from './client';
 export declare type ResourceLike<T extends Resource = Resource> = T | Resource;
 export declare type ResourceClassLike<T extends typeof Resource = typeof Resource> = T | typeof Resource;
+export declare type IterableDict = {
+    [index: string]: any;
+};
 export interface GetRelatedDict {
     deep?: boolean;
     relatedKeys?: string[];
     relatedSubKeys?: string[];
 }
-export interface ResourceClassDict {
+export interface ResourceClassDict extends IterableDict {
     [key: string]: ResourceClassLike;
 }
 export interface ResourceDict<T extends ResourceLike = ResourceLike> {
     [key: string]: T | T[];
+}
+export interface ValidatorDict extends IterableDict {
+    [key: string]: (resource: ResourceLike, value: any) => void;
 }
 export interface CachedResource<T extends ResourceLike = ResourceLike> {
     expires: number;
@@ -23,18 +29,18 @@ export interface SaveOptions {
 export default class Resource implements ResourceLike {
     static endpoint: string;
     static cacheMaxAge: number;
-    static data: any;
     static _cache: any;
     static _client: DefaultClient;
-    static queued: any;
+    static queued: IterableDict;
     static uniqueKey: string;
     static perPage: number | null;
-    static defaults: any;
+    static defaults: IterableDict;
+    static validators: ValidatorDict;
     static related: ResourceClassDict;
-    _attributes: any;
-    attributes: any;
+    _attributes: IterableDict;
+    attributes: IterableDict;
     related: ResourceDict;
-    changes: any;
+    changes: IterableDict;
     constructor(attributes?: any, options?: any);
     /**
      * Cache getter
@@ -150,19 +156,12 @@ export default class Resource implements ResourceLike {
      */
     save(options?: SaveOptions): Promise<ResourceResponse>;
     /**
-     * Validate attributes -- returns empty if no errors exist
+     * Validate attributes -- returns empty if no errors exist -- you should throw new errors here
      * @returns `Error[]` Array of Exceptions
      */
     validate(): Error[];
-    /**
-     * Check if key/value pair is valid -- you can return true/false or throw new errors here
-     * @param key Attribute Key
-     * @param value Attribute Value
-     * @returns `boolean`
-     */
-    fieldIsValid(key: string, value: any): boolean;
     update(): Promise<Resource>;
-    delete(options?: RequestConfig): any;
+    delete(options?: RequestConfig): Promise<any>;
     hasRelatedDefined(relatedKey: string): boolean;
     cache(replace?: boolean): ResourceLike;
     getCached(): CachedResource | undefined;
