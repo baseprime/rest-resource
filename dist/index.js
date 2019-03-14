@@ -1,5 +1,6 @@
 import { stringify } from 'querystring';
 import { DefaultClient } from './client';
+import { uuidWeak } from './util';
 const exceptions = require('./exceptions');
 const assert = require('assert');
 const isEqual = require('lodash').isEqual;
@@ -41,6 +42,13 @@ export default class Resource {
             return this._cache;
         }
         return this._cache;
+    }
+    static get uuid() {
+        if (!this._uuid) {
+            this._uuid = uuidWeak();
+            return this._uuid;
+        }
+        return this._uuid;
     }
     /**
      * Cache a resource onto this class' cache for cacheMaxAge seconds
@@ -442,7 +450,7 @@ export default class Resource {
         let promise;
         const Ctor = this.getConstructor();
         let errors = this.validate();
-        if (errors.length > 0) {
+        if (errors.length > 0 && !options.force) {
             throw new exceptions.ValidationError(errors);
         }
         if (this.isNew()) {
@@ -477,12 +485,12 @@ export default class Resource {
         for (let key in validators) {
             try {
                 if ('function' === typeof validators[key]) {
-                    validators[key].call(null, this, this.attributes[key]);
+                    validators[key].call(null, this.attributes[key], this);
                 }
             }
             catch (e) {
                 // This is one downside of using Webpack
-                if ((e.name && e.name === 'ValidationError') || e instanceof exceptions.ValidationError) {
+                if (exceptions.ValidationError.isValidationError(e)) {
                     errs.push(e);
                 }
                 else {

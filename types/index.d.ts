@@ -16,7 +16,7 @@ export interface ResourceDict<T extends ResourceLike = ResourceLike> {
     [key: string]: T | T[];
 }
 export interface ValidatorDict extends IterableDict {
-    [key: string]: (resource: ResourceLike, value: any) => void;
+    [key: string]: (value?: any, resource?: ResourceLike) => void;
 }
 export interface CachedResource<T extends ResourceLike = ResourceLike> {
     expires: number;
@@ -25,12 +25,14 @@ export interface CachedResource<T extends ResourceLike = ResourceLike> {
 export interface SaveOptions {
     partial?: boolean;
     replaceCache?: boolean;
+    force?: boolean;
 }
 export default class Resource implements ResourceLike {
     static endpoint: string;
     static cacheMaxAge: number;
     static _cache: any;
     static _client: DefaultClient;
+    static _uuid: string;
     static queued: IterableDict;
     static uniqueKey: string;
     static perPage: number | null;
@@ -38,6 +40,7 @@ export default class Resource implements ResourceLike {
     static validators: ValidatorDict;
     static related: ResourceClassDict;
     _attributes: IterableDict;
+    uuid: string;
     attributes: IterableDict;
     related: ResourceDict;
     changes: IterableDict;
@@ -46,6 +49,7 @@ export default class Resource implements ResourceLike {
      * Cache getter
      */
     static readonly cache: any;
+    static readonly uuid: string;
     /**
      * Cache a resource onto this class' cache for cacheMaxAge seconds
      * @param resource

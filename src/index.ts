@@ -1,6 +1,7 @@
 import { stringify } from 'querystring'
 import { DefaultClient, RequestConfig, ResourceResponse } from './client'
 import { AxiosResponse } from 'axios';
+import { uuidWeak } from './util'
 
 const exceptions = require('./exceptions')
 const assert = require('assert')
@@ -25,7 +26,7 @@ export interface ResourceDict<T extends ResourceLike = ResourceLike> {
 }
 
 export interface ValidatorDict extends IterableDict {
-    [key: string]: (resource: ResourceLike, value: any) => void
+    [key: string]: (value?: any, resource?: ResourceLike) => void
 }
 
 export interface CachedResource<T extends ResourceLike = ResourceLike> {
@@ -36,6 +37,7 @@ export interface CachedResource<T extends ResourceLike = ResourceLike> {
 export interface SaveOptions {
     partial?: boolean
     replaceCache?: boolean
+    force?: boolean
 }
 
 export default class Resource implements ResourceLike {
@@ -43,6 +45,7 @@ export default class Resource implements ResourceLike {
     static cacheMaxAge: number = 60
     static _cache: any = {}
     static _client: DefaultClient = new DefaultClient('/')
+    static _uuid: string
     static queued: IterableDict = {}
     static uniqueKey: string = 'id'
     static perPage: number | null = null
@@ -50,6 +53,7 @@ export default class Resource implements ResourceLike {
     static validators: ValidatorDict = {}
     static related: ResourceClassDict = {}
     _attributes: IterableDict = {}
+    uuid: string
     attributes: IterableDict = {}
     related: ResourceDict = {}
     changes: IterableDict = {}
@@ -89,6 +93,14 @@ export default class Resource implements ResourceLike {
             return this._cache
         }
         return this._cache
+    }
+
+    static get uuid() {
+        if(!this._uuid) {
+            this._uuid = uuidWeak()
+            return this._uuid
+        }
+        return this._uuid
     }
 
     /**
@@ -509,7 +521,7 @@ export default class Resource implements ResourceLike {
         
         let errors = this.validate()
 
-        if(errors.length > 0) {
+        if(errors.length > 0 && !options.force) {
             throw new exceptions.ValidationError(errors)
         }
 
@@ -545,11 +557,11 @@ export default class Resource implements ResourceLike {
         for(let key in validators) {
             try {
                 if('function' === typeof validators[key]) {
-                    validators[key].call(null, this, this.attributes[key])
+                    validators[key].call(null, this.attributes[key], this)
                 }
             } catch(e) {
                 // This is one downside of using Webpack
-                if((e.name && e.name === 'ValidationError') || e instanceof exceptions.ValidationError) {
+                if(exceptions.ValidationError.isValidationError(e)) {
                     errs.push(e)
                 } else {
                     throw e
