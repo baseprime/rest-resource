@@ -33,4 +33,7 @@ export declare class DefaultClient {
 export declare class JWTBearerClient extends DefaultClient {
     token: string;
     constructor(baseURL: string, token?: string, options?: RequestConfig);
+    getTokenPayload(): any;
+    tokenIsExpired(): boolean;
+    tokenIsValid(): boolean;
 }

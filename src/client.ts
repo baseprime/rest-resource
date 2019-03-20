@@ -102,4 +102,29 @@ export class JWTBearerClient extends DefaultClient {
         super(baseURL, options)
         this.token = token
     }
+
+    getTokenPayload(): any {
+        try {
+            let jwtPieces = this.token.split('.')
+            let payloadBase64 = jwtPieces[1]
+            let payloadBuffer = new Buffer(payloadBase64, 'base64')
+            return JSON.parse(payloadBuffer.toString())
+        } catch (e) {
+            return undefined
+        }
+    }
+
+    tokenIsExpired(): boolean {
+        try {
+            let payload = this.getTokenPayload()
+            let nowInSeconds = Math.floor(Date.now() / 1000)
+            return payload.exp < nowInSeconds
+        } catch (e) {
+            return true
+        }
+    }
+
+    tokenIsValid(): boolean {
+        return this.token && !this.tokenIsExpired()
+    }
 }
