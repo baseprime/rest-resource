@@ -489,7 +489,9 @@ export default class Resource {
                 }
             }
             catch (e) {
-                // This is one downside of using Webpack
+                // One of the downsides of using Webpack is that you can't strict compare from 
+                //  another module because the exported member will be transpiled and therefore will not
+                //  be the same address in memory. So we have a handy function to detect ValidationError
                 if (exceptions.ValidationError.isValidationError(e)) {
                     errs.push(e);
                 }

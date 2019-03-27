@@ -17,6 +17,7 @@ export class ValidationError extends Error {
         }
         else if (this.message && 'string' === typeof fieldOrArray) {
             this.message = `${fieldOrArray}: ${this.message}`;
+            this.field = fieldOrArray;
         }
     }
     /**
