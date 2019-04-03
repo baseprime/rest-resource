@@ -318,7 +318,7 @@ export default class Resource implements ResourceLike {
      * Get related class by key
      * @param key 
      */
-    static rel(key: string): typeof Resource {
+    static rel(key: string): ResourceClassLike {
         return this.related[key]
     }
 
@@ -464,7 +464,7 @@ export default class Resource implements ResourceLike {
                 // this._attributes is a list of IDs
                 value = relatedResource.id
             } else if(value instanceof Resource && !translateValueToPk) {
-                throw new exceptions.AttributeError(`Can't accept a Related Resource on field "${key}": try using Resource's primary key or assign a value of "${key}" on ${this.getConstructor().name}.related`)
+                throw new exceptions.AttributeError(`Can't accept a Related Resource on field "${key}": Value must be related Resource's primary key if there is an assigned value of "${key}" on ${this.getConstructor().name}.related`)
             }
 
             this.changes[key] = value

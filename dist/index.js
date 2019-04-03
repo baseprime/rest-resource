@@ -403,7 +403,7 @@ export default class Resource {
                 value = relatedResource.id;
             }
             else if (value instanceof Resource && !translateValueToPk) {
-                throw new exceptions.AttributeError(`Can't accept a Related Resource on field "${key}": try using Resource's primary key or assign a value of "${key}" on ${this.getConstructor().name}.related`);
+                throw new exceptions.AttributeError(`Can't accept a Related Resource on field "${key}": Value must be related Resource's primary key if there is an assigned value of "${key}" on ${this.getConstructor().name}.related`);
             }
             this.changes[key] = value;
         }

@@ -104,7 +104,7 @@ export default class Resource implements ResourceLike {
      * Get related class by key
      * @param key
      */
-    static rel(key: string): typeof Resource;
+    static rel(key: string): ResourceClassLike;
     static toResourceName(): string;
     static makeDefaultsObject(): any;
     /**
