@@ -1,9 +1,8 @@
 {
   "name": "rest-resource",
-  "version": "0.4.6",
+  "version": "0.4.7",
   "description": "Simplify your REST API resources, supports automatic caching",
   "main": "./dist/index.js",
-  "module": "./es/index.js",
   "types": "types",
   "scripts": {
     "test": "mocha -r ts-node/register ./tests/**/*.ts",
