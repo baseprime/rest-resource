@@ -2,7 +2,7 @@
     "compilerOptions": {
         "target": "es2015",
         "module": "es2015",
-        "outDir": "./dist",
+        "outDir": "./es",
         "strict": true,
         "strictNullChecks": false,
         "strictFunctionTypes": false,
