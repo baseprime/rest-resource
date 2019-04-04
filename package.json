@@ -1,6 +1,6 @@
 {
   "name": "rest-resource",
-  "version": "0.4.8",
+  "version": "0.4.9",
   "description": "Simplify your REST API resources, supports automatic caching",
   "main": "./dist/index.js",
   "types": "types",
@@ -9,8 +9,7 @@
     "build": "tsc --target es5 --module commonjs --outDir ./dist",
     "dev": "tsc --watch",
     "prettier": "./node_modules/prettier/bin-prettier.js --write ./src/**/*.ts ./src/*.ts",
-    "docs": "documentation build dist/index.js -f md",
-    "postinstall": "npm run build"
+    "docs": "documentation build dist/index.js -f md"
   },
   "repository": {
     "type": "git",

@@ -1,8 +1,8 @@
 {
     "compilerOptions": {
-        "target": "es2015",
-        "module": "es2015",
-        "outDir": "./es",
+        "target": "es5",
+        "module": "commonjs",
+        "outDir": "./dist",
         "strict": true,
         "strictNullChecks": false,
         "strictFunctionTypes": false,
