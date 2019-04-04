@@ -272,7 +272,7 @@ export default class Resource implements ResourceLike {
                 rids.forEach((rid, idx) => {
                     // Create a promise getting the details
                     const promise = RelatedCls.detail(rid).then((instance) => {
-                        assert(instance instanceof RelatedCls, `Related class detail() returned invalid instance on key ${this.name}.related.${resourceKey}: ${instance.getConstructor().name} (returned) !== ${RelatedCls.name} (related)`)
+                        assert(instance.getConstructor().name == RelatedCls.name, `Related class detail() returned invalid instance on key ${this.name}.related.${resourceKey}: ${instance.getConstructor().name} (returned) !== ${RelatedCls.name} (related)`)
                         
                         if (isMany) {
                             // If it's a list, make sure the array property exists before pushing it onto the list
@@ -407,7 +407,7 @@ export default class Resource implements ResourceLike {
             try {
                 resolve(this.get(key))
             } catch (e) {
-                if (e instanceof exceptions.AttributeError) {
+                if (exceptions.AttributeError.isInstance(e)) {
                     const pieces = key.split('.')
                     const thisKey = String(pieces.shift())
 
@@ -563,7 +563,7 @@ export default class Resource implements ResourceLike {
                 // One of the downsides of using Webpack is that you can't strict compare from 
                 //  another module because the exported member will be transpiled and therefore will not
                 //  be the same address in memory. So we have a handy function to detect ValidationError
-                if(exceptions.ValidationError.isValidationError(e)) {
+                if(exceptions.ValidationError.isInstance(e)) {
                     errs.push(e)
                 } else {
                     throw e

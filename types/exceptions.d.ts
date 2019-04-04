@@ -1,10 +1,14 @@
 export declare class ImproperlyConfiguredError extends Error {
+    name: string;
 }
 export declare class CacheError extends Error {
+    name: string;
 }
 export declare class AttributeError extends TypeError {
+    name: string;
 }
 export declare class ValidationError extends Error {
+    name: string;
     field: string;
     constructor(fieldOrArray: string | Error[], message?: string);
     /**
