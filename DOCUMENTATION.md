@@ -1,145 +1,3 @@
-# Documentation
-
-## Resource class
-
-```typescript
-static endpoint: string;
-static cacheMaxAge: number;
-static data: any;
-static _cache: any;
-static client: DefaultClient;
-static queued: any;
-static uniqueKey: string;
-static defaults: any;
-static related: ResourceClassDict;
-_attributes: any;
-attributes: any;
-related: ResourceDict;
-changes: any;
-constructor(attributes?: any, options?: any);
-/**
- * Cache getter
- */
-static readonly cache: any;
-/**
- * Cache a resource onto this class' cache for cacheMaxAge seconds
- * @param resource
- * @param replace
- */
-static cacheResource(resource: ResourceLike, replace?: boolean): void;
-/**
- * Replace attributes on a cached resource onto this class' cache for cacheMaxAge seconds (useful for bubbling up changes to states that may be already rendered)
- * @param resource
- */
-static replaceCache(resource: ResourceLike): void;
-/**
- * Get time delta in seconds of cache expiry
- */
-static cacheDeltaSeconds(): number;
-/**
- * Get a cached resource by ID
- * @param id
- */
-static getCached(id: string): CachedResource | undefined;
-static getCachedAll(): CachedResource[];
-/**
- * Get HTTP client for a resource Class
- * This is meant to be overridden if we want to define a client at any time
- */
-static getClient(): DefaultClient;
-/**
- * Set HTTP client
- * @param client instanceof Client
- */
-static setClient(client: DefaultClient): void;
-/**
- * Get list route path (eg. /users) to be used with HTTP requests and allow a querystring object
- * @param query Querystring
- */
-static getListRoutePath(query?: any): string;
-/**
- * Get detail route path (eg. /users/123) to be used with HTTP requests
- * @param id
- * @param query Querystring
- */
-static getDetailRoutePath(id: string, query?: any): string;
-/**
- * HTTP Get of resource's list route--returns a promise
- * @param options HTTP Request Options
- * @returns Promise
- */
-static list<T extends ResourceLike = ResourceLike>(options?: RequestConfig): Promise<ResourceLike<T>[]>;
-static detail<T extends ResourceLike = ResourceLike>(id: string, options?: RequestConfig): Promise<T>;
-static getDetailRoute<T extends ResourceLike = ResourceLike>(id: string, options?: RequestConfig): Promise<ResourceResponse<ResourceLike<T>>>;
-static getListRoute<T extends ResourceLike = ResourceLike>(options?: RequestConfig): Promise<ResourceResponse<ResourceLike<T>>>;
-static extractObjectsFromResponse<T extends ResourceLike = ResourceLike>(result: any): ResourceResponse<T>;
-static getRelated(resource: ResourceLike, { deep, relatedKeys, relatedSubKeys }?: GetRelatedDict): Promise<Resource>;
-static getRelatedDeep(resource: ResourceLike, options?: GetRelatedDict): Promise<Resource>;
-/**
- * Get related class by key
- * @param key
- */
-static rel(key: string): typeof Resource;
-static toResourceName(): string;
-/**
- * Set an attribute of Resource instance
- * @param key
- * @param value
- */
-set(key: string, value: any): this;
-/**
- * Get an attribute of Resource instance
- * You can use dot notation here -- eg. resource.get('user.username')
- * @param key
- */
-get(key?: string): any;
-/**
- * Persist getting an attribute and get related keys until a key can be found (or not found)
- * TypeError in get() will be thrown, we're just doing the getRelated() work for you...
- * @param key
- */
-getAsync(key: string): Promise<any>;
-/**
- * Mutate key/value on this.attributes[key] into an internal value
- * Usually this is just setting a key/value but we want to be able to accept
- * anything -- another Resource instance for example. If a Resource instance is
- * provided, set the this.related[key] as the new instance, then set the
- * this.attributes[key] field as just the primary key of the related Resource instance
- * @param key
- * @param value
- */
-toInternalValue(key: string, value: any): any;
-/**
- * Like toInternalValue except the other way around
- * @param key
- */
-fromInternalValue(key: string): any;
-/**
- * Like calling instance.constructor but safer:
- * changing objects down the line won't creep up the prototype chain and end up on native global objects like Function or Object
- */
-getConstructor(): ResourceCtorLike;
-getRelated(options?: GetRelatedDict): Promise<Resource>;
-getRelatedDeep(options?: GetRelatedDict): Promise<Resource>;
-/**
- * Get related class by key
- * @param key
- */
-rel(key: string): typeof Resource;
-/**
- * Saves the instance -- sends changes as a PATCH or sends whole object as a POST if it's new
- */
-save(): Promise<ResourceLike>;
-update(): Promise<Resource>;
-hasRelatedDefined(relatedKey: string): boolean;
-cache(replace?: boolean): ResourceLike;
-getCached(): CachedResource | undefined;
-id: string;
-toString(): string;
-toResourceName(): string;
-toJSON(): any;
-```
-
 ### Table of Contents
 
 -   [Resource][1]
@@ -151,40 +9,58 @@ toJSON(): any;
         -   [Parameters][7]
     -   [toInternalValue][8]
         -   [Parameters][9]
-    -   [fromInternalValue][10]
+    -   [shouldTranslateValueToPrimaryKey][10]
         -   [Parameters][11]
     -   [getConstructor][12]
     -   [rel][13]
         -   [Parameters][14]
     -   [save][15]
-    -   [cacheResource][16]
-        -   [Parameters][17]
-    -   [replaceCache][18]
+        -   [Parameters][16]
+    -   [validate][17]
+    -   [cacheResource][18]
         -   [Parameters][19]
-    -   [cacheDeltaSeconds][20]
-    -   [getCached][21]
-        -   [Parameters][22]
-    -   [getClient][23]
-    -   [setClient][24]
-        -   [Parameters][25]
-    -   [getListRoutePath][26]
-        -   [Parameters][27]
-    -   [getDetailRoutePath][28]
-        -   [Parameters][29]
-    -   [list][30]
-        -   [Parameters][31]
-    -   [rel][32]
-        -   [Parameters][33]
+    -   [replaceCache][20]
+        -   [Parameters][21]
+    -   [cacheDeltaSeconds][22]
+    -   [getCached][23]
+        -   [Parameters][24]
+    -   [getListRoutePath][25]
+        -   [Parameters][26]
+    -   [getDetailRoutePath][27]
+        -   [Parameters][28]
+    -   [list][29]
+        -   [Parameters][30]
+    -   [rel][31]
+        -   [Parameters][32]
+-   [get][33]
 -   [get][34]
--   [Error][35]
--   [Error][36]
--   [TypeError][37]
+-   [set][35]
+    -   [Parameters][36]
+-   [DefaultClient][37]
+-   [DefaultClient][38]
+-   [camelize][39]
+    -   [Parameters][40]
+-   [uuidWeak][41]
+-   [Error][42]
+-   [BaseError][43]
+    -   [isInstance][44]
+        -   [Parameters][45]
+-   [BaseError][46]
+    -   [isInstance][47]
+        -   [Parameters][48]
+-   [BaseError][49]
+    -   [isInstance][50]
+        -   [Parameters][51]
+-   [BaseError][52]
+    -   [isInstance][53]
+        -   [Parameters][54]
 
 ## Resource
 
 ### set
 
-Set an attribute of Resource instance
+Set an attribute of Resource instance and apply getters/setters
+Do not use Dot Notation here
 
 #### Parameters
 
@@ -211,7 +87,7 @@ TypeError in get() will be thrown, we're just doing the getRelated() work for yo
 
 ### toInternalValue
 
-Mutate key/value on this.attributes[key] into an internal value
+Translate this.attributes[key] into an internal value
 Usually this is just setting a key/value but we want to be able to accept
 anything -- another Resource instance for example. If a Resource instance is
 provided, set the this.related[key] as the new instance, then set the
@@ -222,13 +98,15 @@ this.attributes[key] field as just the primary key of the related Resource insta
 -   `key`  
 -   `value`  
 
-### fromInternalValue
+### shouldTranslateValueToPrimaryKey
 
-Like toInternalValue except the other way around
+Used to check if an incoming attribute (key)'s value should be translated from
+a Related Resource (defined in Resource.related) to a primary key (the ID)
 
 #### Parameters
 
 -   `key`  
+-   `value`  
 
 ### getConstructor
 
@@ -246,6 +124,16 @@ Get related class by key
 ### save
 
 Saves the instance -- sends changes as a PATCH or sends whole object as a POST if it's new
+
+#### Parameters
+
+-   `options`  
+
+### validate
+
+Validate attributes -- returns empty if no errors exist -- you should throw new errors here
+
+Returns **any** `Error[]` Array of Exceptions
 
 ### cacheResource
 
@@ -275,19 +163,6 @@ Get a cached resource by ID
 #### Parameters
 
 -   `id`  
-
-### getClient
-
-Get HTTP client for a resource Class
-This is meant to be overridden if we want to define a client at any time
-
-### setClient
-
-Set HTTP client
-
-#### Parameters
-
--   `client`  instanceof Client
 
 ### getListRoutePath
 
@@ -328,11 +203,90 @@ Get related class by key
 
 Cache getter
 
-## Error
+## get
+
+Get HTTP client for a resource Class
+This is meant to be overridden if we want to define a client at any time
+
+## set
+
+Set HTTP client
+
+### Parameters
+
+-   `client`  instanceof Client
+
+## DefaultClient
+
+## DefaultClient
+
+## camelize
+
+Takes an input and camelizes it
+
+### Parameters
+
+-   `str`  
+
+## uuidWeak
+
+This is a very quick and primitive implementation of RFC 4122 UUID
+Creates a basic variant UUID
+Warning: Shouldn't be used of N >> 1e9
 
 ## Error
 
-## TypeError
+## BaseError
+
+### isInstance
+
+This exists because Webpack creates a whole new copy of this class, except when you're
+  comparing types in memory (eg. exception instanceof ValidationError) where exception is
+  a transpiled instance of this class, and ValidationError is imported via non-transpiled
+  methods (TypeScript). We need a way to check if either are instanceof ValidationError
+
+#### Parameters
+
+-   `exception`  
+
+## BaseError
+
+### isInstance
+
+This exists because Webpack creates a whole new copy of this class, except when you're
+  comparing types in memory (eg. exception instanceof ValidationError) where exception is
+  a transpiled instance of this class, and ValidationError is imported via non-transpiled
+  methods (TypeScript). We need a way to check if either are instanceof ValidationError
+
+#### Parameters
+
+-   `exception`  
+
+## BaseError
+
+### isInstance
+
+This exists because Webpack creates a whole new copy of this class, except when you're
+  comparing types in memory (eg. exception instanceof ValidationError) where exception is
+  a transpiled instance of this class, and ValidationError is imported via non-transpiled
+  methods (TypeScript). We need a way to check if either are instanceof ValidationError
+
+#### Parameters
+
+-   `exception`  
+
+## BaseError
+
+### isInstance
+
+This exists because Webpack creates a whole new copy of this class, except when you're
+  comparing types in memory (eg. exception instanceof ValidationError) where exception is
+  a transpiled instance of this class, and ValidationError is imported via non-transpiled
+  methods (TypeScript). We need a way to check if either are instanceof ValidationError
+
+#### Parameters
+
+-   `exception`  
 
 [1]: #resource
 
@@ -352,7 +306,7 @@ Cache getter
 
 [9]: #parameters-3
 
-[10]: #frominternalvalue
+[10]: #shouldtranslatevaluetoprimarykey
 
 [11]: #parameters-4
 
@@ -364,46 +318,80 @@ Cache getter
 
 [15]: #save
 
-[16]: #cacheresource
+[16]: #parameters-6
 
-[17]: #parameters-6
+[17]: #validate
 
-[18]: #replacecache
+[18]: #cacheresource
 
 [19]: #parameters-7
 
-[20]: #cachedeltaseconds
+[20]: #replacecache
 
-[21]: #getcached
+[21]: #parameters-8
 
-[22]: #parameters-8
+[22]: #cachedeltaseconds
 
-[23]: #getclient
+[23]: #getcached
 
-[24]: #setclient
+[24]: #parameters-9
 
-[25]: #parameters-9
+[25]: #getlistroutepath
 
-[26]: #getlistroutepath
+[26]: #parameters-10
 
-[27]: #parameters-10
+[27]: #getdetailroutepath
 
-[28]: #getdetailroutepath
+[28]: #parameters-11
 
-[29]: #parameters-11
+[29]: #list
 
-[30]: #list
+[30]: #parameters-12
 
-[31]: #parameters-12
+[31]: #rel-1
 
-[32]: #rel-1
+[32]: #parameters-13
 
-[33]: #parameters-13
+[33]: #get-1
 
-[34]: #get-1
+[34]: #get-2
 
-[35]: #error
+[35]: #set-1
 
-[36]: #error-1
+[36]: #parameters-14
 
-[37]: #typeerror
+[37]: #defaultclient
+
+[38]: #defaultclient-1
+
+[39]: #camelize
+
+[40]: #parameters-15
+
+[41]: #uuidweak
+
+[42]: #error
+
+[43]: #baseerror
+
+[44]: #isinstance
+
+[45]: #parameters-16
+
+[46]: #baseerror-1
+
+[47]: #isinstance-1
+
+[48]: #parameters-17
+
+[49]: #baseerror-2
+
+[50]: #isinstance-2
+
+[51]: #parameters-18
+
+[52]: #baseerror-3
+
+[53]: #isinstance-3
+
+[54]: #parameters-19

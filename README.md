@@ -19,7 +19,7 @@ Like any other architectural style, REST also does have it’s own [6 guiding co
 npm install rest-resource
 ```
 
-### Example
+### Example (assuming Node v12.0.0)
 Given the URIs:
 
 ```

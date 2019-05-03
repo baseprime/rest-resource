@@ -35,12 +35,13 @@ class TodoResource extends BaseResource {
 }
 
 TodoResource.list()
-    .then((response) => {
-        response.resources.forEach(async (resource) => {
-            await resource.getRelated()
-            let title = resource.get('title')
-            let author = resource.get('userId.name')
-            let doneText = resource.get('completed') ? 'x' : '-'
-            //console.log(`${doneText}\t${title}\n\t${author}\n\n`)
-        })
+    .then(async (response) => {
+        let promises = response.resources.map((resource) => resource.getRelatedDeep())
+        await Promise.all(promises)
+        return response.resources
+    }).then(async (resources) => {
+        let firstTodo = resources[0]
+        let user = firstTodo.get('userId')
+        await UserResource.detail(user.id)
+        console.log(`Didn't need to GET /users/${user.id} twice!`)
     })

@@ -28,10 +28,9 @@ class TodoResource extends BaseResource {
 TodoResource.list()
     .then((response) => {
         response.resources.forEach(async (resource) => {
-            await resource.getRelated()
-            let title = resource.get('title')
-            let author = resource.get('userId.name')
-            let doneText = resource.get('completed') ? 'x' : '-'
+            let title = await resource.getAsync('title')
+            let author = await resource.getAsync('userId.name')
+            let doneText = await resource.getAsync('completed') ? 'x' : '-'
             console.log(`${doneText}\t${title}\n\t${author}\n\n`)
         })
     })
