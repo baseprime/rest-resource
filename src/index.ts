@@ -255,7 +255,7 @@ export default class Resource implements ResourceLike {
 
     static getRelated(resource: ResourceLike, { deep = false, relatedKeys = undefined, relatedSubKeys = undefined }: GetRelatedDict = {}): Promise<Resource> {
         const promises: Promise<ResourceDict>[] = []
-        for (var resourceKey in this.related) {
+        for (const resourceKey in this.related) {
             // Allow specification of keys to related resources they want to get
             if (typeof relatedKeys !== 'undefined' && Array.isArray(relatedKeys) && !~relatedKeys.indexOf(resourceKey)) {
                 continue
