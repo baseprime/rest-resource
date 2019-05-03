@@ -214,11 +214,11 @@ export default class Resource implements ResourceLike {
     static detail<T extends ResourceLike = ResourceLike>(id: string, options: RequestConfig = {}): Promise<T> {
         // Check cache first
         const cached: CachedResource<ResourceLike<T>> = this.getCached(String(id))
-        return new Promise((resolve) => {
+        return new Promise((resolve, reject) => {
             // Do we want to use cache?
             if (!cached || options.useCache === false) {
                 // Set a hash key for the queue (keeps it organized by type+id)
-                const queueHashKey = (new Buffer(`${this.name}:${id}`)).toString('base64')
+                const queueHashKey = Buffer.from(`${this.uuid}:${id}`).toString('base64')
                 // If we want to use cache and cache wasn't found...
                 if (!cached && !this.queued[queueHashKey]) {
                     // We want to use cached and a resource with this ID hasn't been requested yet
@@ -232,6 +232,9 @@ export default class Resource implements ResourceLike {
                         this.queued[queueHashKey].forEach((deferred: (resource: ResourceLike<T>) => any) => {
                             deferred(<T>correctResource)
                         })
+                    }).catch((e) => {
+                        reject(e)
+                    }).finally(() => {
                         // Finally, remove the fact that we've queued any requests with this ID
                         delete this.queued[queueHashKey]
                     })
@@ -252,7 +255,7 @@ export default class Resource implements ResourceLike {
 
     static getRelated(resource: ResourceLike, { deep = false, relatedKeys = undefined, relatedSubKeys = undefined }: GetRelatedDict = {}): Promise<Resource> {
         const promises: Promise<ResourceDict>[] = []
-        for (const resourceKey in this.related) {
+        for (var resourceKey in this.related) {
             // Allow specification of keys to related resources they want to get
             if (typeof relatedKeys !== 'undefined' && Array.isArray(relatedKeys) && !~relatedKeys.indexOf(resourceKey)) {
                 continue

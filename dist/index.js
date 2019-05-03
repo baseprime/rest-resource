@@ -173,11 +173,11 @@ var Resource = /** @class */ (function () {
         if (options === void 0) { options = {}; }
         // Check cache first
         var cached = this.getCached(String(id));
-        return new Promise(function (resolve) {
+        return new Promise(function (resolve, reject) {
             // Do we want to use cache?
             if (!cached || options.useCache === false) {
                 // Set a hash key for the queue (keeps it organized by type+id)
-                var queueHashKey_1 = (new Buffer(_this.name + ":" + id)).toString('base64');
+                var queueHashKey_1 = Buffer.from(_this.uuid + ":" + id).toString('base64');
                 // If we want to use cache and cache wasn't found...
                 if (!cached && !_this.queued[queueHashKey_1]) {
                     // We want to use cached and a resource with this ID hasn't been requested yet
@@ -191,6 +191,9 @@ var Resource = /** @class */ (function () {
                         _this.queued[queueHashKey_1].forEach(function (deferred) {
                             deferred(correctResource);
                         });
+                    }).catch(function (e) {
+                        reject(e);
+                    }).finally(function () {
                         // Finally, remove the fact that we've queued any requests with this ID
                         delete _this.queued[queueHashKey_1];
                     });
@@ -214,7 +217,7 @@ var Resource = /** @class */ (function () {
         var _this = this;
         var _b = _a === void 0 ? {} : _a, _c = _b.deep, deep = _c === void 0 ? false : _c, _d = _b.relatedKeys, relatedKeys = _d === void 0 ? undefined : _d, _e = _b.relatedSubKeys, relatedSubKeys = _e === void 0 ? undefined : _e;
         var promises = [];
-        var _loop_1 = function (resourceKey) {
+        var _loop_1 = function () {
             // Allow specification of keys to related resources they want to get
             if (typeof relatedKeys !== 'undefined' && Array.isArray(relatedKeys) && !~relatedKeys.indexOf(resourceKey)) {
                 return "continue";
@@ -269,7 +272,7 @@ var Resource = /** @class */ (function () {
         };
         var this_1 = this;
         for (var resourceKey in this.related) {
-            _loop_1(resourceKey);
+            _loop_1();
         }
         // Run all promises then return related resources
         return Promise.all(promises).then(function () { return resource; });
