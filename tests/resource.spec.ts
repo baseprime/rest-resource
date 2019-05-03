@@ -4,7 +4,7 @@ import { DefaultClient } from '../src/client'
 
 class BaseTestingResource extends Resource {
     static get client() {
-        return new DefaultClient('https://jsonplaceholder.typicode.com')
+        return new DefaultClient('http://localhost:3939')
     }
 }
 
