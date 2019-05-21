@@ -3,14 +3,25 @@ Object.defineProperty(exports, "__esModule", { value: true });
 var tslib_1 = require("tslib");
 var axios_1 = tslib_1.__importDefault(require("axios"));
 tslib_1.__exportStar(require("axios"), exports);
-var DefaultClient = /** @class */ (function () {
-    function DefaultClient(baseURL, config) {
+var BaseClient = /** @class */ (function () {
+    function BaseClient(baseURL, config) {
         if (config === void 0) { config = {}; }
         var opts = Object.assign({ baseURL: baseURL }, config);
         this.hostname = opts.baseURL;
         this.axios = axios_1.default.create(opts);
     }
-    DefaultClient.prototype.negotiateContent = function (ResourceClass) {
+    BaseClient.extend = function (classProps) {
+        // @todo Figure out typings here -- this works perfectly but typings are not happy
+        // @ts-ignore
+        return Object.assign(/** @class */ (function (_super) {
+            tslib_1.__extends(class_1, _super);
+            function class_1() {
+                return _super !== null && _super.apply(this, arguments) || this;
+            }
+            return class_1;
+        }(this)), classProps);
+    };
+    BaseClient.prototype.negotiateContent = function (ResourceClass) {
         // Should always return a function
         return function (response) {
             var objects = [];
@@ -30,58 +41,66 @@ var DefaultClient = /** @class */ (function () {
             };
         };
     };
-    DefaultClient.prototype.list = function (ResourceClass, options) {
+    BaseClient.prototype.list = function (ResourceClass, options) {
         if (options === void 0) { options = {}; }
         return this.get(ResourceClass.getListRoutePath(options.query)).then(this.negotiateContent(ResourceClass));
     };
-    DefaultClient.prototype.detail = function (ResourceClass, id, options) {
+    BaseClient.prototype.detail = function (ResourceClass, id, options) {
         if (options === void 0) { options = {}; }
         return this.get(ResourceClass.getDetailRoutePath(id, options.query)).then(this.negotiateContent(ResourceClass));
     };
-    DefaultClient.prototype.get = function (path, options) {
+    BaseClient.prototype.get = function (path, options) {
         var _this = this;
         if (options === void 0) { options = {}; }
         return this.axios.get(path, options).catch(function (e) { return _this.onError(e); });
     };
-    DefaultClient.prototype.put = function (path, body, options) {
+    BaseClient.prototype.put = function (path, body, options) {
         var _this = this;
         if (body === void 0) { body = {}; }
         if (options === void 0) { options = {}; }
         return this.axios.put(path, body, options).catch(function (e) { return _this.onError(e); });
     };
-    DefaultClient.prototype.post = function (path, body, options) {
+    BaseClient.prototype.post = function (path, body, options) {
         var _this = this;
         if (body === void 0) { body = {}; }
         if (options === void 0) { options = {}; }
         return this.axios.post(path, body, options).catch(function (e) { return _this.onError(e); });
     };
-    DefaultClient.prototype.patch = function (path, body, options) {
+    BaseClient.prototype.patch = function (path, body, options) {
         var _this = this;
         if (body === void 0) { body = {}; }
         if (options === void 0) { options = {}; }
         return this.axios.patch(path, body, options).catch(function (e) { return _this.onError(e); });
     };
-    DefaultClient.prototype.delete = function (path, options) {
+    BaseClient.prototype.delete = function (path, options) {
         var _this = this;
         if (options === void 0) { options = {}; }
         return this.axios.delete(path, options).catch(function (e) { return _this.onError(e); });
     };
-    DefaultClient.prototype.head = function (path, options) {
+    BaseClient.prototype.head = function (path, options) {
         var _this = this;
         if (options === void 0) { options = {}; }
         return this.axios.head(path, options).catch(function (e) { return _this.onError(e); });
     };
-    DefaultClient.prototype.options = function (path, options) {
+    BaseClient.prototype.options = function (path, options) {
         var _this = this;
         if (options === void 0) { options = {}; }
         // @ts-ignore -- Axios forgot to add options to AxiosInstance interface
         return this.axios.options(path, options).catch(function (e) { return _this.onError(e); });
     };
-    DefaultClient.prototype.onError = function (exception) {
+    BaseClient.prototype.onError = function (exception) {
         throw exception;
     };
-    return DefaultClient;
+    return BaseClient;
 }());
+exports.BaseClient = BaseClient;
+var DefaultClient = /** @class */ (function (_super) {
+    tslib_1.__extends(DefaultClient, _super);
+    function DefaultClient() {
+        return _super !== null && _super.apply(this, arguments) || this;
+    }
+    return DefaultClient;
+}(BaseClient));
 exports.DefaultClient = DefaultClient;
 var JWTBearerClient = /** @class */ (function (_super) {
     tslib_1.__extends(JWTBearerClient, _super);
@@ -123,6 +142,6 @@ var JWTBearerClient = /** @class */ (function (_super) {
         return this.token && !this.tokenIsExpired();
     };
     return JWTBearerClient;
-}(DefaultClient));
+}(BaseClient));
 exports.JWTBearerClient = JWTBearerClient;
 //# sourceMappingURL=client.js.map

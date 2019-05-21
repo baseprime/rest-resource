@@ -1,5 +1,6 @@
 "use strict";
 Object.defineProperty(exports, "__esModule", { value: true });
+var tslib_1 = require("tslib");
 var querystring_1 = require("querystring");
 var client_1 = require("./client");
 var util_1 = require("./util");
@@ -8,9 +9,9 @@ var assert = require('assert');
 var isEqual = require('lodash').isEqual;
 var Resource = /** @class */ (function () {
     function Resource(attributes, options) {
+        var _this = this;
         if (attributes === void 0) { attributes = {}; }
         if (options === void 0) { options = {}; }
-        var _this = this;
         this._attributes = {};
         this.attributes = {};
         this.related = {};
@@ -303,6 +304,17 @@ var Resource = /** @class */ (function () {
             }
         }
         return defaults;
+    };
+    Resource.extend = function (classProps) {
+        // @todo Figure out typings here -- this works perfectly but typings are not happy
+        // @ts-ignore
+        return Object.assign(/** @class */ (function (_super) {
+            tslib_1.__extends(class_1, _super);
+            function class_1() {
+                return _super !== null && _super.apply(this, arguments) || this;
+            }
+            return class_1;
+        }(this)), classProps);
     };
     /**
      * Set an attribute of Resource instance and apply getters/setters
