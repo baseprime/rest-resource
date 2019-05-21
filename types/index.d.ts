@@ -107,6 +107,7 @@ export default class Resource implements ResourceLike {
     static rel(key: string): ResourceClassLike;
     static toResourceName(): string;
     static makeDefaultsObject(): any;
+    static extend<T, U>(this: U, classProps: T): U & T;
     /**
      * Set an attribute of Resource instance and apply getters/setters
      * Do not use Dot Notation here

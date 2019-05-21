@@ -342,6 +342,12 @@ export default class Resource implements ResourceLike {
         return defaults
     }
 
+    static extend<T, U>(this: U, classProps: T): U & T {
+        // @todo Figure out typings here -- this works perfectly but typings are not happy
+        // @ts-ignore
+        return Object.assign(class extends this {}, classProps)
+    }
+
     /**
      * Set an attribute of Resource instance and apply getters/setters
      * Do not use Dot Notation here

@@ -14,10 +14,11 @@ export interface ResourceResponse<T extends ResourceLike = ResourceLike> {
     perPage?: () => number;
 }
 export declare type ExtractorFunction<T extends ResourceLike = ResourceLike> = (result: ResourceResponse['response']) => ResourceResponse<T>;
-export declare class DefaultClient {
+export declare class BaseClient {
     axios: AxiosInstance;
     hostname: string;
     constructor(baseURL: string, config?: AxiosRequestConfig);
+    static extend<T, U>(this: U, classProps: T): U & T;
     negotiateContent(ResourceClass: ResourceClassLike): ExtractorFunction;
     list(ResourceClass: ResourceClassLike, options?: RequestConfig): Promise<ResourceResponse<ResourceLike>>;
     detail(ResourceClass: ResourceClassLike, id: string, options?: RequestConfig): Promise<ResourceResponse<import(".").default>>;
@@ -30,7 +31,9 @@ export declare class DefaultClient {
     options(path: string, options?: AxiosRequestConfig): any;
     onError(exception: Error | AxiosError): any;
 }
-export declare class JWTBearerClient extends DefaultClient {
+export declare class DefaultClient extends BaseClient {
+}
+export declare class JWTBearerClient extends BaseClient {
     token: string;
     constructor(baseURL: string, token?: string, options?: RequestConfig);
     getTokenPayload(): any;

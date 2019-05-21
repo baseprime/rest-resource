@@ -1,29 +1,20 @@
 const Resource = require('../dist').default
 const Client = require('../dist/client').DefaultClient
 
-class BaseResource extends Resource {
-    static get client() {
-        return new Client('https://jsonplaceholder.typicode.com')
-    }
-}
+const BaseResource = Resource.extend({
+    client: new Client('https://jsonplaceholder.typicode.com')
+})
 
-class UserResource extends BaseResource {
-    static get endpoint() {
-        return '/users'
-    }
-}
+const UserResource = BaseResource.extend({
+    endpoint: '/users'
+})
 
-class TodoResource extends BaseResource {
-    static get endpoint() {
-        return '/todos'
+const TodoResource = BaseResource.extend({
+    endpoint: '/todos',
+    related: {
+        userId: UserResource
     }
-
-    static get related() {
-        return {
-            userId: UserResource
-        }
-    }
-}
+})
 
 TodoResource.list()
     .then((response) => {

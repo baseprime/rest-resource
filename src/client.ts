@@ -19,7 +19,7 @@ export interface ResourceResponse<T extends ResourceLike = ResourceLike> {
 
 export type ExtractorFunction<T extends ResourceLike = ResourceLike> = (result: ResourceResponse['response']) => ResourceResponse<T>
 
-export class DefaultClient {
+export class BaseClient {
     axios: AxiosInstance
     hostname: string
 
@@ -27,6 +27,12 @@ export class DefaultClient {
         let opts = Object.assign({ baseURL }, config)
         this.hostname = opts.baseURL
         this.axios = axios.create(opts)
+    }
+
+    static extend<T, U>(this: U, classProps: T): U & T {
+        // @todo Figure out typings here -- this works perfectly but typings are not happy
+        // @ts-ignore
+        return Object.assign(class extends this {}, classProps)
     }
 
     negotiateContent(ResourceClass: ResourceClassLike): ExtractorFunction {
@@ -91,7 +97,9 @@ export class DefaultClient {
     }
 }
 
-export class JWTBearerClient extends DefaultClient {
+export class DefaultClient extends BaseClient {}
+
+export class JWTBearerClient extends BaseClient {
     token: string
     // This is just a basic client except we're including a token in the requests
     constructor(baseURL: string, token: string = '', options: RequestConfig = {}) {
