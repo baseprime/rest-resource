@@ -1,11 +1,11 @@
-import { ResourceLike, ResourceClassLike } from './index';
+import Resource from './index';
 import { AxiosPromise, AxiosRequestConfig, AxiosResponse, AxiosError, AxiosInstance } from 'axios';
 export * from 'axios';
 export interface RequestConfig extends AxiosRequestConfig {
     useCache?: boolean;
     query?: any;
 }
-export interface ResourceResponse<T extends ResourceLike = ResourceLike> {
+export interface ResourceResponse<T extends Resource = Resource> {
     response: AxiosResponse;
     resources: T[];
     count?: () => number;
@@ -13,15 +13,15 @@ export interface ResourceResponse<T extends ResourceLike = ResourceLike> {
     currentPage?: () => number;
     perPage?: () => number;
 }
-export declare type ExtractorFunction<T extends ResourceLike = ResourceLike> = (result: ResourceResponse['response']) => ResourceResponse<T>;
+export declare type ExtractorFunction<T extends Resource = Resource> = (result: ResourceResponse['response']) => ResourceResponse<T>;
 export declare class BaseClient {
     axios: AxiosInstance;
     hostname: string;
     constructor(baseURL: string, config?: AxiosRequestConfig);
     static extend<T, U>(this: U, classProps: T): U & T;
-    negotiateContent(ResourceClass: ResourceClassLike): ExtractorFunction;
-    list(ResourceClass: ResourceClassLike, options?: RequestConfig): Promise<ResourceResponse<ResourceLike>>;
-    detail(ResourceClass: ResourceClassLike, id: string, options?: RequestConfig): Promise<ResourceResponse<import(".").default>>;
+    negotiateContent(ResourceClass: typeof Resource): ExtractorFunction;
+    list(ResourceClass: typeof Resource, options?: RequestConfig): Promise<ResourceResponse<Resource>>;
+    detail(ResourceClass: typeof Resource, id: string, options?: RequestConfig): Promise<ResourceResponse<Resource>>;
     get(path: string, options?: any): AxiosPromise<any>;
     put(path: string, body?: any, options?: AxiosRequestConfig): Promise<any>;
     post(path: string, body?: any, options?: AxiosRequestConfig): Promise<any>;

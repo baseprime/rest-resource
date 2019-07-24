@@ -1,4 +1,4 @@
-import { ResourceLike, ResourceClassLike } from './index'
+import Resource from './index'
 import axios, { AxiosPromise, AxiosRequestConfig, AxiosResponse, AxiosError, AxiosInstance } from 'axios'
 
 export * from 'axios'
@@ -8,16 +8,16 @@ export interface RequestConfig extends AxiosRequestConfig {
     query?: any
 }
 
-export interface ResourceResponse<T extends ResourceLike = ResourceLike> {
-    response: AxiosResponse
-    resources: T[],
+export interface ResourceResponse<T extends Resource = Resource> {
+    response: AxiosResponse<T>
+    resources: T[]
     count?: () => number
     pages?: () => number
     currentPage?: () => number
     perPage?: () => number
 }
 
-export type ExtractorFunction<T extends ResourceLike = ResourceLike> = (result: ResourceResponse['response']) => ResourceResponse<T>
+export type ExtractorFunction<T extends Resource = Resource> = (result: ResourceResponse['response']) => ResourceResponse<T>
 
 export class BaseClient {
     axios: AxiosInstance
@@ -35,14 +35,14 @@ export class BaseClient {
         return Object.assign(class extends this {}, classProps)
     }
 
-    negotiateContent(ResourceClass: ResourceClassLike): ExtractorFunction {
+    negotiateContent<T extends typeof Resource = typeof Resource>(ResourceClass: T): ExtractorFunction<InstanceType<T>> {
         // Should always return a function
-        return (response: ResourceResponse['response']) => {
-            let objects: ResourceLike[] = []
-            if(Array.isArray(response.data)) {
-                response.data.forEach((attributes) => objects.push(new ResourceClass(attributes)))
+        return (response: ResourceResponse<InstanceType<T>>['response']) => {
+            let objects: InstanceType<T>[] = []
+            if (Array.isArray(response.data)) {
+                response.data.forEach((attributes) => objects.push(new ResourceClass(attributes) as InstanceType<T>))
             } else {
-                objects.push(new ResourceClass(response.data))
+                objects.push(new ResourceClass(response.data) as InstanceType<T>)
             }
 
             return {
@@ -52,15 +52,15 @@ export class BaseClient {
                 pages: () => Math.ceil(response.headers['Pagination-Count'] / response.headers['Pagination-Limit']),
                 currentPage: () => response.headers['Pagination-Page'],
                 perPage: () => response.headers['Pagination-Limit'],
-            } as ResourceResponse<ResourceLike>
+            } as ResourceResponse<InstanceType<T>>
         }
     }
 
-    list(ResourceClass: ResourceClassLike, options: RequestConfig = {}): Promise<ResourceResponse<ResourceLike>> {
+    list<T extends typeof Resource = typeof Resource>(ResourceClass: T, options: RequestConfig = {}): Promise<ResourceResponse<InstanceType<T>>> {
         return this.get(ResourceClass.getListRoutePath(options.query)).then(this.negotiateContent(ResourceClass))
     }
 
-    detail(ResourceClass: ResourceClassLike, id: string, options: RequestConfig = {}) {
+    detail<T extends typeof Resource = typeof Resource>(ResourceClass: T, id: string, options: RequestConfig = {}) {
         return this.get(ResourceClass.getDetailRoutePath(id, options.query)).then(this.negotiateContent(ResourceClass))
     }
 
@@ -103,9 +103,12 @@ export class JWTBearerClient extends BaseClient {
     token: string
     // This is just a basic client except we're including a token in the requests
     constructor(baseURL: string, token: string = '', options: RequestConfig = {}) {
-        let headers = Object.assign({
-            'Authorization': `Bearer ${token}`
-        }, options.headers)
+        let headers = Object.assign(
+            {
+                Authorization: `Bearer ${token}`,
+            },
+            options.headers
+        )
         options.headers = headers
         super(baseURL, options)
         this.token = token
