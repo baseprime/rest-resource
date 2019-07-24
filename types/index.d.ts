@@ -1,6 +1,4 @@
 import { DefaultClient, RequestConfig, ResourceResponse } from './client';
-export declare type ResourceLike<T extends Resource = Resource> = T | Resource;
-export declare type ResourceClassLike<T extends typeof Resource = typeof Resource> = T | typeof Resource;
 export declare type IterableDict = {
     [index: string]: any;
 };
@@ -9,16 +7,16 @@ export interface GetRelatedDict {
     relatedKeys?: string[];
     relatedSubKeys?: string[];
 }
-export interface ResourceClassDict extends IterableDict {
-    [key: string]: ResourceClassLike;
+export interface ResourceClassDict<T extends typeof Resource = typeof Resource> extends IterableDict {
+    [key: string]: T;
 }
-export interface ResourceDict<T extends ResourceLike = ResourceLike> {
+export interface ResourceDict<T extends Resource = Resource> {
     [key: string]: T | T[];
 }
 export interface ValidatorDict extends IterableDict {
-    [key: string]: (value?: any, resource?: ResourceLike) => void;
+    [key: string]: (value?: any, resource?: Resource) => void;
 }
-export interface CachedResource<T extends ResourceLike = ResourceLike> {
+export interface CachedResource<T extends Resource> {
     expires: number;
     resource: T;
 }
@@ -27,7 +25,7 @@ export interface SaveOptions {
     replaceCache?: boolean;
     force?: boolean;
 }
-export default class Resource implements ResourceLike {
+export default class Resource {
     static endpoint: string;
     static cacheMaxAge: number;
     static _cache: any;
@@ -55,12 +53,12 @@ export default class Resource implements ResourceLike {
      * @param resource
      * @param replace
      */
-    static cacheResource(resource: ResourceLike, replace?: boolean): void;
+    static cacheResource(resource: Resource, replace?: boolean): void;
     /**
      * Replace attributes on a cached resource onto this class' cache for cacheMaxAge seconds (useful for bubbling up changes to states that may be already rendered)
      * @param resource
      */
-    static replaceCache(resource: ResourceLike): void;
+    static replaceCache(resource: Resource): void;
     /**
      * Get time delta in seconds of cache expiry
      */
@@ -69,8 +67,8 @@ export default class Resource implements ResourceLike {
      * Get a cached resource by ID
      * @param id
      */
-    static getCached(id: string): CachedResource | undefined;
-    static getCachedAll(): CachedResource[];
+    static getCached<T extends typeof Resource>(this: T, id: string): CachedResource<InstanceType<T>> | undefined;
+    static getCachedAll<T extends typeof Resource>(this: T): CachedResource<InstanceType<T>>[];
     /**
      * Get HTTP client for a resource Class
      * This is meant to be overridden if we want to define a client at any time
@@ -97,14 +95,14 @@ export default class Resource implements ResourceLike {
      * @returns Promise
      */
     static list(options?: RequestConfig): Promise<ResourceResponse>;
-    static detail<T extends ResourceLike = ResourceLike>(id: string, options?: RequestConfig): Promise<T>;
-    static getRelated(resource: ResourceLike, { deep, relatedKeys, relatedSubKeys }?: GetRelatedDict): Promise<Resource>;
-    static getRelatedDeep(resource: ResourceLike, options?: GetRelatedDict): Promise<Resource>;
+    static detail<T extends typeof Resource = typeof Resource>(this: T, id: string, options?: RequestConfig): Promise<InstanceType<T>>;
+    static getRelated<T extends typeof Resource = typeof Resource>(resource: InstanceType<T>, { deep, relatedKeys, relatedSubKeys }?: GetRelatedDict): Promise<InstanceType<T>>;
+    static getRelatedDeep(resource: Resource, options?: GetRelatedDict): Promise<Resource>;
     /**
      * Get related class by key
      * @param key
      */
-    static rel(key: string): ResourceClassLike;
+    static rel(key: string): typeof Resource;
     static toResourceName(): string;
     static makeDefaultsObject(): any;
     static extend<T, U>(this: U, classProps: T): U & T;
@@ -148,7 +146,7 @@ export default class Resource implements ResourceLike {
      * Like calling instance.constructor but safer:
      * changing objects down the line won't creep up the prototype chain and end up on native global objects like Function or Object
      */
-    getConstructor(): ResourceClassLike;
+    getConstructor<T extends typeof Resource = typeof Resource>(): T;
     getRelated(options?: GetRelatedDict): Promise<Resource>;
     getRelatedDeep(options?: GetRelatedDict): Promise<Resource>;
     /**
@@ -168,8 +166,8 @@ export default class Resource implements ResourceLike {
     update(): Promise<Resource>;
     delete(options?: RequestConfig): Promise<any>;
     hasRelatedDefined(relatedKey: string): boolean;
-    cache(replace?: boolean): ResourceLike;
-    getCached(): CachedResource | undefined;
+    cache(replace?: boolean): Resource;
+    getCached(): CachedResource<Resource>;
     isNew(): boolean;
     id: string;
     toString(): string;

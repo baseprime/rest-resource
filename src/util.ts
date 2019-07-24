@@ -1,7 +1,6 @@
-
 /**
  * Takes an input and camelizes it
- * @param str 
+ * @param str
  */
 export function camelize(str: string) {
     return str.replace(/(?:^\w|[A-Z]|\b\w|\s+)/g, (match: any, index: number) => {
@@ -17,8 +16,8 @@ export function camelize(str: string) {
  */
 export function uuidWeak() {
     return 'xxxxxxxx-xxxx-4xxx-yxxx-xxxxxxxxxxxx'.replace(/[xy]/g, (character) => {
-        let rand = Math.random() * 16 | 0;
-        let value = character === 'x' ? rand : (rand & 0x3 | 0x8);
-        return value.toString(16);
+        let rand = (Math.random() * 16) | 0
+        let value = character === 'x' ? rand : (rand & 0x3) | 0x8
+        return value.toString(16)
     })
 }
