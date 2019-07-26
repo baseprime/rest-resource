@@ -6,7 +6,7 @@ export interface RequestConfig extends AxiosRequestConfig {
     query?: any;
 }
 export interface ResourceResponse<T extends Resource = Resource> {
-    response: AxiosResponse<T>;
+    response: AxiosResponse;
     resources: T[];
     count?: () => number;
     pages?: () => number;
