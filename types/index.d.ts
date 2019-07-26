@@ -53,12 +53,12 @@ export default class Resource {
      * @param resource
      * @param replace
      */
-    static cacheResource(resource: Resource, replace?: boolean): void;
+    static cacheResource<T extends typeof Resource = typeof Resource>(this: T, resource: InstanceType<T>, replace?: boolean): void;
     /**
      * Replace attributes on a cached resource onto this class' cache for cacheMaxAge seconds (useful for bubbling up changes to states that may be already rendered)
      * @param resource
      */
-    static replaceCache(resource: Resource): void;
+    static replaceCache<T extends Resource = Resource>(resource: T): void;
     /**
      * Get time delta in seconds of cache expiry
      */
@@ -94,15 +94,24 @@ export default class Resource {
      * @param options HTTP Request Options
      * @returns Promise
      */
-    static list(options?: RequestConfig): Promise<ResourceResponse>;
+    static list<T extends typeof Resource = typeof Resource>(this: T, options?: RequestConfig): Promise<ResourceResponse<InstanceType<T>>>;
     static detail<T extends typeof Resource = typeof Resource>(this: T, id: string, options?: RequestConfig): Promise<InstanceType<T>>;
-    static getRelated<T extends typeof Resource = typeof Resource>(resource: InstanceType<T>, { deep, relatedKeys, relatedSubKeys }?: GetRelatedDict): Promise<InstanceType<T>>;
-    static getRelatedDeep(resource: Resource, options?: GetRelatedDict): Promise<Resource>;
+    /**
+     * Match all related values in `attributes[key]` where key is primary key of related instance
+     * @param resource Resource Instance
+     */
+    static getRelated<T extends typeof Resource = typeof Resource>(this: T, resource: InstanceType<T>, { deep, relatedKeys, relatedSubKeys }?: GetRelatedDict): Promise<void>;
+    /**
+     * Same as `Resource.getRelated` except with `deep` as `true`
+     * @param resource
+     * @param options
+     */
+    static getRelatedDeep(resource: Resource, options?: GetRelatedDict): Promise<void>;
     /**
      * Get related class by key
      * @param key
      */
-    static rel(key: string): typeof Resource;
+    static rel<T extends typeof Resource = typeof Resource>(key: string): T;
     static toResourceName(): string;
     static makeDefaultsObject(): any;
     static extend<T, U>(this: U, classProps: T): U & T;
@@ -147,27 +156,35 @@ export default class Resource {
      * changing objects down the line won't creep up the prototype chain and end up on native global objects like Function or Object
      */
     getConstructor<T extends typeof Resource = typeof Resource>(): T;
-    getRelated(options?: GetRelatedDict): Promise<Resource>;
-    getRelatedDeep(options?: GetRelatedDict): Promise<Resource>;
+    /**
+     * Match all related values in `attributes[key]` where key is primary key of related instance defined in `Resource.related[key]`
+     * @param options GetRelatedDict
+     */
+    getRelated<T extends typeof Resource = typeof Resource>(this: InstanceType<T>, options?: GetRelatedDict): Promise<void>;
+    /**
+     * Same as `Resource.prototype.getRelated` except `options.deep` defaults to `true`
+     * @param options
+     */
+    getRelatedDeep(options?: GetRelatedDict): Promise<void>;
     /**
      * Get related class by key
      * @param key
      */
-    rel(key: string): typeof Resource;
+    rel<T extends typeof Resource = typeof Resource>(key: string): T;
     /**
      * Saves the instance -- sends changes as a PATCH or sends whole object as a POST if it's new
      */
-    save(options?: SaveOptions): Promise<ResourceResponse>;
+    save<T extends Resource = Resource>(this: T, options?: SaveOptions): Promise<ResourceResponse<T>>;
     /**
      * Validate attributes -- returns empty if no errors exist -- you should throw new errors here
      * @returns `Error[]` Array of Exceptions
      */
     validate(): Error[];
-    update(): Promise<Resource>;
+    update<T extends Resource = Resource>(this: T): Promise<T>;
     delete(options?: RequestConfig): Promise<any>;
     hasRelatedDefined(relatedKey: string): boolean;
-    cache(replace?: boolean): Resource;
-    getCached(): CachedResource<Resource>;
+    cache<T extends Resource = Resource>(this: T, replace?: boolean): T;
+    getCached<T extends Resource = Resource>(this: T): CachedResource<T>;
     isNew(): boolean;
     id: string;
     toString(): string;

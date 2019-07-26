@@ -110,7 +110,7 @@ var JWTBearerClient = /** @class */ (function (_super) {
         if (options === void 0) { options = {}; }
         var _this = this;
         var headers = Object.assign({
-            'Authorization': "Bearer " + token
+            Authorization: "Bearer " + token,
         }, options.headers);
         options.headers = headers;
         _this = _super.call(this, baseURL, options) || this;

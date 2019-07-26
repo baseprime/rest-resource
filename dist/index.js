@@ -33,7 +33,7 @@ var Resource = /** @class */ (function () {
             },
             defineProperty: function (target, prop, descriptor) {
                 return Reflect.defineProperty(target, prop, descriptor);
-            }
+            },
         });
         if (this.id) {
             Ctor.cacheResource(this);
@@ -158,7 +158,7 @@ var Resource = /** @class */ (function () {
      */
     Resource.getDetailRoutePath = function (id, query) {
         var qs = querystring_1.stringify(query);
-        return this.endpoint + "/" + id + ((query && Object.keys(query).length) ? '?' : '') + qs;
+        return this.endpoint + "/" + id + (query && Object.keys(query).length ? '?' : '') + qs;
     };
     /**
      * HTTP Get of resource's list route--returns a promise
@@ -183,7 +183,9 @@ var Resource = /** @class */ (function () {
                 if (!cached && !_this.queued[queueHashKey_1]) {
                     // We want to use cached and a resource with this ID hasn't been requested yet
                     _this.queued[queueHashKey_1] = [];
-                    _this.client.detail(_this, id).then(function (result) {
+                    _this.client
+                        .detail(_this, id)
+                        .then(function (result) {
                         // Get detail route and get resource from response
                         var correctResource = result.resources.pop();
                         // Resolve first-sent request
@@ -192,9 +194,11 @@ var Resource = /** @class */ (function () {
                         _this.queued[queueHashKey_1].forEach(function (deferred) {
                             deferred(correctResource);
                         });
-                    }).catch(function (e) {
+                    })
+                        .catch(function (e) {
                         reject(e);
-                    }).finally(function () {
+                    })
+                        .finally(function () {
                         // Finally, remove the fact that we've queued any requests with this ID
                         delete _this.queued[queueHashKey_1];
                     });
@@ -214,6 +218,10 @@ var Resource = /** @class */ (function () {
             }
         });
     };
+    /**
+     * Match all related values in `attributes[key]` where key is primary key of related instance
+     * @param resource Resource Instance
+     */
     Resource.getRelated = function (resource, _a) {
         var _this = this;
         var _b = _a === void 0 ? {} : _a, _c = _b.deep, deep = _c === void 0 ? false : _c, _d = _b.relatedKeys, relatedKeys = _d === void 0 ? undefined : _d, _e = _b.relatedSubKeys, relatedSubKeys = _e === void 0 ? undefined : _e;
@@ -245,6 +253,7 @@ var Resource = /** @class */ (function () {
                                 resource.related[resourceKey] = [];
                             }
                             // Finally, put this resource into the collection of other instances
+                            ;
                             resource.related[resourceKey][idx] = instance;
                         }
                         else {
@@ -276,8 +285,13 @@ var Resource = /** @class */ (function () {
             _loop_1(resourceKey);
         }
         // Run all promises then return related resources
-        return Promise.all(promises).then(function () { return resource; });
+        return Promise.all(promises).then(function () { return void {}; });
     };
+    /**
+     * Same as `Resource.getRelated` except with `deep` as `true`
+     * @param resource
+     * @param options
+     */
     Resource.getRelatedDeep = function (resource, options) {
         var opts = Object.assign({ deep: true }, options);
         return this.getRelated(resource, opts);
@@ -473,9 +487,17 @@ var Resource = /** @class */ (function () {
         }
         return this.constructor;
     };
+    /**
+     * Match all related values in `attributes[key]` where key is primary key of related instance defined in `Resource.related[key]`
+     * @param options GetRelatedDict
+     */
     Resource.prototype.getRelated = function (options) {
         return this.getConstructor().getRelated(this, options);
     };
+    /**
+     * Same as `Resource.prototype.getRelated` except `options.deep` defaults to `true`
+     * @param options
+     */
     Resource.prototype.getRelatedDeep = function (options) {
         var opts = Object.assign({ deep: true }, options || {});
         return this.getRelated(opts);
@@ -514,7 +536,7 @@ var Resource = /** @class */ (function () {
                 _this.set(resKey, response.data[resKey]);
             }
             // Replace cache
-            _this.cache((options.replaceCache === false) ? false : true);
+            _this.cache(options.replaceCache === false ? false : true);
             return {
                 response: response,
                 resources: [_this],
@@ -535,7 +557,7 @@ var Resource = /** @class */ (function () {
                 }
             }
             catch (e) {
-                // One of the downsides of using Webpack is that you can't strict compare from 
+                // One of the downsides of using Webpack is that you can't strict compare from
                 //  another module because the exported member will be transpiled and therefore will not
                 //  be the same address in memory. So we have a handy function to detect ValidationError
                 if (exceptions.ValidationError.isInstance(e)) {

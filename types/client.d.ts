@@ -6,7 +6,7 @@ export interface RequestConfig extends AxiosRequestConfig {
     query?: any;
 }
 export interface ResourceResponse<T extends Resource = Resource> {
-    response: AxiosResponse;
+    response: AxiosResponse<T>;
     resources: T[];
     count?: () => number;
     pages?: () => number;
@@ -19,9 +19,9 @@ export declare class BaseClient {
     hostname: string;
     constructor(baseURL: string, config?: AxiosRequestConfig);
     static extend<T, U>(this: U, classProps: T): U & T;
-    negotiateContent(ResourceClass: typeof Resource): ExtractorFunction;
-    list(ResourceClass: typeof Resource, options?: RequestConfig): Promise<ResourceResponse<Resource>>;
-    detail(ResourceClass: typeof Resource, id: string, options?: RequestConfig): Promise<ResourceResponse<Resource>>;
+    negotiateContent<T extends typeof Resource = typeof Resource>(ResourceClass: T): ExtractorFunction<InstanceType<T>>;
+    list<T extends typeof Resource = typeof Resource>(ResourceClass: T, options?: RequestConfig): Promise<ResourceResponse<InstanceType<T>>>;
+    detail<T extends typeof Resource = typeof Resource>(ResourceClass: T, id: string, options?: RequestConfig): Promise<ResourceResponse<InstanceType<T>>>;
     get(path: string, options?: any): AxiosPromise<any>;
     put(path: string, body?: any, options?: AxiosRequestConfig): Promise<any>;
     post(path: string, body?: any, options?: AxiosRequestConfig): Promise<any>;
