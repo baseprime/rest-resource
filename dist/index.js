@@ -189,7 +189,7 @@ var Resource = /** @class */ (function () {
                         // Get detail route and get resource from response
                         var correctResource = result.resources.pop();
                         // Resolve first-sent request
-                        resolve(correctResource);
+                        setImmediate(function () { return resolve(correctResource); });
                         // Then resolve any deferred requests if there are any
                         _this.queued[queueHashKey_1].forEach(function (deferred) {
                             deferred(correctResource);
