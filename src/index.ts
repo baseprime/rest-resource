@@ -229,7 +229,7 @@ export default class Resource {
                             // Get detail route and get resource from response
                             const correctResource = <InstanceType<T>>result.resources.pop()
                             // Resolve first-sent request
-                            resolve(correctResource)
+                            setImmediate(() => resolve(correctResource))
                             // Then resolve any deferred requests if there are any
                             this.queued[queueHashKey].forEach((deferred: (resource: InstanceType<T>) => any) => {
                                 deferred(correctResource)

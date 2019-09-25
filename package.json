@@ -1,6 +1,6 @@
 {
   "name": "rest-resource",
-  "version": "0.5.2",
+  "version": "0.5.3",
   "description": "Simplify your REST API resources, supports automatic caching",
   "main": "./dist/index.js",
   "types": "types",
