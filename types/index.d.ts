@@ -1,4 +1,5 @@
 import { DefaultClient, RequestConfig, ResourceResponse } from './client';
+import RelatedManager from './related';
 export declare type IterableDict = {
     [index: string]: any;
 };
@@ -35,6 +36,7 @@ export default class Resource {
     static uniqueKey: string;
     static perPage: number | null;
     static defaults: IterableDict;
+    static defaultRelatedManager: typeof RelatedManager;
     static validators: ValidatorDict;
     static related: ResourceClassDict;
     _attributes: IterableDict;
@@ -59,6 +61,7 @@ export default class Resource {
      * @param resource
      */
     static replaceCache<T extends Resource = Resource>(resource: T): void;
+    static clearCache(): void;
     /**
      * Get time delta in seconds of cache expiry
      */
@@ -114,6 +117,11 @@ export default class Resource {
     static rel<T extends typeof Resource = typeof Resource>(key: string): T;
     static toResourceName(): string;
     static makeDefaultsObject(): any;
+    /**
+     * Unique resource hash key used for caching and organizing requests
+     * @param resourceId
+     */
+    static getResourceHashKey(resourceId: string): string;
     static extend<T, U>(this: U, classProps: T): U & T;
     /**
      * Set an attribute of Resource instance and apply getters/setters

@@ -2,6 +2,7 @@ import { stringify } from 'querystring'
 import { DefaultClient, RequestConfig, ResourceResponse } from './client'
 import { AxiosResponse } from 'axios'
 import { uuidWeak } from './util'
+import RelatedManager from './related'
 
 const exceptions = require('./exceptions')
 const assert = require('assert')
@@ -50,6 +51,7 @@ export default class Resource {
     static uniqueKey: string = 'id'
     static perPage: number | null = null
     static defaults: IterableDict = {}
+    static defaultRelatedManager: typeof RelatedManager = RelatedManager
     static validators: ValidatorDict = {}
     static related: ResourceClassDict = {}
     _attributes: IterableDict = {}
@@ -136,6 +138,10 @@ export default class Resource {
         this.cache[resource.id].expires = this.cacheDeltaSeconds()
     }
 
+    static clearCache() {
+        this._cache = {}
+    }
+
     /**
      * Get time delta in seconds of cache expiry
      */
@@ -218,7 +224,7 @@ export default class Resource {
             // Do we want to use cache?
             if (!cached || options.useCache === false) {
                 // Set a hash key for the queue (keeps it organized by type+id)
-                const queueHashKey = Buffer.from(`${this.uuid}:${id}`).toString('base64')
+                const queueHashKey = this.getResourceHashKey(id)
                 // If we want to use cache and cache wasn't found...
                 if (!cached && !this.queued[queueHashKey]) {
                     // We want to use cached and a resource with this ID hasn't been requested yet
@@ -353,6 +359,15 @@ export default class Resource {
             }
         }
         return defaults
+    }
+
+    /**
+     * Unique resource hash key used for caching and organizing requests
+     * @param resourceId 
+     */
+    static getResourceHashKey(resourceId: string) {
+        assert(Boolean(resourceId), 'Can\'t generate resource hash key with an empty Resource ID. Please ensure Resource is saved first.')
+        return Buffer.from(`${this.uuid}:${resourceId}`).toString('base64')
     }
 
     static extend<T, U>(this: U, classProps: T): U & T {

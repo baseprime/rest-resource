@@ -4,6 +4,7 @@ var tslib_1 = require("tslib");
 var querystring_1 = require("querystring");
 var client_1 = require("./client");
 var util_1 = require("./util");
+var related_1 = tslib_1.__importDefault(require("./related"));
 var exceptions = require('./exceptions');
 var assert = require('assert');
 var isEqual = require('lodash').isEqual;
@@ -96,6 +97,9 @@ var Resource = /** @class */ (function () {
         Object.assign(this.cache[resource.id].resource.attributes, resource.attributes);
         this.cache[resource.id].expires = this.cacheDeltaSeconds();
     };
+    Resource.clearCache = function () {
+        this._cache = {};
+    };
     /**
      * Get time delta in seconds of cache expiry
      */
@@ -178,7 +182,7 @@ var Resource = /** @class */ (function () {
             // Do we want to use cache?
             if (!cached || options.useCache === false) {
                 // Set a hash key for the queue (keeps it organized by type+id)
-                var queueHashKey_1 = Buffer.from(_this.uuid + ":" + id).toString('base64');
+                var queueHashKey_1 = _this.getResourceHashKey(id);
                 // If we want to use cache and cache wasn't found...
                 if (!cached && !_this.queued[queueHashKey_1]) {
                     // We want to use cached and a resource with this ID hasn't been requested yet
@@ -318,6 +322,14 @@ var Resource = /** @class */ (function () {
             }
         }
         return defaults;
+    };
+    /**
+     * Unique resource hash key used for caching and organizing requests
+     * @param resourceId
+     */
+    Resource.getResourceHashKey = function (resourceId) {
+        assert(Boolean(resourceId), 'Can\'t generate resource hash key with an empty Resource ID. Please ensure Resource is saved first.');
+        return Buffer.from(this.uuid + ":" + resourceId).toString('base64');
     };
     Resource.extend = function (classProps) {
         // @todo Figure out typings here -- this works perfectly but typings are not happy
@@ -618,6 +630,7 @@ var Resource = /** @class */ (function () {
     Resource.uniqueKey = 'id';
     Resource.perPage = null;
     Resource.defaults = {};
+    Resource.defaultRelatedManager = related_1.default;
     Resource.validators = {};
     Resource.related = {};
     return Resource;

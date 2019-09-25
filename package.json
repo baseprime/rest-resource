@@ -5,8 +5,8 @@
   "main": "./dist/index.js",
   "types": "types",
   "scripts": {
-    "test": "mocha -r ts-node/register ./tests/**/*.ts",
-    "test-server": "json-server -p 3939 ./tests/fixtures.json",
+    "test": "mocha -r ts-node/register ./tests/**/*.spec.ts",
+    "test-server": "json-server -p ${TEST_PORT:-8099} ./tests/fixtures.json",
     "build": "tsc --target es5 --module commonjs --outDir ./dist",
     "dev": "tsc --watch",
     "prettier": "./node_modules/prettier/bin-prettier.js --write ./src/**/*.ts ./src/*.ts",
@@ -43,10 +43,11 @@
     "ts-node": "^8.0.2"
   },
   "dependencies": {
+    "@types/lodash": "^4.14.137",
     "@types/node": "^10.12.19",
     "assert": "^1.4.1",
     "axios": "^0.18.0",
-    "lodash": "^4.17.11",
+    "lodash": "^4.17.15",
     "tslib": "^1.9.3",
     "typescript": "^3.3.3"
   }
