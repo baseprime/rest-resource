@@ -15,9 +15,10 @@ var Resource = /** @class */ (function () {
         if (options === void 0) { options = {}; }
         this._attributes = {};
         this.attributes = {};
-        this.related = {};
+        this.managers = {};
         this.changes = {};
         var Ctor = this.getConstructor();
+        var RelatedManagerCtor = Ctor.relatedManager;
         if (typeof Ctor.client !== 'object') {
             throw new exceptions.ImproperlyConfiguredError("Resource can't be used without Client class instance");
         }
@@ -36,6 +37,11 @@ var Resource = /** @class */ (function () {
                 return Reflect.defineProperty(target, prop, descriptor);
             },
         });
+        // Create related managers
+        // Because we're using Object.assign above, we shouldn't have to iterate here again -- @todo improve it
+        for (var attrKey in Ctor.related) {
+            this.managers[attrKey] = new RelatedManagerCtor(Ctor.related[attrKey], this._attributes[attrKey]);
+        }
         if (this.id) {
             Ctor.cacheResource(this);
         }
@@ -222,91 +228,6 @@ var Resource = /** @class */ (function () {
             }
         });
     };
-    /**
-     * Match all related values in `attributes[key]` where key is primary key of related instance
-     * @param resource Resource Instance
-     */
-    Resource.getRelated = function (resource, _a) {
-        var _this = this;
-        var _b = _a === void 0 ? {} : _a, _c = _b.deep, deep = _c === void 0 ? false : _c, _d = _b.relatedKeys, relatedKeys = _d === void 0 ? undefined : _d, _e = _b.relatedSubKeys, relatedSubKeys = _e === void 0 ? undefined : _e;
-        var promises = [];
-        var _loop_1 = function (resourceKey) {
-            // Allow specification of keys to related resources they want to get
-            if (typeof relatedKeys !== 'undefined' && Array.isArray(relatedKeys) && !~relatedKeys.indexOf(resourceKey)) {
-                return "continue";
-            }
-            // If this resource key exists on the resource's attributes, and it's not null
-            if (resource.attributes[resourceKey] !== 'undefined' && resource.attributes[resourceKey] !== null) {
-                // Get related Resource class
-                var RelatedCls_1 = this_1.related[resourceKey];
-                // If the property of the attributes is a list of IDs, we need to return a collection of Resources
-                var isMany_1 = Array.isArray(resource.attributes[resourceKey]);
-                // Get resource ids -- coerce to list (even if it's 1 ID to get, it'll be [id])
-                var rids = [].concat(resource.attributes[resourceKey]);
-                if (isMany_1 && !Array.isArray(resource.related[resourceKey])) {
-                    resource.related[resourceKey] = [];
-                }
-                // Now for all IDs...
-                rids.forEach(function (rid, idx) {
-                    // Create a promise getting the details
-                    var promise = RelatedCls_1.detail(rid).then(function (instance) {
-                        assert(instance.getConstructor().name == RelatedCls_1.name, "Related class detail() returned invalid instance on key " + _this.name + ".related." + resourceKey + ": " + instance.getConstructor().name + " (returned) !== " + RelatedCls_1.name + " (related)");
-                        if (isMany_1) {
-                            // If it's a list, make sure the array property exists before pushing it onto the list
-                            if (!Array.isArray(resource.related[resourceKey])) {
-                                resource.related[resourceKey] = [];
-                            }
-                            // Finally, put this resource into the collection of other instances
-                            ;
-                            resource.related[resourceKey][idx] = instance;
-                        }
-                        else {
-                            // The corresponding attribute is just a Primary Key, so no need to create a collection
-                            resource.related[resourceKey] = instance;
-                        }
-                        if (deep) {
-                            // If we want to go deeper, recursively call new instance's getRelated() -- note we're shifting over the relatedKeys
-                            return instance
-                                .getRelated({
-                                deep: deep,
-                                relatedKeys: relatedSubKeys,
-                            })
-                                .then(function () { return resource.related; });
-                        }
-                        // We're done!
-                        return resource.related;
-                    });
-                    // Add this promise to the list of other related models to get
-                    promises.push(promise);
-                });
-            }
-            else {
-                // Probably a null value, just leave it null
-            }
-        };
-        var this_1 = this;
-        for (var resourceKey in this.related) {
-            _loop_1(resourceKey);
-        }
-        // Run all promises then return related resources
-        return Promise.all(promises).then(function () { return void {}; });
-    };
-    /**
-     * Same as `Resource.getRelated` except with `deep` as `true`
-     * @param resource
-     * @param options
-     */
-    Resource.getRelatedDeep = function (resource, options) {
-        var opts = Object.assign({ deep: true }, options);
-        return this.getRelated(resource, opts);
-    };
-    /**
-     * Get related class by key
-     * @param key
-     */
-    Resource.rel = function (key) {
-        return this.related[key];
-    };
     Resource.toResourceName = function () {
         return this.name;
     };
@@ -328,7 +249,7 @@ var Resource = /** @class */ (function () {
      * @param resourceId
      */
     Resource.getResourceHashKey = function (resourceId) {
-        assert(Boolean(resourceId), 'Can\'t generate resource hash key with an empty Resource ID. Please ensure Resource is saved first.');
+        assert(Boolean(resourceId), "Can't generate resource hash key with an empty Resource ID. Please ensure Resource is saved first.");
         return Buffer.from(this.uuid + ":" + resourceId).toString('base64');
     };
     Resource.extend = function (classProps) {
@@ -359,27 +280,34 @@ var Resource = /** @class */ (function () {
      */
     Resource.prototype.get = function (key) {
         if (typeof key !== 'undefined') {
-            // We're simply getting a value
+            // Get a value
             var pieces_1 = key.split('.');
             var thisKey = String(pieces_1.shift());
             var thisValue = this.attributes[thisKey];
-            var relatedResource = this.related[thisKey];
-            if (pieces_1.length > 0 && typeof relatedResource !== 'undefined') {
-                // We're not done getting attributes (it contains a ".") send it to related resource
-                if (Array.isArray(relatedResource)) {
-                    return relatedResource.map(function (thisResource) {
+            var relatedManager = this.managers[thisKey];
+            if (pieces_1.length > 0) {
+                // We need to go deeper...
+                if (!relatedManager) {
+                    throw new exceptions.ImproperlyConfiguredError("No relation found on " + this.toResourceName() + "[" + thisKey + "]. Did you define it on " + this.toResourceName() + ".related?");
+                }
+                if (relatedManager.many) {
+                    return relatedManager.objects.map(function (thisResource) {
                         return thisResource.get(pieces_1.join('.'));
                     });
                 }
-                return relatedResource.get(pieces_1.join('.'));
+                return relatedManager.objects[0].get(pieces_1.join('.'));
             }
-            if (pieces_1.length > 0 && thisValue && typeof relatedResource === 'undefined' && this.hasRelatedDefined(thisKey)) {
-                throw new exceptions.AttributeError("Can't read related property " + thisKey + " before getRelated() is called");
+            else if (typeof thisValue !== 'undefined' && relatedManager && !relatedManager.inflated) {
+                return relatedManager;
             }
-            else if (!pieces_1.length && typeof relatedResource !== 'undefined') {
-                return relatedResource;
+            else if (typeof thisValue !== 'undefined' && relatedManager) {
+                if (!relatedManager.inflated) {
+                    throw new exceptions.AttributeError("Can't read related property " + thisKey + " before RelatedManager.resolve() is called");
+                }
+                var objects = relatedManager.objects;
+                return relatedManager.many ? objects : objects[0];
             }
-            else if (!pieces_1.length && typeof thisValue !== 'undefined') {
+            else if (typeof thisValue !== 'undefined') {
                 return thisValue;
             }
             else {
@@ -388,16 +316,16 @@ var Resource = /** @class */ (function () {
         }
         else {
             // We're getting all attributes -- any related resources also get converted to an object
-            var related = Object.keys(this.related);
+            var managers = Object.keys(this.managers);
             var obj = Object.assign({}, this.attributes);
-            while (related.length) {
-                var key_1 = String(related.shift());
-                var relatedResource = this.related[key_1];
-                if (Array.isArray(relatedResource)) {
-                    obj[key_1] = relatedResource.map(function (subResource) { return subResource.get(); });
+            while (managers.length) {
+                var key_1 = String(managers.shift());
+                var manager = this.managers[key_1];
+                if (manager.many) {
+                    obj[key_1] = manager.objects.map(function (subResource) { return subResource.get(); });
                 }
                 else {
-                    obj[key_1] = relatedResource.get();
+                    obj[key_1] = manager.objects[0].get();
                 }
             }
             return obj;
@@ -418,16 +346,16 @@ var Resource = /** @class */ (function () {
                 if (exceptions.AttributeError.isInstance(e)) {
                     var pieces_2 = key.split('.');
                     var thisKey_1 = String(pieces_2.shift());
-                    _this.getRelated({ relatedKeys: [thisKey_1] }).then(function () {
+                    var manager_1 = _this.managers[thisKey_1];
+                    manager_1.resolve().then(function () {
                         var attrValue = _this.get(thisKey_1);
-                        var isMany = Array.isArray(attrValue);
                         var relatedResources = [].concat(attrValue);
                         var relatedKey = pieces_2.join('.');
                         var promises = relatedResources.map(function (resource) {
                             return resource.getAsync(relatedKey);
                         });
                         Promise.all(promises).then(function (values) {
-                            if (isMany) {
+                            if (manager_1.many) {
                                 resolve(values);
                             }
                             else if (values.length === 1) {
@@ -446,47 +374,44 @@ var Resource = /** @class */ (function () {
         });
     };
     /**
-     * Translate this.attributes[key] into an internal value
+     * Setter -- Translate new value into an internal value onto this._attributes[key]
      * Usually this is just setting a key/value but we want to be able to accept
      * anything -- another Resource instance for example. If a Resource instance is
-     * provided, set the this.related[key] as the new instance, then set the
+     * provided, set the this.managers[key] as the new manager instance, then set the
      * this.attributes[key] field as just the primary key of the related Resource instance
      * @param key
      * @param value
      */
     Resource.prototype.toInternalValue = function (key, value) {
         var currentValue = this.attributes[key];
-        if (!isEqual(currentValue, value)) {
-            // New value has changed -- set it in this.changed and this._attributes
-            var translateValueToPk = this.shouldTranslateValueToPrimaryKey(key, value);
-            // Also resolve any related Resources back into foreign keys -- @todo What if it's a list of related Resources?
-            if (value && translateValueToPk) {
-                // Newly set value is an actual Resource instance
-                var relatedResource = value;
+        var newValue = value;
+        if (!isEqual(currentValue, newValue)) {
+            // Also resolve any related Resources back into foreign keys
+            if (newValue && newValue['getConstructor']) {
+                // newValue is a Resource instance
                 // Don't accept any resources that aren't saved
-                if (!relatedResource.id) {
-                    throw new exceptions.AttributeError("Can't append Related Resource on field \"" + key + "\": Related Resource " + relatedResource.getConstructor().name + " must be saved first");
+                if (!newValue.id) {
+                    throw new exceptions.AttributeError("Can't append Related Resource on field \"" + key + "\": Related Resource " + newValue.getConstructor().name + " must be saved first");
                 }
-                // this.related is a related resource or a list of related resources
-                this.related[key] = relatedResource;
-                // this._attributes is a list of IDs
-                value = relatedResource.id;
+                // Create a RelatedManager
+                var RelatedCtor = newValue.getConstructor();
+                var RelatedManager_1 = this.getConstructor().relatedManager;
+                var manager = new RelatedManager_1(RelatedCtor, newValue);
+                newValue = manager.toJSON();
+                this.managers[key] = manager;
             }
-            else if (value instanceof Resource && !translateValueToPk) {
-                throw new exceptions.AttributeError("Can't accept a Related Resource on field \"" + key + "\": Value must be related Resource's primary key if there is an assigned value of \"" + key + "\" on " + this.getConstructor().name + ".related");
+            else if (newValue && this.managers[key]) {
+                // newValue has an old manager -- needs a new one
+                // Create a RelatedManager
+                var RelatedCtor = newValue.to;
+                var RelatedManager_2 = this.getConstructor().relatedManager;
+                var manager = new RelatedManager_2(RelatedCtor, newValue);
+                newValue = manager.toJSON();
+                this.managers[key] = manager;
             }
-            this.changes[key] = value;
+            this.changes[key] = newValue;
         }
-        return value;
-    };
-    /**
-     * Used to check if an incoming attribute (key)'s value should be translated from
-     * a Related Resource (defined in Resource.related) to a primary key (the ID)
-     * @param key
-     * @param value
-     */
-    Resource.prototype.shouldTranslateValueToPrimaryKey = function (key, value) {
-        return !!(value instanceof Resource && value.getConstructor() === this.rel(key));
+        return newValue;
     };
     /**
      * Like calling instance.constructor but safer:
@@ -503,8 +428,25 @@ var Resource = /** @class */ (function () {
      * Match all related values in `attributes[key]` where key is primary key of related instance defined in `Resource.related[key]`
      * @param options GetRelatedDict
      */
-    Resource.prototype.getRelated = function (options) {
-        return this.getConstructor().getRelated(this, options);
+    Resource.prototype.getRelated = function (_a) {
+        var _b = _a === void 0 ? {} : _a, _c = _b.deep, deep = _c === void 0 ? false : _c, _d = _b.managers, managers = _d === void 0 ? [] : _d;
+        var promises = [];
+        for (var resourceKey in this.managers) {
+            if (Array.isArray(managers) && managers.length > 0 && !~managers.indexOf(resourceKey)) {
+                continue;
+            }
+            var manager = this.managers[resourceKey];
+            var promise = manager.resolve().then(function (objects) {
+                if (deep) {
+                    return objects.forEach(function (resource) { return resource.getRelated({ deep: deep }); });
+                }
+                else {
+                    return void {};
+                }
+            });
+            promises.push(promise);
+        }
+        return Promise.all(promises).then(function () { return void {}; });
     };
     /**
      * Same as `Resource.prototype.getRelated` except `options.deep` defaults to `true`
@@ -519,7 +461,7 @@ var Resource = /** @class */ (function () {
      * @param key
      */
     Resource.prototype.rel = function (key) {
-        return this.getConstructor().rel(key);
+        return this.managers[key];
     };
     /**
      * Saves the instance -- sends changes as a PATCH or sends whole object as a POST if it's new
@@ -588,9 +530,6 @@ var Resource = /** @class */ (function () {
     Resource.prototype.delete = function (options) {
         return this.getConstructor().client.delete(this.getConstructor().getDetailRoutePath(this.id), options);
     };
-    Resource.prototype.hasRelatedDefined = function (relatedKey) {
-        return this.getConstructor().related[relatedKey] && !this.related[relatedKey];
-    };
     Resource.prototype.cache = function (replace) {
         if (replace === void 0) { replace = false; }
         this.getConstructor().cacheResource(this, !!replace);
@@ -630,7 +569,7 @@ var Resource = /** @class */ (function () {
     Resource.uniqueKey = 'id';
     Resource.perPage = null;
     Resource.defaults = {};
-    Resource.defaultRelatedManager = related_1.default;
+    Resource.relatedManager = related_1.default;
     Resource.validators = {};
     Resource.related = {};
     return Resource;
