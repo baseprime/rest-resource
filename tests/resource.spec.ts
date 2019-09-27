@@ -54,6 +54,7 @@ describe('', () => {
         expect(changingUser.changes.name).to.exist
         expect(changingUser.changes.name).to.equal('Test User (Changed)')
         expect(changingUser.attributes.name).to.equal('Test User (Changed)')
+        expect(typeof changingUser.get()).to.equal('object')
     })
     
     it('related key is a string', async () => {
@@ -67,11 +68,15 @@ describe('', () => {
         expect(post.get('user')).to.be.instanceOf(PostResource.relatedManager)
         await post.getRelated()
         await group.getRelated()
-        expect(post.get('user')).to.be.instanceOf(UserResource) // do we want this?
+        expect(post.get('user')).to.be.instanceOf(PostResource.relatedManager)
         expect(post.managers.user).to.be.instanceOf(PostResource.relatedManager)
+        expect(group.managers.users).to.be.instanceOf(GroupResource.relatedManager)
+        expect(group.managers.users.many).to.be.true
+        expect(group.managers.users.inflated).to.be.true
+        expect(group.managers.users.primaryKeys.length).to.equal(3)
         expect(group.get('name')).to.equal('Test group')
-        expect(group.get('users')).to.be.instanceOf(Array)
-        expect(group.get('users')[0]).to.be.instanceOf(UserResource)
+        expect(group.get('users.name')).to.be.instanceOf(Array)
+        expect(group.get('users').objects[0]).to.be.instanceOf(UserResource)
     })
 
     it('correctly gets a cached related item', async () => {

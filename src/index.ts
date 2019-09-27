@@ -337,15 +337,8 @@ export default class Resource {
                 }
 
                 return relatedManager.objects[0].get(pieces.join('.'))
-            } else if (typeof thisValue !== 'undefined' && relatedManager && !relatedManager.inflated) {
-                return relatedManager
             } else if (typeof thisValue !== 'undefined' && relatedManager) {
-                if (!relatedManager.inflated) {
-                    throw new exceptions.AttributeError(`Can't read related property ${thisKey} before RelatedManager.resolve() is called`)
-                }
-
-                let objects = relatedManager.objects
-                return relatedManager.many ? objects : objects[0]
+                return relatedManager
             } else if (typeof thisValue !== 'undefined') {
                 return thisValue
             } else {
