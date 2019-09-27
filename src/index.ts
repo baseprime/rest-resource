@@ -12,12 +12,6 @@ export type IterableDict = {
     [index: string]: any
 }
 
-export interface GetRelatedDict {
-    deep?: boolean
-    relatedKeys?: string[]
-    relatedSubKeys?: string[]
-}
-
 export interface ResourceClassDict<T extends typeof Resource = typeof Resource> extends IterableDict {
     [key: string]: T
 }
@@ -41,27 +35,33 @@ export interface SaveOptions {
     force?: boolean
 }
 
+export interface GetRelatedOpts {
+    managers?: string[]
+    deep?: boolean
+}
+
 export default class Resource {
     static endpoint: string = ''
     static cacheMaxAge: number = 60
     static _cache: any = {}
     static _client: DefaultClient = new DefaultClient('/')
     static _uuid: string
-    static queued: IterableDict = {}
+    static queued: Record<string, any> = {}
     static uniqueKey: string = 'id'
     static perPage: number | null = null
-    static defaults: IterableDict = {}
-    static defaultRelatedManager: typeof RelatedManager = RelatedManager
+    static defaults: Record<string, any> = {}
+    static relatedManager: typeof RelatedManager = RelatedManager
     static validators: ValidatorDict = {}
     static related: ResourceClassDict = {}
-    _attributes: IterableDict = {}
+    _attributes: Record<string, any> = {}
     uuid: string
-    attributes: IterableDict = {}
-    related: ResourceDict = {}
-    changes: IterableDict = {}
+    attributes: Record<string, any> = {}
+    managers: Record<string, RelatedManager> = {}
+    changes: Record<string, any> = {}
 
     constructor(attributes: any = {}, options: any = {}) {
         const Ctor = this.getConstructor()
+        const RelatedManagerCtor = Ctor.relatedManager
         if (typeof Ctor.client !== 'object') {
             throw new exceptions.ImproperlyConfiguredError("Resource can't be used without Client class instance")
         }
@@ -80,6 +80,11 @@ export default class Resource {
                 return Reflect.defineProperty(target, prop, descriptor)
             },
         })
+        // Create related managers
+        // Because we're using Object.assign above, we shouldn't have to iterate here again -- @todo improve it
+        for (let attrKey in Ctor.related) {
+            this.managers[attrKey] = new RelatedManagerCtor(Ctor.related[attrKey], this._attributes[attrKey])
+        }
 
         if (this.id) {
             Ctor.cacheResource(this)
@@ -263,87 +268,6 @@ export default class Resource {
         })
     }
 
-    /**
-     * Match all related values in `attributes[key]` where key is primary key of related instance
-     * @param resource Resource Instance
-     */
-    static getRelated<T extends typeof Resource = typeof Resource>(this: T, resource: InstanceType<T>, { deep = false, relatedKeys = undefined, relatedSubKeys = undefined }: GetRelatedDict = {}): Promise<void> {
-        const promises: Promise<ResourceDict>[] = []
-        for (const resourceKey in this.related) {
-            // Allow specification of keys to related resources they want to get
-            if (typeof relatedKeys !== 'undefined' && Array.isArray(relatedKeys) && !~relatedKeys.indexOf(resourceKey)) {
-                continue
-            }
-            // If this resource key exists on the resource's attributes, and it's not null
-            if (resource.attributes[resourceKey] !== 'undefined' && resource.attributes[resourceKey] !== null) {
-                // Get related Resource class
-                const RelatedCls: typeof Resource = this.related[resourceKey]
-                // If the property of the attributes is a list of IDs, we need to return a collection of Resources
-                const isMany = Array.isArray(resource.attributes[resourceKey])
-                // Get resource ids -- coerce to list (even if it's 1 ID to get, it'll be [id])
-                const rids = [].concat(resource.attributes[resourceKey])
-                if (isMany && !Array.isArray(resource.related[resourceKey])) {
-                    resource.related[resourceKey] = []
-                }
-                // Now for all IDs...
-                rids.forEach((rid, idx) => {
-                    // Create a promise getting the details
-                    const promise = RelatedCls.detail(rid).then((instance) => {
-                        assert(instance.getConstructor().name == RelatedCls.name, `Related class detail() returned invalid instance on key ${this.name}.related.${resourceKey}: ${instance.getConstructor().name} (returned) !== ${RelatedCls.name} (related)`)
-
-                        if (isMany) {
-                            // If it's a list, make sure the array property exists before pushing it onto the list
-                            if (!Array.isArray(resource.related[resourceKey])) {
-                                resource.related[resourceKey] = []
-                            }
-                            // Finally, put this resource into the collection of other instances
-                            ;(resource.related[resourceKey] as Resource[])[idx] = instance
-                        } else {
-                            // The corresponding attribute is just a Primary Key, so no need to create a collection
-                            resource.related[resourceKey] = instance
-                        }
-
-                        if (deep) {
-                            // If we want to go deeper, recursively call new instance's getRelated() -- note we're shifting over the relatedKeys
-                            return instance
-                                .getRelated({
-                                    deep,
-                                    relatedKeys: relatedSubKeys,
-                                })
-                                .then(() => resource.related)
-                        }
-                        // We're done!
-                        return resource.related
-                    })
-                    // Add this promise to the list of other related models to get
-                    promises.push(promise)
-                })
-            } else {
-                // Probably a null value, just leave it null
-            }
-        }
-        // Run all promises then return related resources
-        return Promise.all(promises).then(() => void {})
-    }
-
-    /**
-     * Same as `Resource.getRelated` except with `deep` as `true`
-     * @param resource
-     * @param options
-     */
-    static getRelatedDeep(resource: Resource, options?: GetRelatedDict) {
-        const opts = Object.assign({ deep: true }, options)
-        return this.getRelated(resource, opts)
-    }
-
-    /**
-     * Get related class by key
-     * @param key
-     */
-    static rel<T extends typeof Resource = typeof Resource>(key: string): T {
-        return this.related[key] as T
-    }
-
     static toResourceName(): string {
         return this.name
     }
@@ -363,10 +287,10 @@ export default class Resource {
 
     /**
      * Unique resource hash key used for caching and organizing requests
-     * @param resourceId 
+     * @param resourceId
      */
     static getResourceHashKey(resourceId: string) {
-        assert(Boolean(resourceId), 'Can\'t generate resource hash key with an empty Resource ID. Please ensure Resource is saved first.')
+        assert(Boolean(resourceId), "Can't generate resource hash key with an empty Resource ID. Please ensure Resource is saved first.")
         return Buffer.from(`${this.uuid}:${resourceId}`).toString('base64')
     }
 
@@ -394,40 +318,50 @@ export default class Resource {
      */
     get(key?: string): any {
         if (typeof key !== 'undefined') {
-            // We're simply getting a value
+            // Get a value
             const pieces = key.split('.')
             const thisKey = String(pieces.shift())
             const thisValue = this.attributes[thisKey]
-            const relatedResource = this.related[thisKey]
-            if (pieces.length > 0 && typeof relatedResource !== 'undefined') {
-                // We're not done getting attributes (it contains a ".") send it to related resource
-                if (Array.isArray(relatedResource)) {
-                    return relatedResource.map((thisResource) => {
+            const relatedManager: RelatedManager = this.managers[thisKey]
+
+            if (pieces.length > 0) {
+                // We need to go deeper...
+                if (!relatedManager) {
+                    throw new exceptions.ImproperlyConfiguredError(`No relation found on ${this.toResourceName()}[${thisKey}]. Did you define it on ${this.toResourceName()}.related?`)
+                }
+
+                if (relatedManager.many) {
+                    return relatedManager.objects.map((thisResource) => {
                         return thisResource.get(pieces.join('.'))
                     })
                 }
-                return relatedResource.get(pieces.join('.'))
-            }
-            if (pieces.length > 0 && thisValue && typeof relatedResource === 'undefined' && this.hasRelatedDefined(thisKey)) {
-                throw new exceptions.AttributeError(`Can't read related property ${thisKey} before getRelated() is called`)
-            } else if (!pieces.length && typeof relatedResource !== 'undefined') {
-                return relatedResource
-            } else if (!pieces.length && typeof thisValue !== 'undefined') {
+
+                return relatedManager.objects[0].get(pieces.join('.'))
+            } else if (typeof thisValue !== 'undefined' && relatedManager && !relatedManager.inflated) {
+                return relatedManager
+            } else if (typeof thisValue !== 'undefined' && relatedManager) {
+                if (!relatedManager.inflated) {
+                    throw new exceptions.AttributeError(`Can't read related property ${thisKey} before RelatedManager.resolve() is called`)
+                }
+
+                let objects = relatedManager.objects
+                return relatedManager.many ? objects : objects[0]
+            } else if (typeof thisValue !== 'undefined') {
                 return thisValue
             } else {
                 return undefined
             }
         } else {
             // We're getting all attributes -- any related resources also get converted to an object
-            const related = Object.keys(this.related)
+            const managers = Object.keys(this.managers)
             const obj = Object.assign({}, this.attributes)
-            while (related.length) {
-                const key = String(related.shift())
-                const relatedResource = this.related[key]
-                if (Array.isArray(relatedResource)) {
-                    obj[key] = relatedResource.map((subResource) => subResource.get())
+            while (managers.length) {
+                const key = String(managers.shift())
+                const manager = this.managers[key]
+                if (manager.many) {
+                    obj[key] = manager.objects.map((subResource) => subResource.get())
                 } else {
-                    obj[key] = relatedResource.get()
+                    obj[key] = manager.objects[0].get()
                 }
             }
             return obj
@@ -447,10 +381,10 @@ export default class Resource {
                 if (exceptions.AttributeError.isInstance(e)) {
                     const pieces = key.split('.')
                     const thisKey = String(pieces.shift())
+                    const manager = this.managers[thisKey]
 
-                    this.getRelated({ relatedKeys: [thisKey] }).then(() => {
+                    manager.resolve().then(() => {
                         let attrValue = this.get(thisKey)
-                        let isMany = Array.isArray(attrValue)
                         let relatedResources = [].concat(attrValue)
                         let relatedKey = pieces.join('.')
                         let promises = relatedResources.map((resource) => {
@@ -458,7 +392,7 @@ export default class Resource {
                         })
 
                         Promise.all(promises).then((values) => {
-                            if (isMany) {
+                            if (manager.many) {
                                 resolve(values)
                             } else if (values.length === 1) {
                                 resolve(values[0])
@@ -475,49 +409,46 @@ export default class Resource {
     }
 
     /**
-     * Translate this.attributes[key] into an internal value
+     * Setter -- Translate new value into an internal value onto this._attributes[key]
      * Usually this is just setting a key/value but we want to be able to accept
      * anything -- another Resource instance for example. If a Resource instance is
-     * provided, set the this.related[key] as the new instance, then set the
+     * provided, set the this.managers[key] as the new manager instance, then set the
      * this.attributes[key] field as just the primary key of the related Resource instance
      * @param key
      * @param value
      */
     toInternalValue(key: string, value: any): any {
         let currentValue = this.attributes[key]
-        if (!isEqual(currentValue, value)) {
-            // New value has changed -- set it in this.changed and this._attributes
-            let translateValueToPk = this.shouldTranslateValueToPrimaryKey(key, value)
-            // Also resolve any related Resources back into foreign keys -- @todo What if it's a list of related Resources?
-            if (value && translateValueToPk) {
-                // Newly set value is an actual Resource instance
-                let relatedResource: Resource = value
+        let newValue = value
+
+        if (!isEqual(currentValue, newValue)) {
+            // Also resolve any related Resources back into foreign keys
+            if (newValue && newValue['getConstructor']) {
+                // newValue is a Resource instance
                 // Don't accept any resources that aren't saved
-                if (!relatedResource.id) {
-                    throw new exceptions.AttributeError(`Can't append Related Resource on field "${key}": Related Resource ${relatedResource.getConstructor().name} must be saved first`)
+                if (!newValue.id) {
+                    throw new exceptions.AttributeError(`Can't append Related Resource on field "${key}": Related Resource ${newValue.getConstructor().name} must be saved first`)
                 }
-                // this.related is a related resource or a list of related resources
-                this.related[key] = relatedResource
-                // this._attributes is a list of IDs
-                value = relatedResource.id
-            } else if (value instanceof Resource && !translateValueToPk) {
-                throw new exceptions.AttributeError(`Can't accept a Related Resource on field "${key}": Value must be related Resource's primary key if there is an assigned value of "${key}" on ${this.getConstructor().name}.related`)
+                // Create a RelatedManager
+                let RelatedCtor = newValue.getConstructor()
+                let RelatedManager = this.getConstructor().relatedManager
+                let manager = new RelatedManager(RelatedCtor, newValue)
+                newValue = manager.toJSON()
+                this.managers[key] = manager
+            } else if (newValue && this.managers[key]) {
+                // newValue has an old manager -- needs a new one
+                // Create a RelatedManager
+                let RelatedCtor = newValue.to
+                let RelatedManager = this.getConstructor().relatedManager
+                let manager = new RelatedManager(RelatedCtor, newValue)
+                newValue = manager.toJSON()
+                this.managers[key] = manager
             }
 
-            this.changes[key] = value
+            this.changes[key] = newValue
         }
 
-        return value
-    }
-
-    /**
-     * Used to check if an incoming attribute (key)'s value should be translated from
-     * a Related Resource (defined in Resource.related) to a primary key (the ID)
-     * @param key
-     * @param value
-     */
-    shouldTranslateValueToPrimaryKey(key: string, value: any) {
-        return !!(value instanceof Resource && value.getConstructor() === this.rel(key))
+        return newValue
     }
 
     /**
@@ -536,15 +467,33 @@ export default class Resource {
      * Match all related values in `attributes[key]` where key is primary key of related instance defined in `Resource.related[key]`
      * @param options GetRelatedDict
      */
-    getRelated<T extends typeof Resource = typeof Resource>(this: InstanceType<T>, options?: GetRelatedDict) {
-        return this.getConstructor<T>().getRelated(this, options)
+    getRelated({ deep = false, managers = [] }: GetRelatedOpts = {}) {
+        const promises: Promise<any>[] = []
+        for (const resourceKey in this.managers) {
+            if (Array.isArray(managers) && managers.length > 0 && !~managers.indexOf(resourceKey)) {
+                continue
+            }
+
+            const manager = this.managers[resourceKey]
+            const promise = manager.resolve().then((objects) => {
+                if (deep) {
+                    return objects.forEach((resource) => resource.getRelated({ deep }))
+                } else {
+                    return void {}
+                }
+            })
+
+            promises.push(promise)
+        }
+
+        return Promise.all(promises).then(() => void {})
     }
 
     /**
      * Same as `Resource.prototype.getRelated` except `options.deep` defaults to `true`
      * @param options
      */
-    getRelatedDeep(options?: GetRelatedDict): Promise<void> {
+    getRelatedDeep(options?: GetRelatedOpts): Promise<void> {
         const opts = Object.assign({ deep: true }, options || {})
         return this.getRelated(opts)
     }
@@ -553,8 +502,8 @@ export default class Resource {
      * Get related class by key
      * @param key
      */
-    rel<T extends typeof Resource = typeof Resource>(key: string): T {
-        return this.getConstructor().rel<T>(key)
+    rel(key: string) {
+        return this.managers[key]
     }
 
     /**
@@ -625,10 +574,6 @@ export default class Resource {
 
     delete(options?: RequestConfig) {
         return this.getConstructor().client.delete(this.getConstructor().getDetailRoutePath(this.id), options)
-    }
-
-    hasRelatedDefined(relatedKey: string) {
-        return this.getConstructor().related[relatedKey] && !this.related[relatedKey]
     }
 
     cache<T extends Resource = Resource>(this: T, replace: boolean = false): T {

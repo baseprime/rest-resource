@@ -2,7 +2,7 @@ import { DefaultClient } from '../src/client'
 import Resource from '../src/index'
 export const TEST_PORT = process.env.TEST_PORT || 8099
 
-class TestingClient extends DefaultClient {
+export class TestingClient extends DefaultClient {
     requestTracker: any = {}
 
     get() {

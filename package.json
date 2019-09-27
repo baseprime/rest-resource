@@ -6,10 +6,11 @@
   "types": "types",
   "scripts": {
     "test": "mocha -r ts-node/register ./tests/**/*.spec.ts",
-    "test-server": "json-server -p ${TEST_PORT:-8099} ./tests/fixtures.json",
+    "test-server": "cp ./tests/fixtures.json ./tests/fixtures-local.json && json-server -p ${TEST_PORT:-8099} ./tests/fixtures-local.json",
     "build": "tsc --target es5 --module commonjs --outDir ./dist",
     "dev": "tsc --watch",
     "prettier": "./node_modules/prettier/bin-prettier.js --write ./src/**/*.ts ./src/*.ts",
+    "repl": "ts-node ./tests/repl.ts",
     "docs": "documentation build dist/index.js -f md"
   },
   "repository": {

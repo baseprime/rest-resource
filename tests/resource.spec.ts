@@ -64,10 +64,11 @@ describe('', () => {
     it('correctly gets related', async () => {
         let post = await PostResource.detail('1')
         let group = await GroupResource.detail('1')
+        expect(post.get('user')).to.be.instanceOf(PostResource.relatedManager)
         await post.getRelated()
         await group.getRelated()
-        expect(post.get('user')).to.be.instanceOf(UserResource)
-        expect(post.related.user).to.be.instanceOf(UserResource)
+        expect(post.get('user')).to.be.instanceOf(UserResource) // do we want this?
+        expect(post.managers.user).to.be.instanceOf(PostResource.relatedManager)
         expect(group.get('name')).to.equal('Test group')
         expect(group.get('users')).to.be.instanceOf(Array)
         expect(group.get('users')[0]).to.be.instanceOf(UserResource)
@@ -92,7 +93,11 @@ describe('', () => {
         let userName = await post.getAsync('user.name')
         expect(userName).to.equal('Leanne Graham')
         expect(await post.getAsync('user.propDoesNotExist')).to.be.undefined
-        expect(await post.getAsync('user.nested.propDoesNotExist')).to.be.undefined
+        try {
+            await post.getAsync('user.nested.propDoesNotExist')
+        } catch(e) {
+            expect(e.name).to.equal('ImproperlyConfiguredError')
+        }
     })
 
     it('caching can be turned off and on again', async () => {
