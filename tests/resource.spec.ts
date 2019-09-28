@@ -15,6 +15,7 @@ const PostResource = BaseTestingResource.extend({
 const GroupResource = BaseTestingResource.extend({
     endpoint: '/groups',
     related: {
+        owner: UserResource,
         users: UserResource
     }
 })

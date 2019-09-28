@@ -2,45 +2,45 @@ import Resource from '../index'
 import { first as _first } from 'lodash'
 import assert from 'assert'
 import { AttributeError } from '../exceptions';
-export type RelatedValues<T> = T | T[] | string | string[] | number | number[] | Record<string, any> | Record<string, any>[]
+export type RelatedObjectValue = string | string[] | number | number[] | Record<string, any> | Record<string, any>[]
 export type CollectionValue = Record<string, any>[]
 
 export default class RelatedManager<T extends typeof Resource = typeof Resource> {
     to: T
-    value: RelatedValues<T>
+    value: RelatedObjectValue
     many: boolean = false
     inflated: boolean = false
     primaryKeys: string[]
     _objects: Record<string, InstanceType<T>> = {}
 
-    constructor(to: T, value: RelatedValues<T>) {
+    constructor(to: T, value: RelatedObjectValue) {
         this.to = to
         this.value = value
         this.many = Array.isArray(value)
         this.primaryKeys = this.getPrimaryKeys()
-    }
 
-    getNodeContentType() {
-        if (this.many) {
-            let iterValue = this.value as any[]
-            let nodeCtor = _first(iterValue).constructor
-            if (nodeCtor.prototype instanceof Resource) {
-                return Resource
-            } else {
-                return nodeCtor
-            }
-        } else {
-            let Ctor = this.value.constructor
-            if (Ctor.prototype instanceof Resource) {
-                return Resource
-            } else {
-                return Ctor
-            }
+        if(!this.value || this.many && !Object.keys(this.value).length) {
+            this.inflated = true
         }
     }
 
+    getValueContentType() {
+        let node = _first([].concat(this.value))
+        let Ctor = node.constructor
+        if (Ctor.prototype instanceof Resource) {
+            return Resource
+        } else {
+            return Ctor
+        }
+        
+    }
+
     getPrimaryKeys(): string[] {
-        let contentType = this.getNodeContentType()
+        if(!Boolean(this.value)) {
+            return []
+        }
+
+        let contentType = this.getValueContentType()
         let iterValue = this.value as any[]
 
         if (this.many) {
@@ -85,9 +85,25 @@ export default class RelatedManager<T extends typeof Resource = typeof Resource>
         })
     }
 
+    add(resource: InstanceType<T>) {
+        assert(this.many, `Related Manager "many" must be true to add()`)
+        assert(resource.id, `Resource must be saved before adding to Related Manager`)
+        assert(resource.getConstructor() === this.to, `Related Manager add() expected ${this.to.toResourceName()}, recieved ${resource.getConstructor().toResourceName()}`)
+        const ContentCtor = this.getValueContentType()
+        var value
+        if(ContentCtor === Object) {
+            value = resource.toJSON()
+        } else if(ContentCtor === Number || ContentCtor === String) {
+            value = resource.id
+        }
+
+        (this.value as any[]).push(value)
+        this._objects[resource.id] = resource
+    }
+
     get objects(): InstanceType<T>[] {
         if(!this.inflated) {
-            throw new AttributeError(`Can\'t read results of ${this.constructor.name}[objects], ${this.to.toResourceName()} must resolve() first`)
+            throw new AttributeError(`Can't read results of ${this.constructor.name}[objects], ${this.to.toResourceName()} must resolve() first`)
         }
 
         const allObjects = Object.values(this._objects)

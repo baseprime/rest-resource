@@ -353,7 +353,7 @@ export default class Resource {
                 const manager = this.managers[key]
                 if (manager.many) {
                     obj[key] = manager.objects.map((subResource) => subResource.get())
-                } else {
+                } else if(!manager.many && manager.objects[0]) {
                     obj[key] = manager.objects[0].get()
                 }
             }
