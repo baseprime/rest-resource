@@ -40,6 +40,14 @@ export interface GetRelatedOpts {
     deep?: boolean
 }
 
+export type ListOpts = RequestConfig & {
+    getRelated?: boolean
+}
+
+export type DetailOpts = RequestConfig & {
+    getRelated?: boolean
+}
+
 export default class Resource {
     static endpoint: string = ''
     static cacheMaxAge: number = 60
@@ -215,14 +223,23 @@ export default class Resource {
 
     /**
      * HTTP Get of resource's list route--returns a promise
-     * @param options HTTP Request Options
+     * @param options Options object
      * @returns Promise
      */
-    static list<T extends typeof Resource = typeof Resource>(this: T, options: RequestConfig = {}): Promise<ResourceResponse<InstanceType<T>>> {
-        return this.client.list<T>(this as T, options)
+    static list<T extends typeof Resource = typeof Resource>(this: T, options: ListOpts = {}): Promise<ResourceResponse<InstanceType<T>>> {
+        return this.client.list<T>(this as T, options).then((result) => {
+            if (options.getRelated) {
+                const promises: Promise<void>[] = []
+                result.resources.forEach((resource) => {
+                    promises.push(resource.getRelated({ deep: true }))
+                })
+                return Promise.all(promises).then(() => result)
+            }
+            return result
+        })
     }
 
-    static detail<T extends typeof Resource = typeof Resource>(this: T, id: string, options: RequestConfig = {}): Promise<InstanceType<T>> {
+    static detail<T extends typeof Resource = typeof Resource>(this: T, id: string, options: DetailOpts = {}): Promise<InstanceType<T>> {
         // Check cache first
         const cached: CachedResource<InstanceType<T>> = this.getCached(String(id))
         return new Promise((resolve, reject) => {
@@ -235,10 +252,14 @@ export default class Resource {
                     // We want to use cached and a resource with this ID hasn't been requested yet
                     this.queued[queueHashKey] = []
                     this.client
-                        .detail(this, id)
-                        .then((result) => {
+                        .detail(this, id, options)
+                        .then(async (result) => {
                             // Get detail route and get resource from response
                             const correctResource = <InstanceType<T>>result.resources.pop()
+                            // Get related resources?
+                            if (options.getRelated) {
+                                await correctResource.getRelated({ deep: true })
+                            }
                             // Resolve first-sent request
                             setImmediate(() => resolve(correctResource))
                             // Then resolve any deferred requests if there are any
@@ -263,7 +284,13 @@ export default class Resource {
                 }
             } else {
                 // We want to use cache, and we found it!
-                resolve(cached.resource)
+                const cachedResource = cached.resource
+                // Get related resources?
+                if (options.getRelated) {
+                    cached.resource.getRelated({ deep: true }).then(() => resolve(cachedResource))
+                } else {
+                    resolve(cachedResource)
+                }
             }
         })
     }
@@ -313,8 +340,9 @@ export default class Resource {
 
     /**
      * Get an attribute of Resource instance
-     * You can use dot notation here -- eg. resource.get('user.username')
-     * @param key
+     * You can use dot notation here -- eg. `resource.get('user.username')`
+     * You can also get all properties by not providing any arguments
+     * @param? key
      */
     get(key?: string): any {
         if (typeof key !== 'undefined') {
@@ -353,7 +381,7 @@ export default class Resource {
                 const manager = this.managers[key]
                 if (manager.many) {
                     obj[key] = manager.objects.map((subResource) => subResource.get())
-                } else if(!manager.many && manager.objects[0]) {
+                } else if (!manager.many && manager.objects[0]) {
                     obj[key] = manager.objects[0].get()
                 }
             }
@@ -375,12 +403,10 @@ export default class Resource {
                     const pieces = key.split('.')
                     const thisKey = String(pieces.shift())
                     const manager = this.managers[thisKey]
-
+                    
                     manager.resolve().then(() => {
-                        let attrValue = this.get(thisKey)
-                        let relatedResources = [].concat(attrValue)
                         let relatedKey = pieces.join('.')
-                        let promises = relatedResources.map((resource) => {
+                        let promises = manager.objects.map((resource: Resource) => {
                             return resource.getAsync(relatedKey)
                         })
 
@@ -460,8 +486,8 @@ export default class Resource {
      * Match all related values in `attributes[key]` where key is primary key of related instance defined in `Resource.related[key]`
      * @param options GetRelatedDict
      */
-    getRelated({ deep = false, managers = [] }: GetRelatedOpts = {}) {
-        const promises: Promise<any>[] = []
+    getRelated({ deep = false, managers = [] }: GetRelatedOpts = {}): Promise<void> {
+        const promises: Promise<void>[] = []
         for (const resourceKey in this.managers) {
             if (Array.isArray(managers) && managers.length > 0 && !~managers.indexOf(resourceKey)) {
                 continue
@@ -470,7 +496,7 @@ export default class Resource {
             const manager = this.managers[resourceKey]
             const promise = manager.resolve().then((objects) => {
                 if (deep) {
-                    return objects.forEach((resource) => resource.getRelated({ deep }))
+                    return objects.forEach((resource) => resource.getRelated({ deep, managers }))
                 } else {
                     return void {}
                 }
