@@ -365,7 +365,7 @@ export default class Resource {
                 }
 
                 return relatedManager.objects[0].get(pieces.join('.'))
-            } else if (typeof thisValue !== 'undefined' && relatedManager) {
+            } else if (Boolean(thisValue) && relatedManager) {
                 // If the related manager is a single object and is inflated, auto resolve the resource.get(key) to that object
                 // @todo Maybe we should always return the manager? Or maybe we should always return the resolved object(s)? I am skeptical about this part
                 return !relatedManager.many && relatedManager.resolved ? relatedManager.objects[0] : relatedManager
