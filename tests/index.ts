@@ -4,8 +4,12 @@ export const TEST_PORT = process.env.TEST_PORT || 8099
 
 export class TestingClient extends DefaultClient {
     requestTracker: any = {}
+    logging: boolean = false
 
     get() {
+        if(this.logging) {
+            console.log('GET', arguments[0])
+        }
         this.requestTracker[arguments[0]] = (this.requestTracker[arguments[0]] || 0) + 1
         // @ts-ignore
         return DefaultClient.prototype.get.apply(this, arguments)

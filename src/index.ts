@@ -366,11 +366,11 @@ export default class Resource {
 
                 return relatedManager.objects[0].get(pieces.join('.'))
             } else if (typeof thisValue !== 'undefined' && relatedManager) {
-                return relatedManager
-            } else if (typeof thisValue !== 'undefined') {
-                return thisValue
+                // If the related manager is a single object and is inflated, auto resolve the resource.get(key) to that object
+                // @todo Maybe we should always return the manager? Or maybe we should always return the resolved object(s)? I am skeptical about this part
+                return !relatedManager.many && relatedManager.resolved ? relatedManager.objects[0] : relatedManager
             } else {
-                return undefined
+                return thisValue
             }
         } else {
             // We're getting all attributes -- any related resources also get converted to an object
@@ -403,7 +403,7 @@ export default class Resource {
                     const pieces = key.split('.')
                     const thisKey = String(pieces.shift())
                     const manager = this.managers[thisKey]
-                    
+
                     manager.resolve().then(() => {
                         let relatedKey = pieces.join('.')
                         let promises = manager.objects.map((resource: Resource) => {
@@ -496,7 +496,10 @@ export default class Resource {
             const manager = this.managers[resourceKey]
             const promise = manager.resolve().then((objects) => {
                 if (deep) {
-                    return objects.forEach((resource) => resource.getRelated({ deep, managers }))
+                    let otherPromises = objects.map((resource) => resource.getRelated({ deep, managers }))
+                    return Promise.all(otherPromises).then(() => {
+                        return void {}
+                    })
                 } else {
                     return void {}
                 }
