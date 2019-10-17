@@ -62,7 +62,7 @@ export default class RelatedManager<T extends typeof Resource = typeof Resource>
      * @returns String
      */
     getPrimaryKeys(): string[] {
-        if (!Boolean(this.value)) {
+        if (!Boolean(this.value) || (Array.isArray(this.value) && !this.value.length)) {
             return []
         }
 
