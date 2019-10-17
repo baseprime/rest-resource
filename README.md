@@ -28,7 +28,7 @@ npm install rest-resource
 ```
 
 ## Examples
-[Play around with a working example using RunKit](https://runkit.com/baseprime/5da7c105ada8d0001ab20580)
+[Play around with a working example using RunKit](https://runkit.com/baseprime/rest-resource-example)
 
 (assuming `Node >= v12.0.0`)
 
@@ -291,4 +291,8 @@ Authorization: Bearer <token>
 For more information on how JWTs work, please see [JSON Web Token Documentation](https://jwt.io/introduction/)
 
 # Documentation
+```
+npm run serve-docs
+```
+
 Please see [Documentation](./docs)
