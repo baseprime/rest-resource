@@ -5,6 +5,13 @@ const UserResource = BaseTestingResource.extend({
     endpoint: '/users'
 })
 
+const TodoResource = BaseTestingResource.extend({
+    endpoint: '/todos',
+    related: {
+        user: UserResource
+    }
+})
+
 const PostResource = BaseTestingResource.extend({
     endpoint: '/posts',
     related: {
@@ -65,7 +72,7 @@ describe('', () => {
         expect(typeof changingUser.get()).to.equal('object')
     })
     
-    it('related object lookup has right progression', async () => {
+    it('related object lookup has correct progression', async () => {
         let post = await PostResource.detail('40')
         expect(post.get('user')).to.be.string
         let samePost = await PostResource.detail('40', { getRelated: true })
@@ -155,7 +162,28 @@ describe('', () => {
         expect(group.managers.users.objects[0] === user).to.be.true
     })
 
-    it('correctly gets paged results', async() => {
+    it('handles empty values correctly', async() => {
+        // Custom group resource
+        const CustomGroupResource = BaseTestingResource.extend({
+            endpoint: '/groups',
+            related: {
+                todos: TodoResource,
+                users: UserResource,
+                owner: UserResource
+            }
+        })
+        // ...that is created with empty lists and some emptyish values on related field
+        const someGroup = new CustomGroupResource({
+            name: 'Test Group',
+            // This is what we're testing
+            users: [], // empty list
+            owner: null, // null
+            todos: undefined
+        })
         
+        expect(someGroup.get('owner')).to.be.null
+        expect(someGroup.get('users')).to.be.instanceOf(CustomGroupResource.relatedManager)
+        expect(someGroup.get('users').objects).to.be.empty
+        expect(someGroup.get('todos')).to.be.undefined
     })
 })
