@@ -291,8 +291,10 @@ Authorization: Bearer <token>
 For more information on how JWTs work, please see [JSON Web Token Documentation](https://jwt.io/introduction/)
 
 # Documentation
+Please see [Documentation](https://htmlpreview.github.io/?https://raw.githubusercontent.com/baseprime/rest-resource/master/docs/modules/_index_.html)
+
+or
+
 ```
 npm run serve-docs
 ```
-
-Please see [Documentation](./docs)
