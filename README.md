@@ -1,11 +1,11 @@
 # REST Resource - Simplified Interface for consuming REST APIs
-REST Resource is a simple library to help make your life simpler when calling REST API Endpoints. It takes RESTful Resource/Service URIs and simplifies them into a Class that can be called with simple methods.
+REST Resource is a library to make your life simpler when working with REST API Endpoints. It takes RESTful Resource/Service URIs and simplifies them into a Class that can be called with simple methods. **Think of it like a Model for REST API Endpoints.**
 
 #### Features:
-- Caching
-- Supports Related Resources
-- Nested attribute resolution on Related Resources
-- Custom clients
+- **Caching!** -- You'll never have to worry about making multiple calls to the same endpoint
+- **Easily set up Related Resources** -- Quickly wire up your Resources and which ones they're related to, Rest Resource takes care of the rest
+- **Nested attribute resolution on Related Resources** -- Get attributes on related resources as easily as `await resource.getAsync('otherResource.evenDeeperResource.name')`
+- **Custom clients** -- Customize the way Rest Resource works with your API
 
 ## What is a REST Resource?
 REST is acronym for REpresentational State Transfer. It is architectural style for distributed hypermedia systems and was first presented by Roy Fielding in 2000 in his famous [dissertation](https://www.ics.uci.edu/~fielding/pubs/dissertation/rest_arch_style.htm).
@@ -19,7 +19,7 @@ Like any other architectural style, REST also does have it’s own [6 guiding co
 npm install rest-resource
 ```
 
-### Example (assuming Node v12.0.0)
+### Example (assuming `Node >= v12.0.0`)
 Given the URIs:
 
 ```
@@ -268,4 +268,4 @@ Authorization: Bearer <token>
 For more information on how JWTs work, please see [JSON Web Token Documentation](https://jwt.io/introduction/)
 
 # Documentation
-Please see [DOCUMENTATION.md](DOCUMENTATION.md)
+Please see [Documentation](./docs)
