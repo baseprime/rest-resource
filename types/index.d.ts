@@ -25,6 +25,12 @@ export interface GetRelatedOpts {
     managers?: string[];
     deep?: boolean;
 }
+export declare type ListOpts = RequestConfig & {
+    getRelated?: boolean;
+};
+export declare type DetailOpts = RequestConfig & {
+    getRelated?: boolean;
+};
 export default class Resource {
     static endpoint: string;
     static cacheMaxAge: number;
@@ -93,11 +99,11 @@ export default class Resource {
     static getDetailRoutePath(id: string, query?: any): string;
     /**
      * HTTP Get of resource's list route--returns a promise
-     * @param options HTTP Request Options
+     * @param options Options object
      * @returns Promise
      */
-    static list<T extends typeof Resource = typeof Resource>(this: T, options?: RequestConfig): Promise<ResourceResponse<InstanceType<T>>>;
-    static detail<T extends typeof Resource = typeof Resource>(this: T, id: string, options?: RequestConfig): Promise<InstanceType<T>>;
+    static list<T extends typeof Resource = typeof Resource>(this: T, options?: ListOpts): Promise<ResourceResponse<InstanceType<T>>>;
+    static detail<T extends typeof Resource = typeof Resource>(this: T, id: string, options?: DetailOpts): Promise<InstanceType<T>>;
     static toResourceName(): string;
     static makeDefaultsObject(): any;
     /**
@@ -115,8 +121,9 @@ export default class Resource {
     set(key: string, value: any): this;
     /**
      * Get an attribute of Resource instance
-     * You can use dot notation here -- eg. resource.get('user.username')
-     * @param key
+     * You can use dot notation here -- eg. `resource.get('user.username')`
+     * You can also get all properties by not providing any arguments
+     * @param? key
      */
     get(key?: string): any;
     /**
@@ -144,7 +151,7 @@ export default class Resource {
      * Match all related values in `attributes[key]` where key is primary key of related instance defined in `Resource.related[key]`
      * @param options GetRelatedDict
      */
-    getRelated({ deep, managers }?: GetRelatedOpts): Promise<any>;
+    getRelated({ deep, managers }?: GetRelatedOpts): Promise<void>;
     /**
      * Same as `Resource.prototype.getRelated` except `options.deep` defaults to `true`
      * @param options
