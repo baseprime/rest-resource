@@ -1,12 +1,8 @@
 import { DefaultClient, RequestConfig, ResourceResponse } from './client';
+import RelatedManager from './related';
 export declare type IterableDict = {
     [index: string]: any;
 };
-export interface GetRelatedDict {
-    deep?: boolean;
-    relatedKeys?: string[];
-    relatedSubKeys?: string[];
-}
 export interface ResourceClassDict<T extends typeof Resource = typeof Resource> extends IterableDict {
     [key: string]: T;
 }
@@ -25,23 +21,28 @@ export interface SaveOptions {
     replaceCache?: boolean;
     force?: boolean;
 }
+export interface GetRelatedOpts {
+    managers?: string[];
+    deep?: boolean;
+}
 export default class Resource {
     static endpoint: string;
     static cacheMaxAge: number;
     static _cache: any;
     static _client: DefaultClient;
     static _uuid: string;
-    static queued: IterableDict;
+    static queued: Record<string, any>;
     static uniqueKey: string;
     static perPage: number | null;
-    static defaults: IterableDict;
+    static defaults: Record<string, any>;
+    static relatedManager: typeof RelatedManager;
     static validators: ValidatorDict;
     static related: ResourceClassDict;
-    _attributes: IterableDict;
+    _attributes: Record<string, any>;
     uuid: string;
-    attributes: IterableDict;
-    related: ResourceDict;
-    changes: IterableDict;
+    attributes: Record<string, any>;
+    managers: Record<string, RelatedManager>;
+    changes: Record<string, any>;
     constructor(attributes?: any, options?: any);
     /**
      * Cache getter
@@ -59,6 +60,7 @@ export default class Resource {
      * @param resource
      */
     static replaceCache<T extends Resource = Resource>(resource: T): void;
+    static clearCache(): void;
     /**
      * Get time delta in seconds of cache expiry
      */
@@ -96,24 +98,13 @@ export default class Resource {
      */
     static list<T extends typeof Resource = typeof Resource>(this: T, options?: RequestConfig): Promise<ResourceResponse<InstanceType<T>>>;
     static detail<T extends typeof Resource = typeof Resource>(this: T, id: string, options?: RequestConfig): Promise<InstanceType<T>>;
-    /**
-     * Match all related values in `attributes[key]` where key is primary key of related instance
-     * @param resource Resource Instance
-     */
-    static getRelated<T extends typeof Resource = typeof Resource>(this: T, resource: InstanceType<T>, { deep, relatedKeys, relatedSubKeys }?: GetRelatedDict): Promise<void>;
-    /**
-     * Same as `Resource.getRelated` except with `deep` as `true`
-     * @param resource
-     * @param options
-     */
-    static getRelatedDeep(resource: Resource, options?: GetRelatedDict): Promise<void>;
-    /**
-     * Get related class by key
-     * @param key
-     */
-    static rel<T extends typeof Resource = typeof Resource>(key: string): T;
     static toResourceName(): string;
     static makeDefaultsObject(): any;
+    /**
+     * Unique resource hash key used for caching and organizing requests
+     * @param resourceId
+     */
+    static getResourceHashKey(resourceId: string): string;
     static extend<T, U>(this: U, classProps: T): U & T;
     /**
      * Set an attribute of Resource instance and apply getters/setters
@@ -135,22 +126,15 @@ export default class Resource {
      */
     getAsync(key: string): Promise<any>;
     /**
-     * Translate this.attributes[key] into an internal value
+     * Setter -- Translate new value into an internal value onto this._attributes[key]
      * Usually this is just setting a key/value but we want to be able to accept
      * anything -- another Resource instance for example. If a Resource instance is
-     * provided, set the this.related[key] as the new instance, then set the
+     * provided, set the this.managers[key] as the new manager instance, then set the
      * this.attributes[key] field as just the primary key of the related Resource instance
      * @param key
      * @param value
      */
     toInternalValue(key: string, value: any): any;
-    /**
-     * Used to check if an incoming attribute (key)'s value should be translated from
-     * a Related Resource (defined in Resource.related) to a primary key (the ID)
-     * @param key
-     * @param value
-     */
-    shouldTranslateValueToPrimaryKey(key: string, value: any): boolean;
     /**
      * Like calling instance.constructor but safer:
      * changing objects down the line won't creep up the prototype chain and end up on native global objects like Function or Object
@@ -160,17 +144,17 @@ export default class Resource {
      * Match all related values in `attributes[key]` where key is primary key of related instance defined in `Resource.related[key]`
      * @param options GetRelatedDict
      */
-    getRelated<T extends typeof Resource = typeof Resource>(this: InstanceType<T>, options?: GetRelatedDict): Promise<void>;
+    getRelated({ deep, managers }?: GetRelatedOpts): Promise<any>;
     /**
      * Same as `Resource.prototype.getRelated` except `options.deep` defaults to `true`
      * @param options
      */
-    getRelatedDeep(options?: GetRelatedDict): Promise<void>;
+    getRelatedDeep(options?: GetRelatedOpts): Promise<void>;
     /**
      * Get related class by key
      * @param key
      */
-    rel<T extends typeof Resource = typeof Resource>(key: string): T;
+    rel(key: string): RelatedManager<typeof Resource>;
     /**
      * Saves the instance -- sends changes as a PATCH or sends whole object as a POST if it's new
      */
@@ -182,7 +166,6 @@ export default class Resource {
     validate(): Error[];
     update<T extends Resource = Resource>(this: T): Promise<T>;
     delete(options?: RequestConfig): Promise<any>;
-    hasRelatedDefined(relatedKey: string): boolean;
     cache<T extends Resource = Resource>(this: T, replace?: boolean): T;
     getCached<T extends Resource = Resource>(this: T): CachedResource<T>;
     isNew(): boolean;
