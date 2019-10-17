@@ -27,6 +27,12 @@ Like any other architectural style, REST also does have it’s own [6 guiding co
 npm install rest-resource
 ```
 
+# Documentation
+Please see [Documentation](https://htmlpreview.github.io/?https://raw.githubusercontent.com/baseprime/rest-resource/master/docs/classes/_index_.resource.html)
+```
+npm run serve-docs
+```
+
 ## Examples
 [Play around with a working example using RunKit](https://runkit.com/baseprime/rest-resource-example)
 
@@ -289,12 +295,3 @@ Authorization: Bearer <token>
 ```
 
 For more information on how JWTs work, please see [JSON Web Token Documentation](https://jwt.io/introduction/)
-
-# Documentation
-Please see [Documentation](https://htmlpreview.github.io/?https://raw.githubusercontent.com/baseprime/rest-resource/master/docs/modules/_index_.html)
-
-or
-
-```
-npm run serve-docs
-```
