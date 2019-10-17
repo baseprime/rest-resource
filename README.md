@@ -2,7 +2,7 @@
 ### Simplified Interface for consuming REST APIs
 REST Resource is a library to make your life simpler when working with REST API Endpoints. It takes RESTful Resource/Service URIs and simplifies them into a Class that can be called with simple methods. **Think of it like a Model for REST API Endpoints.**
 
-#### Features:
+### Features:
 - **Caching!**
   - You'll never have to worry about making multiple calls to the same endpoint
 - **Easily set up Related Resources**
