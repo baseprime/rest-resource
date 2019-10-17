@@ -1,0 +1,419 @@
+<!doctype html>
+<html class="default no-js">
+<head>
+	<meta charset="utf-8">
+	<meta http-equiv="X-UA-Compatible" content="IE=edge">
+	<title>rest-resource</title>
+	<meta name="description" content="">
+	<meta name="viewport" content="width=device-width, initial-scale=1">
+	<link rel="stylesheet" href="assets/css/main.css">
+</head>
+<body>
+<header>
+	<div class="tsd-page-toolbar">
+		<div class="container">
+			<div class="table-wrap">
+				<div class="table-cell" id="tsd-search" data-index="assets/js/search.js" data-base=".">
+					<div class="field">
+						<label for="tsd-search-field" class="tsd-widget search no-caption">Search</label>
+						<input id="tsd-search-field" type="text" />
+					</div>
+					<ul class="results">
+						<li class="state loading">Preparing search index...</li>
+						<li class="state failure">The search index is not available</li>
+					</ul>
+					<a href="index.html" class="title">rest-resource</a>
+				</div>
+				<div class="table-cell" id="tsd-widgets">
+					<div id="tsd-filter">
+						<a href="#" class="tsd-widget options no-caption" data-toggle="options">Options</a>
+						<div class="tsd-filter-group">
+							<div class="tsd-select" id="tsd-filter-visibility">
+								<span class="tsd-select-label">All</span>
+								<ul class="tsd-select-list">
+									<li data-value="public">Public</li>
+									<li data-value="protected">Public/Protected</li>
+									<li data-value="private" class="selected">All</li>
+								</ul>
+							</div>
+							<input type="checkbox" id="tsd-filter-inherited" checked />
+							<label class="tsd-widget" for="tsd-filter-inherited">Inherited</label>
+							<input type="checkbox" id="tsd-filter-externals" checked />
+							<label class="tsd-widget" for="tsd-filter-externals">Externals</label>
+						</div>
+					</div>
+					<a href="#" class="tsd-widget menu no-caption" data-toggle="menu">Menu</a>
+				</div>
+			</div>
+		</div>
+	</div>
+	<div class="tsd-page-title">
+		<div class="container">
+			<ul class="tsd-breadcrumb">
+				<li>
+					<a href="globals.html">Globals</a>
+				</li>
+			</ul>
+			<h1> rest-resource</h1>
+		</div>
+	</div>
+</header>
+<div class="container container-main">
+	<div class="row">
+		<div class="col-8 col-content">
+			<div class="tsd-panel tsd-typography">
+				<a href="#rest-resource---simplified-interface-for-consuming-rest-apis" id="rest-resource---simplified-interface-for-consuming-rest-apis" style="color: inherit; text-decoration: none;">
+					<h1>REST Resource - Simplified Interface for consuming REST APIs</h1>
+				</a>
+				<p>REST Resource is a simple library to help make your life simpler when calling REST API Endpoints. It takes RESTful Resource/Service URIs and simplifies them into a Class that can be called with simple methods.</p>
+				<a href="#features" id="features" style="color: inherit; text-decoration: none;">
+					<h4>Features:</h4>
+				</a>
+				<ul>
+					<li>Caching</li>
+					<li>Supports Related Resources</li>
+					<li>Nested attribute resolution on Related Resources</li>
+					<li>Custom clients</li>
+				</ul>
+				<a href="#what-is-a-rest-resource" id="what-is-a-rest-resource" style="color: inherit; text-decoration: none;">
+					<h2>What is a REST Resource?</h2>
+				</a>
+				<p>REST is acronym for REpresentational State Transfer. It is architectural style for distributed hypermedia systems and was first presented by Roy Fielding in 2000 in his famous <a href="https://www.ics.uci.edu/~fielding/pubs/dissertation/rest_arch_style.htm">dissertation</a>.</p>
+				<p>Like any other architectural style, REST also does have it’s own <a href="https://restfulapi.net/rest-architectural-constraints/">6 guiding constraints</a> which must be satisfied if an interface needs to be referred as RESTful.</p>
+				<p><a href="https://restfulapi.net/">Please read further documentation</a></p>
+				<a href="#installation" id="installation" style="color: inherit; text-decoration: none;">
+					<h2>Installation</h2>
+				</a>
+				<pre><code>npm <span class="hljs-keyword">install</span> rest-<span class="hljs-keyword">resource</span></code></pre>
+				<a href="#example-assuming-node-v1200" id="example-assuming-node-v1200" style="color: inherit; text-decoration: none;">
+					<h3>Example (assuming Node v12.0.0)</h3>
+				</a>
+				<p>Given the URIs:</p>
+				<pre><code><span class="hljs-built_in">/users
+</span>/users/&lt;id&gt;
+/roles
+/roles/&lt;id&gt;
+/groups
+/groups/&lt;id&gt;</code></pre><p>Code:</p>
+				<pre><code class="language-javascript"><span class="hljs-keyword">import</span> Resource <span class="hljs-keyword">from</span> <span class="hljs-string">'rest-resource'</span>
+
+<span class="hljs-class"><span class="hljs-keyword">class</span> <span class="hljs-title">UserResource</span> <span class="hljs-keyword">extends</span> <span class="hljs-title">Resource</span> </span>{
+    <span class="hljs-keyword">static</span> endpoint = <span class="hljs-string">'/users'</span>
+
+    greet() {
+        <span class="hljs-built_in">console</span>.log(<span class="hljs-string">'I am %s, %s!'</span>, <span class="hljs-keyword">this</span>.attributes.name, <span class="hljs-keyword">this</span>.attributes.role)
+    }
+}
+
+<span class="hljs-comment">// Sends a GET to /users</span>
+UserResource.list().then(<span class="hljs-function">(<span class="hljs-params">users</span>) =&gt;</span> {
+    <span class="hljs-keyword">let</span> user = users[<span class="hljs-number">0</span>]
+    user.greet()
+    <span class="hljs-comment">// =&gt; I am Arthur, King of the Britons!</span>
+    user.set(<span class="hljs-string">'weapon'</span>, <span class="hljs-string">'Sword'</span>)
+    user.save()
+    <span class="hljs-comment">// PATCH { weapon: 'Sword' } to /users/123</span>
+})
+
+<span class="hljs-comment">// Or, get details of a Resource</span>
+<span class="hljs-comment">// Sends a GET to /users/123</span>
+UserResource.detail(<span class="hljs-number">123</span>).then(<span class="hljs-function">(<span class="hljs-params">arthur</span>) =&gt;</span> {
+    arthur.greet()
+})</code></pre>
+				<a href="#supports-caching-out-of-the-box" id="supports-caching-out-of-the-box" style="color: inherit; text-decoration: none;">
+					<h1>Supports Caching out of the box</h1>
+				</a>
+				<p>REST Resource has a caching mechanism that caches objects returned by your API.</p>
+				<pre><code class="language-javascript"><span class="hljs-keyword">let</span> user = <span class="hljs-keyword">await</span> UserResource.detail(<span class="hljs-number">123</span>)
+<span class="hljs-comment">// GET /users/123</span>
+
+user.greet()
+<span class="hljs-comment">// =&gt; I am Arthur, King of the Britons!</span>
+
+<span class="hljs-keyword">let</span> sameuser = <span class="hljs-keyword">await</span> UserResource.detail(<span class="hljs-number">123</span>)
+<span class="hljs-comment">// Cache is still good, did not send GET to /users/123</span>
+
+sameuser.greet()
+<span class="hljs-comment">// =&gt; I am Arthur, King of the Britons!</span></code></pre>
+				<a href="#related-resources" id="related-resources" style="color: inherit; text-decoration: none;">
+					<h1>Related Resources</h1>
+				</a>
+				<p>You can also define related resources:</p>
+				<pre><code class="language-javascript"><span class="hljs-keyword">import</span> Resource <span class="hljs-keyword">from</span> <span class="hljs-string">'rest-resource'</span>
+
+<span class="hljs-class"><span class="hljs-keyword">class</span> <span class="hljs-title">RoleResource</span> <span class="hljs-keyword">extends</span> <span class="hljs-title">Resource</span> </span>{
+    <span class="hljs-keyword">static</span> endpont = <span class="hljs-string">'/roles'</span>
+}
+
+<span class="hljs-class"><span class="hljs-keyword">class</span> <span class="hljs-title">GroupResource</span> <span class="hljs-keyword">extends</span> <span class="hljs-title">Resource</span> </span>{
+    <span class="hljs-keyword">static</span> endpont = <span class="hljs-string">'/groups'</span>
+}
+
+<span class="hljs-class"><span class="hljs-keyword">class</span> <span class="hljs-title">UserResource</span> <span class="hljs-keyword">extends</span> <span class="hljs-title">Resource</span> </span>{
+    <span class="hljs-keyword">static</span> endpoint = <span class="hljs-string">'/users'</span>
+    <span class="hljs-keyword">static</span> related = {
+        <span class="hljs-attr">role</span>: RoleResource,
+        <span class="hljs-attr">group</span>: GroupResource
+    }
+}
+
+<span class="hljs-comment">// GET /users/321</span>
+<span class="hljs-keyword">let</span> user = <span class="hljs-keyword">await</span> UserResource.detail(<span class="hljs-number">321</span>)
+<span class="hljs-keyword">await</span> user.getRelated()
+<span class="hljs-comment">// GET /roles/&lt;id&gt;</span>
+<span class="hljs-comment">// GET /groups/&lt;id&gt;</span>
+
+<span class="hljs-comment">// Using get() gets the attribute `title `on related key `role`</span>
+<span class="hljs-keyword">let</span> title = user.get(<span class="hljs-string">'role.title'</span>)
+<span class="hljs-keyword">let</span> name = user.get(<span class="hljs-string">'name'</span>)
+<span class="hljs-built_in">console</span>.log(<span class="hljs-string">'%s the %s!'</span>, name, title)
+<span class="hljs-comment">// =&gt; Tim the Enchanter!</span>
+
+<span class="hljs-built_in">console</span>.log(user.get(<span class="hljs-string">'role'</span>))
+<span class="hljs-comment">// =&gt; RoleResource({ id: 654, title: 'Enchanter' })</span></code></pre>
+				<a href="#related-attribute-lookups-with-codegetasynccode" id="related-attribute-lookups-with-codegetasynccode" style="color: inherit; text-decoration: none;">
+					<h3>Related Attribute Lookups with <code>getAsync()</code></h3>
+				</a>
+				<p>REST Resource automatically resolves properties from related lookups, then decides what it needs to call <code>resource.getRelated()</code></p>
+				<pre><code class="language-javascript"><span class="hljs-keyword">let</span> roger = <span class="hljs-keyword">await</span> UserResource.detail(<span class="hljs-number">543</span>)
+<span class="hljs-comment">// GET /users/543</span>
+
+<span class="hljs-keyword">let</span> title = <span class="hljs-keyword">await</span> roger.getAsync(<span class="hljs-string">'role.title'</span>)
+<span class="hljs-comment">// Doesn't need send GET /roles/&lt;id&gt;</span>
+
+<span class="hljs-built_in">console</span>.log(title)
+<span class="hljs-comment">// =&gt; Shrubber</span></code></pre>
+				<p>Furthermore, if an object is cached and is called upon from other related models, REST Resource will save a request.</p>
+				<p>In the example below, notice the <code>group</code> ids are the same:</p>
+				<pre><code class="language-javascript"><span class="hljs-keyword">let</span> arthur = <span class="hljs-keyword">await</span> UserResource.detail(<span class="hljs-number">123</span>)
+<span class="hljs-built_in">console</span>.log(arthur.attributes)
+<span class="hljs-comment">// =&gt; {</span>
+<span class="hljs-comment">//        id: 123,</span>
+<span class="hljs-comment">//        name: 'King Arthur',</span>
+<span class="hljs-comment">//        weapon: 'Sword',</span>
+<span class="hljs-comment">//        role: 1,</span>
+<span class="hljs-comment">//        group: 1</span>
+<span class="hljs-comment">//    }</span>
+
+<span class="hljs-keyword">let</span> patsy = <span class="hljs-keyword">await</span> UserResource.detail(<span class="hljs-number">654</span>)
+<span class="hljs-built_in">console</span>.log(patsy.attributes)
+<span class="hljs-comment">// =&gt; {</span>
+<span class="hljs-comment">//        id: 654,</span>
+<span class="hljs-comment">//        name: 'Patsy',</span>
+<span class="hljs-comment">//        weapon: 'Coconuts',</span>
+<span class="hljs-comment">//        role: 2,</span>
+<span class="hljs-comment">//        group: 1 // Notice this ID is the same as the one above</span>
+<span class="hljs-comment">//    }</span>
+
+<span class="hljs-keyword">let</span> arthurTitle = arthur.getAsync(<span class="hljs-string">'role.title'</span>)
+<span class="hljs-keyword">let</span> arthurGroup = arthur.getAsync(<span class="hljs-string">'group.name'</span>)
+<span class="hljs-comment">// GET /roles/1</span>
+<span class="hljs-comment">// GET /groups/1</span>
+
+<span class="hljs-keyword">let</span> patsyTitle = patsy.getAsync(<span class="hljs-string">'role.title'</span>)
+<span class="hljs-keyword">let</span> patsyGroup = patsy.getAsync(<span class="hljs-string">'group.name'</span>)
+<span class="hljs-comment">// GET /roles/2</span>
+<span class="hljs-comment">// Does not need to GET /groups/1</span></code></pre>
+				<a href="#acts-like-a-model" id="acts-like-a-model" style="color: inherit; text-decoration: none;">
+					<h1>Acts like a Model</h1>
+				</a>
+				<p>You can use REST Resource like a RESTful Model. REST Resource tracks changes in each Resource instance&#39;s attributes and uses RESTful HTTP Verbs like <code>GET</code>, <code>POST</code>, <code>PUT</code>, <code>PATCH</code>, and <code>DELETE</code> accordingly:</p>
+				<pre><code class="language-javascript"><span class="hljs-keyword">let</span> robin = <span class="hljs-keyword">new</span> UserResource({
+    <span class="hljs-attr">name</span>: <span class="hljs-string">'Brave Sir Robin'</span>,
+    <span class="hljs-attr">weapon</span>: <span class="hljs-string">'Sword'</span>
+})
+
+<span class="hljs-keyword">await</span> robin.save()
+<span class="hljs-comment">// POST /users</span>
+<span class="hljs-keyword">let</span> knight = <span class="hljs-keyword">new</span> RoleResource({ <span class="hljs-attr">title</span>: <span class="hljs-string">'Knight of the Round Table'</span> })
+<span class="hljs-keyword">await</span> knight.save()
+<span class="hljs-comment">// POST /roles</span>
+
+robin.set(<span class="hljs-string">'role'</span>, knight.id)
+robin.save()
+<span class="hljs-comment">// PATCH /users/&lt;robin-id&gt;</span>
+
+robin.update()
+<span class="hljs-comment">// GET /users/&lt;robin-id&gt;</span>
+
+robin.runAway()
+robin.delete()
+<span class="hljs-comment">// DELETE /users/&lt;robin-id&gt;</span></code></pre>
+				<a href="#resource-instance-defaults" id="resource-instance-defaults" style="color: inherit; text-decoration: none;">
+					<h2>Resource Instance Defaults</h2>
+				</a>
+				<p>You can also specify the defaults that a Resource instance should have:</p>
+				<pre><code class="language-javascript"><span class="hljs-class"><span class="hljs-keyword">class</span> <span class="hljs-title">UserResource</span> <span class="hljs-keyword">extends</span> <span class="hljs-title">Resource</span> </span>{
+    <span class="hljs-keyword">static</span> endpoint = <span class="hljs-string">'/users'</span>
+    <span class="hljs-keyword">static</span> defaults = {
+        <span class="hljs-attr">name</span>: <span class="hljs-string">'Unknown User'</span>,
+        <span class="hljs-attr">weapon</span>: <span class="hljs-string">'Hyperbolic Taunting'</span>,
+        <span class="hljs-attr">group</span>: <span class="hljs-number">1</span>
+    }
+}
+
+<span class="hljs-keyword">let</span> unknown = <span class="hljs-keyword">new</span> UserResource({ <span class="hljs-attr">group</span>: <span class="hljs-number">2</span> })
+<span class="hljs-built_in">console</span>.log(unknown.get(<span class="hljs-string">'name'</span>))
+<span class="hljs-comment">// =&gt; Unknown User</span></code></pre>
+				<a href="#the-codeclientcode-class" id="the-codeclientcode-class" style="color: inherit; text-decoration: none;">
+					<h1>The <code>Client</code> Class</h1>
+				</a>
+				<p>The Client class is a simple request library that is meant to be customized to suit your needs.</p>
+				<a href="#rest-resource-assumes-the-api-you-are-consuming-is-rendering-json-and-authenticated-endpoints-are-using-a-bearer-jwt" id="rest-resource-assumes-the-api-you-are-consuming-is-rendering-json-and-authenticated-endpoints-are-using-a-bearer-jwt" style="color: inherit; text-decoration: none;">
+					<h4>REST Resource assumes the API you are consuming is rendering JSON and authenticated endpoints are using a Bearer JWT</h4>
+				</a>
+				<p>For requests, REST Resource uses a basic <a href="https://www.npmjs.com/package/axios">Axios</a> client (<code>JWTBearerClient</code> class in <code>src/client</code>). You can override this by creating a custom client.</p>
+				<p>For more information on how Axios works, <a href="https://github.com/axios/axios">please refer to Axios documentation</a></p>
+				<a href="#creating-a-custom-client" id="creating-a-custom-client" style="color: inherit; text-decoration: none;">
+					<h2>Creating a custom client</h2>
+				</a>
+				<p>When creating a custom client, you can override any methods you&#39;d like. One method in particular you&#39;ll need to focus on is <code>negotiateContent()</code> which should return a function that parses the body of the response into a list of objects.</p>
+				<a href="#assigning-a-custom-client" id="assigning-a-custom-client" style="color: inherit; text-decoration: none;">
+					<h2>Assigning a Custom Client</h2>
+				</a>
+				<p>There are a number of ways you can set the client:</p>
+				<pre><code class="language-javascript"><span class="hljs-keyword">import</span> Resource <span class="hljs-keyword">from</span> <span class="hljs-string">'rest-resource'</span>
+<span class="hljs-keyword">import</span> { DefaultClient } <span class="hljs-keyword">from</span> <span class="hljs-string">'rest-resource/client'</span>
+
+<span class="hljs-class"><span class="hljs-keyword">class</span> <span class="hljs-title">CustomClient</span> <span class="hljs-keyword">extends</span> <span class="hljs-title">DefaultClient</span> </span>{
+    negotiateContent(ResourceClass) {
+        <span class="hljs-keyword">return</span> <span class="hljs-function">(<span class="hljs-params">response</span>) =&gt;</span> {
+            <span class="hljs-keyword">let</span> objects = []
+            <span class="hljs-keyword">if</span>(<span class="hljs-built_in">Array</span>.isArray(response.data)) {
+                response.data.forEach(<span class="hljs-function">(<span class="hljs-params">attributes</span>) =&gt;</span> objects.push(<span class="hljs-keyword">new</span> ResourceClass(attributes)))
+            } <span class="hljs-keyword">else</span> {
+                objects.push(<span class="hljs-keyword">new</span> ResourceClass(response.data))
+            }
+
+            <span class="hljs-keyword">return</span> {
+                response,
+                objects,
+                <span class="hljs-attr">pages</span>: <span class="hljs-function"><span class="hljs-params">()</span> =&gt;</span> response.headers[<span class="hljs-string">'Pagination-Count'</span>],
+                <span class="hljs-attr">currentPage</span>: <span class="hljs-function"><span class="hljs-params">()</span> =&gt;</span> response.headers[<span class="hljs-string">'Pagination-Page'</span>],
+                <span class="hljs-attr">perPage</span>: <span class="hljs-function"><span class="hljs-params">()</span> =&gt;</span> response.headers[<span class="hljs-string">'Pagination-Limit'</span>],
+            }
+        }
+    }
+}
+
+<span class="hljs-class"><span class="hljs-keyword">class</span> <span class="hljs-title">CustomResource</span> <span class="hljs-keyword">extends</span> <span class="hljs-title">Resource</span> </span>{
+    <span class="hljs-keyword">static</span> client = <span class="hljs-keyword">new</span> CustomClient(<span class="hljs-string">'http://some-api.com'</span>)
+}
+
+<span class="hljs-comment">// Or: (this method can also be used to override client globally by replacing "CustomResource" with "Resource")</span>
+CustomResource.client = <span class="hljs-keyword">new</span> CustomClient(<span class="hljs-string">'http://some-api.com'</span>)</code></pre>
+				<a href="#json-web-tokens-jwt-and-authenticated-endpoints" id="json-web-tokens-jwt-and-authenticated-endpoints" style="color: inherit; text-decoration: none;">
+					<h3>JSON Web Tokens (JWT) and Authenticated Endpoints</h3>
+				</a>
+				<p>Whenever the user wants to access a protected route or resource, the user agent should send the JWT, typically in the Authorization header using the Bearer schema. The content of the header should look like the following:</p>
+				<pre><code><span class="hljs-symbol">Authorization:</span> Bearer <span class="hljs-params">&lt;token&gt;</span></code></pre><p>For more information on how JWTs work, please see <a href="https://jwt.io/introduction/">JSON Web Token Documentation</a></p>
+				<a href="#documentation" id="documentation" style="color: inherit; text-decoration: none;">
+					<h1>Documentation</h1>
+				</a>
+				<p>Please see <a href="DOCUMENTATION.md">DOCUMENTATION.md</a></p>
+			</div>
+		</div>
+		<div class="col-4 col-menu menu-sticky-wrap menu-highlight">
+			<nav class="tsd-navigation primary">
+				<ul>
+					<li class="globals  ">
+						<a href="globals.html"><em>Globals</em></a>
+					</li>
+					<li class="label tsd-is-external">
+						<span>Internals</span>
+					</li>
+					<li class=" tsd-kind-external-module">
+						<a href="modules/_index_.html">"index"</a>
+					</li>
+					<li class="label tsd-is-external">
+						<span>Externals</span>
+					</li>
+					<li class=" tsd-kind-external-module tsd-is-external">
+						<a href="modules/_client_.html">"client"</a>
+					</li>
+					<li class=" tsd-kind-external-module tsd-is-external">
+						<a href="modules/_exceptions_.html">"exceptions"</a>
+					</li>
+					<li class=" tsd-kind-external-module tsd-is-external">
+						<a href="modules/_related_index_.html">"related/index"</a>
+					</li>
+					<li class=" tsd-kind-external-module tsd-is-external">
+						<a href="modules/_util_.html">"util"</a>
+					</li>
+				</ul>
+			</nav>
+			<nav class="tsd-navigation secondary menu-sticky">
+				<ul class="before-current">
+				</ul>
+			</nav>
+		</div>
+	</div>
+</div>
+<footer class="with-border-bottom">
+	<div class="container">
+		<h2>Legend</h2>
+		<div class="tsd-legend-group">
+			<ul class="tsd-legend">
+				<li class="tsd-kind-module"><span class="tsd-kind-icon">Module</span></li>
+				<li class="tsd-kind-object-literal"><span class="tsd-kind-icon">Object literal</span></li>
+				<li class="tsd-kind-variable"><span class="tsd-kind-icon">Variable</span></li>
+				<li class="tsd-kind-function"><span class="tsd-kind-icon">Function</span></li>
+				<li class="tsd-kind-function tsd-has-type-parameter"><span class="tsd-kind-icon">Function with type parameter</span></li>
+				<li class="tsd-kind-index-signature"><span class="tsd-kind-icon">Index signature</span></li>
+				<li class="tsd-kind-type-alias"><span class="tsd-kind-icon">Type alias</span></li>
+				<li class="tsd-kind-type-alias tsd-has-type-parameter"><span class="tsd-kind-icon">Type alias with type parameter</span></li>
+			</ul>
+			<ul class="tsd-legend">
+				<li class="tsd-kind-enum"><span class="tsd-kind-icon">Enumeration</span></li>
+				<li class="tsd-kind-enum-member"><span class="tsd-kind-icon">Enumeration member</span></li>
+				<li class="tsd-kind-property tsd-parent-kind-enum"><span class="tsd-kind-icon">Property</span></li>
+				<li class="tsd-kind-method tsd-parent-kind-enum"><span class="tsd-kind-icon">Method</span></li>
+			</ul>
+			<ul class="tsd-legend">
+				<li class="tsd-kind-interface"><span class="tsd-kind-icon">Interface</span></li>
+				<li class="tsd-kind-interface tsd-has-type-parameter"><span class="tsd-kind-icon">Interface with type parameter</span></li>
+				<li class="tsd-kind-constructor tsd-parent-kind-interface"><span class="tsd-kind-icon">Constructor</span></li>
+				<li class="tsd-kind-property tsd-parent-kind-interface"><span class="tsd-kind-icon">Property</span></li>
+				<li class="tsd-kind-method tsd-parent-kind-interface"><span class="tsd-kind-icon">Method</span></li>
+				<li class="tsd-kind-index-signature tsd-parent-kind-interface"><span class="tsd-kind-icon">Index signature</span></li>
+			</ul>
+			<ul class="tsd-legend">
+				<li class="tsd-kind-class"><span class="tsd-kind-icon">Class</span></li>
+				<li class="tsd-kind-class tsd-has-type-parameter"><span class="tsd-kind-icon">Class with type parameter</span></li>
+				<li class="tsd-kind-constructor tsd-parent-kind-class"><span class="tsd-kind-icon">Constructor</span></li>
+				<li class="tsd-kind-property tsd-parent-kind-class"><span class="tsd-kind-icon">Property</span></li>
+				<li class="tsd-kind-method tsd-parent-kind-class"><span class="tsd-kind-icon">Method</span></li>
+				<li class="tsd-kind-accessor tsd-parent-kind-class"><span class="tsd-kind-icon">Accessor</span></li>
+				<li class="tsd-kind-index-signature tsd-parent-kind-class"><span class="tsd-kind-icon">Index signature</span></li>
+			</ul>
+			<ul class="tsd-legend">
+				<li class="tsd-kind-constructor tsd-parent-kind-class tsd-is-inherited"><span class="tsd-kind-icon">Inherited constructor</span></li>
+				<li class="tsd-kind-property tsd-parent-kind-class tsd-is-inherited"><span class="tsd-kind-icon">Inherited property</span></li>
+				<li class="tsd-kind-method tsd-parent-kind-class tsd-is-inherited"><span class="tsd-kind-icon">Inherited method</span></li>
+				<li class="tsd-kind-accessor tsd-parent-kind-class tsd-is-inherited"><span class="tsd-kind-icon">Inherited accessor</span></li>
+			</ul>
+			<ul class="tsd-legend">
+				<li class="tsd-kind-property tsd-parent-kind-class tsd-is-protected"><span class="tsd-kind-icon">Protected property</span></li>
+				<li class="tsd-kind-method tsd-parent-kind-class tsd-is-protected"><span class="tsd-kind-icon">Protected method</span></li>
+				<li class="tsd-kind-accessor tsd-parent-kind-class tsd-is-protected"><span class="tsd-kind-icon">Protected accessor</span></li>
+			</ul>
+			<ul class="tsd-legend">
+				<li class="tsd-kind-property tsd-parent-kind-class tsd-is-private"><span class="tsd-kind-icon">Private property</span></li>
+				<li class="tsd-kind-method tsd-parent-kind-class tsd-is-private"><span class="tsd-kind-icon">Private method</span></li>
+				<li class="tsd-kind-accessor tsd-parent-kind-class tsd-is-private"><span class="tsd-kind-icon">Private accessor</span></li>
+			</ul>
+			<ul class="tsd-legend">
+				<li class="tsd-kind-property tsd-parent-kind-class tsd-is-static"><span class="tsd-kind-icon">Static property</span></li>
+				<li class="tsd-kind-call-signature tsd-parent-kind-class tsd-is-static"><span class="tsd-kind-icon">Static method</span></li>
+			</ul>
+		</div>
+	</div>
+</footer>
+<div class="container tsd-generator">
+	<p>Generated using <a href="https://typedoc.org/" target="_blank">TypeDoc</a></p>
+</div>
+<div class="overlay"></div>
+<script src="assets/js/main.js"></script>
+<script>if (location.protocol == 'file:') document.write('<script src="assets/js/search.js"><' + '/script>');</script>
+</body>
+</html>

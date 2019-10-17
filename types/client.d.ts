@@ -12,6 +12,8 @@ export interface ResourceResponse<T extends Resource = Resource> {
     pages?: () => number;
     currentPage?: () => number;
     perPage?: () => number;
+    next?: () => ResourceResponse<T>;
+    previous?: () => ResourceResponse<T>;
 }
 export declare type ExtractorFunction<T extends Resource = Resource> = (result: ResourceResponse['response']) => ResourceResponse<T>;
 export declare class BaseClient {

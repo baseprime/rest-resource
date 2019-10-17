@@ -172,12 +172,21 @@ var Resource = /** @class */ (function () {
     };
     /**
      * HTTP Get of resource's list route--returns a promise
-     * @param options HTTP Request Options
+     * @param options Options object
      * @returns Promise
      */
     Resource.list = function (options) {
         if (options === void 0) { options = {}; }
-        return this.client.list(this, options);
+        return this.client.list(this, options).then(function (result) {
+            if (options.getRelated) {
+                var promises_1 = [];
+                result.resources.forEach(function (resource) {
+                    promises_1.push(resource.getRelated({ deep: true }));
+                });
+                return Promise.all(promises_1).then(function () { return result; });
+            }
+            return result;
+        });
     };
     Resource.detail = function (id, options) {
         var _this = this;
@@ -194,17 +203,29 @@ var Resource = /** @class */ (function () {
                     // We want to use cached and a resource with this ID hasn't been requested yet
                     _this.queued[queueHashKey_1] = [];
                     _this.client
-                        .detail(_this, id)
-                        .then(function (result) {
-                        // Get detail route and get resource from response
-                        var correctResource = result.resources.pop();
-                        // Resolve first-sent request
-                        setImmediate(function () { return resolve(correctResource); });
-                        // Then resolve any deferred requests if there are any
-                        _this.queued[queueHashKey_1].forEach(function (deferred) {
-                            deferred(correctResource);
+                        .detail(_this, id, options)
+                        .then(function (result) { return tslib_1.__awaiter(_this, void 0, void 0, function () {
+                        var correctResource;
+                        return tslib_1.__generator(this, function (_a) {
+                            switch (_a.label) {
+                                case 0:
+                                    correctResource = result.resources.pop();
+                                    if (!options.getRelated) return [3 /*break*/, 2];
+                                    return [4 /*yield*/, correctResource.getRelated({ deep: true })];
+                                case 1:
+                                    _a.sent();
+                                    _a.label = 2;
+                                case 2:
+                                    // Resolve first-sent request
+                                    setImmediate(function () { return resolve(correctResource); });
+                                    // Then resolve any deferred requests if there are any
+                                    this.queued[queueHashKey_1].forEach(function (deferred) {
+                                        deferred(correctResource);
+                                    });
+                                    return [2 /*return*/];
+                            }
                         });
-                    })
+                    }); })
                         .catch(function (e) {
                         reject(e);
                     })
@@ -224,7 +245,14 @@ var Resource = /** @class */ (function () {
             }
             else {
                 // We want to use cache, and we found it!
-                resolve(cached.resource);
+                var cachedResource_1 = cached.resource;
+                // Get related resources?
+                if (options.getRelated) {
+                    cached.resource.getRelated({ deep: true }).then(function () { return resolve(cachedResource_1); });
+                }
+                else {
+                    resolve(cachedResource_1);
+                }
             }
         });
     };
@@ -275,8 +303,9 @@ var Resource = /** @class */ (function () {
     };
     /**
      * Get an attribute of Resource instance
-     * You can use dot notation here -- eg. resource.get('user.username')
-     * @param key
+     * You can use dot notation here -- eg. `resource.get('user.username')`
+     * You can also get all properties by not providing any arguments
+     * @param? key
      */
     Resource.prototype.get = function (key) {
         if (typeof key !== 'undefined') {
@@ -297,21 +326,13 @@ var Resource = /** @class */ (function () {
                 }
                 return relatedManager.objects[0].get(pieces_1.join('.'));
             }
-            else if (typeof thisValue !== 'undefined' && relatedManager && !relatedManager.inflated) {
-                return relatedManager;
-            }
-            else if (typeof thisValue !== 'undefined' && relatedManager) {
-                if (!relatedManager.inflated) {
-                    throw new exceptions.AttributeError("Can't read related property " + thisKey + " before RelatedManager.resolve() is called");
-                }
-                var objects = relatedManager.objects;
-                return relatedManager.many ? objects : objects[0];
-            }
-            else if (typeof thisValue !== 'undefined') {
-                return thisValue;
+            else if (Boolean(thisValue) && relatedManager) {
+                // If the related manager is a single object and is inflated, auto resolve the resource.get(key) to that object
+                // @todo Maybe we should always return the manager? Or maybe we should always return the resolved object(s)? I am skeptical about this part
+                return !relatedManager.many && relatedManager.resolved ? relatedManager.objects[0] : relatedManager;
             }
             else {
-                return undefined;
+                return thisValue;
             }
         }
         else {
@@ -324,7 +345,7 @@ var Resource = /** @class */ (function () {
                 if (manager.many) {
                     obj[key_1] = manager.objects.map(function (subResource) { return subResource.get(); });
                 }
-                else {
+                else if (!manager.many && manager.objects[0]) {
                     obj[key_1] = manager.objects[0].get();
                 }
             }
@@ -345,13 +366,11 @@ var Resource = /** @class */ (function () {
             catch (e) {
                 if (exceptions.AttributeError.isInstance(e)) {
                     var pieces_2 = key.split('.');
-                    var thisKey_1 = String(pieces_2.shift());
-                    var manager_1 = _this.managers[thisKey_1];
+                    var thisKey = String(pieces_2.shift());
+                    var manager_1 = _this.managers[thisKey];
                     manager_1.resolve().then(function () {
-                        var attrValue = _this.get(thisKey_1);
-                        var relatedResources = [].concat(attrValue);
                         var relatedKey = pieces_2.join('.');
-                        var promises = relatedResources.map(function (resource) {
+                        var promises = manager_1.objects.map(function (resource) {
                             return resource.getAsync(relatedKey);
                         });
                         Promise.all(promises).then(function (values) {
@@ -438,7 +457,10 @@ var Resource = /** @class */ (function () {
             var manager = this.managers[resourceKey];
             var promise = manager.resolve().then(function (objects) {
                 if (deep) {
-                    return objects.forEach(function (resource) { return resource.getRelated({ deep: deep }); });
+                    var otherPromises = objects.map(function (resource) { return resource.getRelated({ deep: deep, managers: managers }); });
+                    return Promise.all(otherPromises).then(function () {
+                        return void {};
+                    });
                 }
                 else {
                     return void {};
