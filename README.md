@@ -291,4 +291,8 @@ Authorization: Bearer <token>
 For more information on how JWTs work, please see [JSON Web Token Documentation](https://jwt.io/introduction/)
 
 # Documentation
+```
+npm run serve-docs
+```
+
 Please see [Documentation](./docs)
