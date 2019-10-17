@@ -27,7 +27,7 @@ Like any other architectural style, REST also does have it’s own [6 guiding co
 npm install rest-resource
 ```
 
-# Documentation
+## Documentation
 Please see [Documentation](https://htmlpreview.github.io/?https://raw.githubusercontent.com/baseprime/rest-resource/master/docs/classes/_index_.resource.html)
 ```
 npm run serve-docs
