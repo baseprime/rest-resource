@@ -1,18 +1,19 @@
-# REST Resource - Simplified Interface for consuming REST APIs
+# REST Resource
+### Simplified Interface for consuming REST APIs
 REST Resource is a library to make your life simpler when working with REST API Endpoints. It takes RESTful Resource/Service URIs and simplifies them into a Class that can be called with simple methods. **Think of it like a Model for REST API Endpoints.**
 
 #### Features:
 - **Caching!**
   - You'll never have to worry about making multiple calls to the same endpoint
 - **Easily set up Related Resources**
-  - Quickly wire up your Resources and which ones they're related to, Rest Resource takes care of the rest
+  - Quickly wire up your Resources and which ones they're related to, REST Resource takes care of the rest
 - **Nested attribute resolution on Related Resources**
   - Get attributes on related resources as easily as:
     ```javascript
     await resource.getAsync('otherResource.evenDeeperResource.name')
     ```
-- **Custom clients**
-  - Customize the way Rest Resource works with your API
+- **Class-Based/Custom clients**
+  - Completely customize the way REST Resource works with your API
 
 ## What is a REST Resource?
 REST is acronym for REpresentational State Transfer. It is architectural style for distributed hypermedia systems and was first presented by Roy Fielding in 2000 in his famous [dissertation](https://www.ics.uci.edu/~fielding/pubs/dissertation/rest_arch_style.htm).
@@ -26,7 +27,11 @@ Like any other architectural style, REST also does have it’s own [6 guiding co
 npm install rest-resource
 ```
 
-### Example (assuming `Node >= v12.0.0`)
+## Examples
+[Play around with a working example using RunKit](https://runkit.com/baseprime/5da7c105ada8d0001ab20580)
+
+(assuming `Node >= v12.0.0`)
+
 Given the URIs:
 
 ```
@@ -106,9 +111,8 @@ class UserResource extends Resource {
     }
 }
 
+let user = await UserResource.detail(321, { getRelated: true })
 // GET /users/321
-let user = await UserResource.detail(321)
-await user.getRelated()
 // GET /roles/<id>
 // GET /groups/<id>
 
@@ -123,7 +127,7 @@ console.log(user.get('role'))
 ```
 
 ### Related Attribute Lookups with `getAsync()`
-REST Resource automatically resolves properties from related lookups, then decides what it needs to call `resource.getRelated()`
+REST Resource automatically resolves properties from related lookups, then decides what fields it needs to call `resource.getRelated()`
 
 ```javascript
 let roger = await UserResource.detail(543)
@@ -215,6 +219,18 @@ class UserResource extends Resource {
 let unknown = new UserResource({ group: 2 })
 console.log(unknown.get('name'))
 // => Unknown User
+```
+
+# Working with older versions of Node
+If you aren't using a newer version of Node or TypeScript, you can use `Resource.extend` to define static members. For example:
+```javascript
+const UserResource = Resource.extend({
+    endpoint: '/users',
+    defaults: {
+        name: 'Unknown User'
+        // ...etc
+    }
+})
 ```
 
 # The `Client` Class
