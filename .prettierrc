@@ -1,11 +1,11 @@
 {
-  "parser": "typescript",
-  "printWidth": 300,
-  "trailingComma": "es5",
-  "bracketSpacing": true,
-  "arrowParens": "always",
-  "tabWidth": 4,
-  "semi": false,
-  "singleQuote": true,
-  "useTabs": false,
+    "parser": "typescript",
+    "printWidth": 300,
+    "trailingComma": "es5",
+    "bracketSpacing": true,
+    "arrowParens": "always",
+    "tabWidth": 4,
+    "semi": false,
+    "singleQuote": true,
+    "useTabs": false
 }
