@@ -96,7 +96,9 @@ sameuser.greet()
 ```
 
 # Related Resources
-You can also define related resources:
+Related Resources can be wired up very easily.
+
+## One to Many relationships
 
 ```javascript
 import Resource from 'rest-resource'
@@ -105,22 +107,16 @@ class RoleResource extends Resource {
     static endpont = '/roles'
 }
 
-class GroupResource extends Resource {
-    static endpont = '/groups'
-}
-
 class UserResource extends Resource {
     static endpoint = '/users'
     static related = {
-        role: RoleResource,
-        group: GroupResource
+        role: RoleResource
     }
 }
 
-let user = await UserResource.detail(321, { getRelated: true })
+let user = await UserResource.detail(321, { getRelated: true }) // Add getRelated: true here and it'll automatically resolve related resources
 // GET /users/321
 // GET /roles/<id>
-// GET /groups/<id>
 
 // Using get() gets the attribute `title `on related key `role`
 let title = user.get('role.title')
@@ -130,6 +126,93 @@ console.log('%s the %s!', name, title)
 
 console.log(user.get('role'))
 // => RoleResource({ id: 654, title: 'Enchanter' })
+```
+
+## Many to Many relationships
+Many to many relationships work exactly the same as One to Many relationships with one key difference: when using `resource.get(attribute)` where `attribute` is the field of a related resource, the returned value is not the related `Resource` instance, it's a `RelatedManager` instance:
+
+```javascript
+class UserResource extends Resource {
+    static endpoint = '/users'
+    static related = {
+        role: RoleResource,
+        groups: GroupResource // Many to many relationship
+    }
+}
+
+let user = await UserResource.detail(654)
+
+console.log(user.attributes)
+// => {
+//        id: 654,
+//        name: 'Patsy',
+//        weapon: 'Coconuts',
+//        role: 2,
+//        groups: [1, 2]
+//    }
+
+let manager = user.get('groups') // Many to many relationship
+
+console.log(manager.resolved)
+// => false
+
+// REST Resource doesn't automatically resolve related lookups unless instructed by using getRelated
+await manager.resolve()
+// GET /groups/1
+// GET /groups/2
+
+console.log(manager.resolved)
+// => true
+
+console.log(manager.objects)
+// => [GroupResource, GroupResource]
+```
+
+## Using `getRelated()` and `{ getRelated: true }`
+When using `ResourceClass.detail()` and `ResourceClass.list()`, one of the available options is `{ getRelated: true }`, which will automatically resolve related resources.
+
+#### Using `{ getRelated: true }` with `ResourceClass.detail()`:
+```javascript
+let user = await UserResource.detail(654, { getRelated: true })
+// or
+await user.getRelated()
+// GET /users/654
+// GET /roles/2
+// GET /groups/1
+// GET /groups/2
+console.log('groups.name')
+// => ["Some Group", "Another Group"]
+```
+
+#### Using `{ getRelated: true }` with `ResourceClass.list()`:
+```javascript
+let users = await UserResource.list({ getRelated: true })
+// GET /users
+// GET /roles/1
+// GET /roles/2
+// GET /groups/1
+// GET /groups/2
+```
+
+#### Using `resourceInstance.getRelated()`:
+
+```javascript
+// You can also call getRelated() manually
+let user = await UserResource.detail(654)
+// GET /users/654
+await user.getRelated()
+// GET /roles/2
+// GET /groups/1
+// GET /groups/2
+```
+
+Additionally, you can also provide a list of managers that you want to resolve:
+```javascript
+// You can also call getRelated() manually
+let user = await UserResource.detail(654)
+// GET /users/654
+await user.getRelated(['role']) // Will ignore all but "role" field (notice the "groups" were not resolved)
+// GET /roles/2
 ```
 
 ### Related Attribute Lookups with `getAsync()`
@@ -146,9 +229,9 @@ console.log(title)
 // => Shrubber
 ```
 
-Furthermore, if an object is cached and is called upon from other related models, REST Resource will save a request.
+If an object is cached and is called upon from other related models, REST Resource will save a request.
 
-In the example below, notice the `group` ids are the same:
+In the example below, notice the `groups` ids are the same:
 
 ```javascript
 let arthur = await UserResource.detail(123)
@@ -158,7 +241,7 @@ console.log(arthur.attributes)
 //        name: 'King Arthur',
 //        weapon: 'Sword',
 //        role: 1,
-//        group: 1
+//        groups: [1]
 //    }
 
 let patsy = await UserResource.detail(654)
@@ -168,17 +251,18 @@ console.log(patsy.attributes)
 //        name: 'Patsy',
 //        weapon: 'Coconuts',
 //        role: 2,
-//        group: 1 // Notice this ID is the same as the one above
+//        groups: [1, 2] // Notice this list contains an already retrieved group (1)
 //    }
 
 let arthurTitle = arthur.getAsync('role.title')
-let arthurGroup = arthur.getAsync('group.name')
+let arthurGroup = arthur.getAsync('groups.name')
 // GET /roles/1
 // GET /groups/1
 
 let patsyTitle = patsy.getAsync('role.title')
-let patsyGroup = patsy.getAsync('group.name')
+let patsyGroup = patsy.getAsync('groups.name')
 // GET /roles/2
+// GET /groups/2
 // Does not need to GET /groups/1
 ```
 
@@ -218,11 +302,11 @@ class UserResource extends Resource {
     static defaults = {
         name: 'Unknown User',
         weapon: 'Hyperbolic Taunting',
-        group: 1
+        groups: [1]
     }
 }
 
-let unknown = new UserResource({ group: 2 })
+let unknown = new UserResource({ groups: [2] })
 console.log(unknown.get('name'))
 // => Unknown User
 ```
@@ -295,3 +379,29 @@ Authorization: Bearer <token>
 ```
 
 For more information on how JWTs work, please see [JSON Web Token Documentation](https://jwt.io/introduction/)
+
+# Customizing Related Manager 
+Whenever a related field is defined, a manager is created to that field. You can customize this class by extending it and assigning it when you create a class.
+
+```javascript
+import Resource from 'rest-resource'
+import RelatedManager from 'rest-resource/dist/related'
+
+class CustomRelatedManager extends RelatedManager {
+    batchSize: 50 // Only GET 50 related objects at a time (default: Infinity)
+
+    /**
+     * @param options Object (getRelated, etc.)
+     * @returns Resource[] List of Resource instances
+     */
+    resolve(options) {
+        // etc
+    }
+}
+
+class UserResource extends Resource {
+    static endpoint = '/users'
+    // Define custom related manager here
+    static relatedManager = CustomRelatedManager
+}
+```
