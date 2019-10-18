@@ -1,12 +1,12 @@
 {
   "name": "rest-resource",
-  "version": "0.6.1",
+  "version": "0.6.2",
   "description": "Simplify your REST API resources, supports automatic caching",
   "main": "./dist/index.js",
   "types": "types",
   "scripts": {
     "test": "mocha -r ts-node/register ./tests/**/*.spec.ts",
-    "build": "tsc --target es5 --module commonjs --outDir ./dist",
+    "build": "tsc --target es5 --module commonjs --outDir ./dist && npm run generate-docs",
     "dev": "tsc --watch",
     "prettier": "./node_modules/prettier/bin-prettier.js --write ./src/**/*.ts ./src/*.ts",
     "repl": "ts-node ./tests/repl.ts",

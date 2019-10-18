@@ -6043,7 +6043,7 @@
         },
         {
             "id": 2,
-            "name": "Test group with lots of todos",
+            "name": "Test group ID 2 with exactly 90 todos, empty users, null owner",
             "owner": null,
             "users": [],
             "todos": [

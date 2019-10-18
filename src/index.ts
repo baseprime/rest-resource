@@ -261,7 +261,7 @@ export default class Resource {
                                 await correctResource.getRelated({ deep: true })
                             }
                             // Resolve first-sent request
-                            setImmediate(() => resolve(correctResource))
+                            setTimeout(() => resolve(correctResource), 0)
                             // Then resolve any deferred requests if there are any
                             this.queued[queueHashKey].forEach((deferred: (resource: InstanceType<T>) => any) => {
                                 deferred(correctResource)
