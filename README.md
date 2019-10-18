@@ -174,8 +174,6 @@ When using `ResourceClass.detail()` and `ResourceClass.list()`, one of the avail
 #### Using `{ getRelated: true }` with `ResourceClass.detail()`:
 ```javascript
 let user = await UserResource.detail(654, { getRelated: true })
-// or
-await user.getRelated()
 // GET /users/654
 // GET /roles/2
 // GET /groups/1
