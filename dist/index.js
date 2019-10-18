@@ -217,7 +217,7 @@ var Resource = /** @class */ (function () {
                                     _a.label = 2;
                                 case 2:
                                     // Resolve first-sent request
-                                    setImmediate(function () { return resolve(correctResource); });
+                                    setTimeout(function () { return resolve(correctResource); }, 0);
                                     // Then resolve any deferred requests if there are any
                                     this.queued[queueHashKey_1].forEach(function (deferred) {
                                         deferred(correctResource);

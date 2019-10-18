@@ -62,18 +62,38 @@
 	<div class="row">
 		<div class="col-8 col-content">
 			<div class="tsd-panel tsd-typography">
-				<a href="#rest-resource---simplified-interface-for-consuming-rest-apis" id="rest-resource---simplified-interface-for-consuming-rest-apis" style="color: inherit; text-decoration: none;">
-					<h1>REST Resource - Simplified Interface for consuming REST APIs</h1>
+				<a href="#rest-resource" id="rest-resource" style="color: inherit; text-decoration: none;">
+					<h1>REST Resource</h1>
 				</a>
-				<p>REST Resource is a simple library to help make your life simpler when calling REST API Endpoints. It takes RESTful Resource/Service URIs and simplifies them into a Class that can be called with simple methods.</p>
+				<a href="#simplified-interface-for-consuming-rest-apis" id="simplified-interface-for-consuming-rest-apis" style="color: inherit; text-decoration: none;">
+					<h3>Simplified Interface for consuming REST APIs</h3>
+				</a>
+				<p>REST Resource is a library to make your life simpler when working with REST API Endpoints. It takes RESTful Resource/Service URIs and simplifies them into a Class that can be called with simple methods. <strong><a href="#acts-like-a-model">Think of it like a Model for REST API Endpoints.</a></strong></p>
 				<a href="#features" id="features" style="color: inherit; text-decoration: none;">
-					<h4>Features:</h4>
+					<h3>Features:</h3>
 				</a>
 				<ul>
-					<li>Caching</li>
-					<li>Supports Related Resources</li>
-					<li>Nested attribute resolution on Related Resources</li>
-					<li>Custom clients</li>
+					<li><strong><a href="#supports-caching-out-of-the-box">Caching!</a></strong><ul>
+							<li>You&#39;ll never have to worry about making multiple calls to the same endpoint</li>
+						</ul>
+					</li>
+					<li><strong><a href="#related-resources">Easily set up Related Resources</a></strong><ul>
+							<li>Quickly wire up your Resources and which ones they&#39;re related to, REST Resource takes care of the rest</li>
+						</ul>
+					</li>
+					<li><strong><a href="#related-attribute-lookups-with-getasync">Nested attribute resolution on Related Resources</a></strong><ul>
+							<li>Get attributes on related resources as easily as:<pre><code class="language-javascript"><span class="hljs-keyword">await</span> resource.getAsync(<span class="hljs-string">'otherResource.evenDeeperResource.name'</span>)</code></pre>
+							</li>
+						</ul>
+					</li>
+					<li><strong>Class-Based/Custom clients</strong><ul>
+							<li>Completely customize the way REST Resource works with your API<ul>
+									<li><a href="#the-client-class">The Client Class</a></li>
+									<li><a href="#customizing-relatedmanager">Customizing Related Manager</a></li>
+								</ul>
+							</li>
+						</ul>
+					</li>
 				</ul>
 				<a href="#what-is-a-rest-resource" id="what-is-a-rest-resource" style="color: inherit; text-decoration: none;">
 					<h2>What is a REST Resource?</h2>
@@ -85,9 +105,16 @@
 					<h2>Installation</h2>
 				</a>
 				<pre><code>npm <span class="hljs-keyword">install</span> rest-<span class="hljs-keyword">resource</span></code></pre>
-				<a href="#example-assuming-node-v1200" id="example-assuming-node-v1200" style="color: inherit; text-decoration: none;">
-					<h3>Example (assuming Node v12.0.0)</h3>
+				<a href="#documentation" id="documentation" style="color: inherit; text-decoration: none;">
+					<h2>Documentation</h2>
 				</a>
+				<p>Please see <a href="https://htmlpreview.github.io/?https://raw.githubusercontent.com/baseprime/rest-resource/master/docs/classes/_index_.resource.html">Documentation</a></p>
+				<pre><code>npm <span class="hljs-keyword">run</span><span class="bash"> serve-docs</span></code></pre>
+				<a href="#examples" id="examples" style="color: inherit; text-decoration: none;">
+					<h2>Examples</h2>
+				</a>
+				<p><a href="https://runkit.com/baseprime/rest-resource-example">Play around with a working example using RunKit</a></p>
+				<p>(assuming <code>Node &gt;= v12.0.0</code>)</p>
 				<p>Given the URIs:</p>
 				<pre><code><span class="hljs-built_in">/users
 </span>/users/&lt;id&gt;
@@ -135,56 +162,8 @@ user.greet()
 
 sameuser.greet()
 <span class="hljs-comment">// =&gt; I am Arthur, King of the Britons!</span></code></pre>
-				<a href="#related-resources" id="related-resources" style="color: inherit; text-decoration: none;">
-					<h1>Related Resources</h1>
-				</a>
-				<p>You can also define related resources:</p>
-				<pre><code class="language-javascript"><span class="hljs-keyword">import</span> Resource <span class="hljs-keyword">from</span> <span class="hljs-string">'rest-resource'</span>
-
-<span class="hljs-class"><span class="hljs-keyword">class</span> <span class="hljs-title">RoleResource</span> <span class="hljs-keyword">extends</span> <span class="hljs-title">Resource</span> </span>{
-    <span class="hljs-keyword">static</span> endpont = <span class="hljs-string">'/roles'</span>
-}
-
-<span class="hljs-class"><span class="hljs-keyword">class</span> <span class="hljs-title">GroupResource</span> <span class="hljs-keyword">extends</span> <span class="hljs-title">Resource</span> </span>{
-    <span class="hljs-keyword">static</span> endpont = <span class="hljs-string">'/groups'</span>
-}
-
-<span class="hljs-class"><span class="hljs-keyword">class</span> <span class="hljs-title">UserResource</span> <span class="hljs-keyword">extends</span> <span class="hljs-title">Resource</span> </span>{
-    <span class="hljs-keyword">static</span> endpoint = <span class="hljs-string">'/users'</span>
-    <span class="hljs-keyword">static</span> related = {
-        <span class="hljs-attr">role</span>: RoleResource,
-        <span class="hljs-attr">group</span>: GroupResource
-    }
-}
-
-<span class="hljs-comment">// GET /users/321</span>
-<span class="hljs-keyword">let</span> user = <span class="hljs-keyword">await</span> UserResource.detail(<span class="hljs-number">321</span>)
-<span class="hljs-keyword">await</span> user.getRelated()
-<span class="hljs-comment">// GET /roles/&lt;id&gt;</span>
-<span class="hljs-comment">// GET /groups/&lt;id&gt;</span>
-
-<span class="hljs-comment">// Using get() gets the attribute `title `on related key `role`</span>
-<span class="hljs-keyword">let</span> title = user.get(<span class="hljs-string">'role.title'</span>)
-<span class="hljs-keyword">let</span> name = user.get(<span class="hljs-string">'name'</span>)
-<span class="hljs-built_in">console</span>.log(<span class="hljs-string">'%s the %s!'</span>, name, title)
-<span class="hljs-comment">// =&gt; Tim the Enchanter!</span>
-
-<span class="hljs-built_in">console</span>.log(user.get(<span class="hljs-string">'role'</span>))
-<span class="hljs-comment">// =&gt; RoleResource({ id: 654, title: 'Enchanter' })</span></code></pre>
-				<a href="#related-attribute-lookups-with-codegetasynccode" id="related-attribute-lookups-with-codegetasynccode" style="color: inherit; text-decoration: none;">
-					<h3>Related Attribute Lookups with <code>getAsync()</code></h3>
-				</a>
-				<p>REST Resource automatically resolves properties from related lookups, then decides what it needs to call <code>resource.getRelated()</code></p>
-				<pre><code class="language-javascript"><span class="hljs-keyword">let</span> roger = <span class="hljs-keyword">await</span> UserResource.detail(<span class="hljs-number">543</span>)
-<span class="hljs-comment">// GET /users/543</span>
-
-<span class="hljs-keyword">let</span> title = <span class="hljs-keyword">await</span> roger.getAsync(<span class="hljs-string">'role.title'</span>)
-<span class="hljs-comment">// Doesn't need send GET /roles/&lt;id&gt;</span>
-
-<span class="hljs-built_in">console</span>.log(title)
-<span class="hljs-comment">// =&gt; Shrubber</span></code></pre>
-				<p>Furthermore, if an object is cached and is called upon from other related models, REST Resource will save a request.</p>
-				<p>In the example below, notice the <code>group</code> ids are the same:</p>
+				<p>If an object is cached and is called upon from other related models, REST Resource will save a request.</p>
+				<p>In the example below, notice the <code>groups</code> ids are the same:</p>
 				<pre><code class="language-javascript"><span class="hljs-keyword">let</span> arthur = <span class="hljs-keyword">await</span> UserResource.detail(<span class="hljs-number">123</span>)
 <span class="hljs-built_in">console</span>.log(arthur.attributes)
 <span class="hljs-comment">// =&gt; {</span>
@@ -192,7 +171,7 @@ sameuser.greet()
 <span class="hljs-comment">//        name: 'King Arthur',</span>
 <span class="hljs-comment">//        weapon: 'Sword',</span>
 <span class="hljs-comment">//        role: 1,</span>
-<span class="hljs-comment">//        group: 1</span>
+<span class="hljs-comment">//        groups: [1]</span>
 <span class="hljs-comment">//    }</span>
 
 <span class="hljs-keyword">let</span> patsy = <span class="hljs-keyword">await</span> UserResource.detail(<span class="hljs-number">654</span>)
@@ -202,18 +181,141 @@ sameuser.greet()
 <span class="hljs-comment">//        name: 'Patsy',</span>
 <span class="hljs-comment">//        weapon: 'Coconuts',</span>
 <span class="hljs-comment">//        role: 2,</span>
-<span class="hljs-comment">//        group: 1 // Notice this ID is the same as the one above</span>
+<span class="hljs-comment">//        groups: [1, 2] // Notice this list contains an already retrieved group (1)</span>
 <span class="hljs-comment">//    }</span>
 
 <span class="hljs-keyword">let</span> arthurTitle = arthur.getAsync(<span class="hljs-string">'role.title'</span>)
-<span class="hljs-keyword">let</span> arthurGroup = arthur.getAsync(<span class="hljs-string">'group.name'</span>)
+<span class="hljs-keyword">let</span> arthurGroup = arthur.getAsync(<span class="hljs-string">'groups.name'</span>)
 <span class="hljs-comment">// GET /roles/1</span>
 <span class="hljs-comment">// GET /groups/1</span>
 
 <span class="hljs-keyword">let</span> patsyTitle = patsy.getAsync(<span class="hljs-string">'role.title'</span>)
-<span class="hljs-keyword">let</span> patsyGroup = patsy.getAsync(<span class="hljs-string">'group.name'</span>)
+<span class="hljs-keyword">let</span> patsyGroup = patsy.getAsync(<span class="hljs-string">'groups.name'</span>)
 <span class="hljs-comment">// GET /roles/2</span>
+<span class="hljs-comment">// GET /groups/2</span>
 <span class="hljs-comment">// Does not need to GET /groups/1</span></code></pre>
+				<a href="#related-resources" id="related-resources" style="color: inherit; text-decoration: none;">
+					<h1>Related Resources</h1>
+				</a>
+				<p>Related Resources can be wired up very easily.</p>
+				<a href="#one-to-many-relationships" id="one-to-many-relationships" style="color: inherit; text-decoration: none;">
+					<h2>One to Many relationships</h2>
+				</a>
+				<pre><code class="language-javascript"><span class="hljs-keyword">import</span> Resource <span class="hljs-keyword">from</span> <span class="hljs-string">'rest-resource'</span>
+
+<span class="hljs-class"><span class="hljs-keyword">class</span> <span class="hljs-title">RoleResource</span> <span class="hljs-keyword">extends</span> <span class="hljs-title">Resource</span> </span>{
+    <span class="hljs-keyword">static</span> endpont = <span class="hljs-string">'/roles'</span>
+}
+
+<span class="hljs-class"><span class="hljs-keyword">class</span> <span class="hljs-title">UserResource</span> <span class="hljs-keyword">extends</span> <span class="hljs-title">Resource</span> </span>{
+    <span class="hljs-keyword">static</span> endpoint = <span class="hljs-string">'/users'</span>
+    <span class="hljs-keyword">static</span> related = {
+        <span class="hljs-attr">role</span>: RoleResource
+    }
+}
+
+<span class="hljs-keyword">let</span> user = <span class="hljs-keyword">await</span> UserResource.detail(<span class="hljs-number">321</span>, { <span class="hljs-attr">getRelated</span>: <span class="hljs-literal">true</span> }) <span class="hljs-comment">// Add getRelated: true here and it'll automatically resolve related resources</span>
+<span class="hljs-comment">// GET /users/321</span>
+<span class="hljs-comment">// GET /roles/&lt;id&gt;</span>
+
+<span class="hljs-comment">// Using get() gets the attribute `title `on related key `role`</span>
+<span class="hljs-keyword">let</span> title = user.get(<span class="hljs-string">'role.title'</span>)
+<span class="hljs-keyword">let</span> name = user.get(<span class="hljs-string">'name'</span>)
+<span class="hljs-built_in">console</span>.log(<span class="hljs-string">'%s the %s!'</span>, name, title)
+<span class="hljs-comment">// =&gt; Tim the Enchanter!</span>
+
+<span class="hljs-built_in">console</span>.log(user.get(<span class="hljs-string">'role'</span>))
+<span class="hljs-comment">// =&gt; RoleResource({ id: 654, title: 'Enchanter' })</span></code></pre>
+				<a href="#many-to-many-relationships" id="many-to-many-relationships" style="color: inherit; text-decoration: none;">
+					<h2>Many to Many relationships</h2>
+				</a>
+				<p>Many to many relationships work exactly the same as One to Many relationships with one key difference: when using <code>resource.get(attribute)</code> where <code>attribute</code> is the field of a related resource, the returned value is not the related <code>Resource</code> instance, it&#39;s a <code>RelatedManager</code> instance:</p>
+				<pre><code class="language-javascript"><span class="hljs-class"><span class="hljs-keyword">class</span> <span class="hljs-title">UserResource</span> <span class="hljs-keyword">extends</span> <span class="hljs-title">Resource</span> </span>{
+    <span class="hljs-keyword">static</span> endpoint = <span class="hljs-string">'/users'</span>
+    <span class="hljs-keyword">static</span> related = {
+        <span class="hljs-attr">role</span>: RoleResource,
+        <span class="hljs-attr">groups</span>: GroupResource <span class="hljs-comment">// Many to many relationship</span>
+    }
+}
+
+<span class="hljs-keyword">let</span> user = <span class="hljs-keyword">await</span> UserResource.detail(<span class="hljs-number">654</span>)
+
+<span class="hljs-built_in">console</span>.log(user.attributes)
+<span class="hljs-comment">// =&gt; {</span>
+<span class="hljs-comment">//        id: 654,</span>
+<span class="hljs-comment">//        name: 'Patsy',</span>
+<span class="hljs-comment">//        weapon: 'Coconuts',</span>
+<span class="hljs-comment">//        role: 2,</span>
+<span class="hljs-comment">//        groups: [1, 2]</span>
+<span class="hljs-comment">//    }</span>
+
+<span class="hljs-keyword">let</span> manager = user.get(<span class="hljs-string">'groups'</span>) <span class="hljs-comment">// Many to many relationship</span>
+
+<span class="hljs-built_in">console</span>.log(manager.resolved)
+<span class="hljs-comment">// =&gt; false</span>
+
+<span class="hljs-comment">// REST Resource doesn't automatically resolve related lookups unless instructed by using getRelated</span>
+<span class="hljs-keyword">await</span> manager.resolve()
+<span class="hljs-comment">// GET /groups/1</span>
+<span class="hljs-comment">// GET /groups/2</span>
+
+<span class="hljs-built_in">console</span>.log(manager.resolved)
+<span class="hljs-comment">// =&gt; true</span>
+
+<span class="hljs-built_in">console</span>.log(manager.objects)
+<span class="hljs-comment">// =&gt; [GroupResource, GroupResource]</span></code></pre>
+				<a href="#using-codegetrelatedcode-and-code-getrelated-true-code" id="using-codegetrelatedcode-and-code-getrelated-true-code" style="color: inherit; text-decoration: none;">
+					<h2>Using <code>getRelated()</code> and <code>{ getRelated: true }</code></h2>
+				</a>
+				<p>When using <code>ResourceClass.detail()</code> and <code>ResourceClass.list()</code>, one of the available options is <code>{ getRelated: true }</code>, which will automatically resolve related resources.</p>
+				<a href="#using-code-getrelated-true-code-with-coderesourceclassdetailcode" id="using-code-getrelated-true-code-with-coderesourceclassdetailcode" style="color: inherit; text-decoration: none;">
+					<h4>Using <code>{ getRelated: true }</code> with <code>ResourceClass.detail()</code>:</h4>
+				</a>
+				<pre><code class="language-javascript"><span class="hljs-keyword">let</span> user = <span class="hljs-keyword">await</span> UserResource.detail(<span class="hljs-number">654</span>, { <span class="hljs-attr">getRelated</span>: <span class="hljs-literal">true</span> })
+<span class="hljs-comment">// GET /users/654</span>
+<span class="hljs-comment">// GET /roles/2</span>
+<span class="hljs-comment">// GET /groups/1</span>
+<span class="hljs-comment">// GET /groups/2</span>
+<span class="hljs-built_in">console</span>.log(<span class="hljs-string">'groups.name'</span>)
+<span class="hljs-comment">// =&gt; ["Some Group", "Another Group"]</span></code></pre>
+				<a href="#using-code-getrelated-true-code-with-coderesourceclasslistcode" id="using-code-getrelated-true-code-with-coderesourceclasslistcode" style="color: inherit; text-decoration: none;">
+					<h4>Using <code>{ getRelated: true }</code> with <code>ResourceClass.list()</code>:</h4>
+				</a>
+				<pre><code class="language-javascript"><span class="hljs-keyword">let</span> users = <span class="hljs-keyword">await</span> UserResource.list({ <span class="hljs-attr">getRelated</span>: <span class="hljs-literal">true</span> })
+<span class="hljs-comment">// GET /users</span>
+<span class="hljs-comment">// GET /roles/1</span>
+<span class="hljs-comment">// GET /roles/2</span>
+<span class="hljs-comment">// GET /groups/1</span>
+<span class="hljs-comment">// GET /groups/2</span></code></pre>
+				<a href="#using-coderesourceinstancegetrelatedcode" id="using-coderesourceinstancegetrelatedcode" style="color: inherit; text-decoration: none;">
+					<h4>Using <code>resourceInstance.getRelated()</code>:</h4>
+				</a>
+				<pre><code class="language-javascript"><span class="hljs-keyword">let</span> user = <span class="hljs-keyword">await</span> UserResource.detail(<span class="hljs-number">654</span>)
+<span class="hljs-comment">// GET /users/654</span>
+<span class="hljs-keyword">await</span> user.getRelated()
+<span class="hljs-comment">// GET /roles/2</span>
+<span class="hljs-comment">// GET /groups/1</span>
+<span class="hljs-comment">// GET /groups/2</span></code></pre>
+				<p>Additionally, you can also provide a list of managers that you want to resolve:</p>
+				<pre><code class="language-javascript"><span class="hljs-keyword">let</span> user = <span class="hljs-keyword">await</span> UserResource.detail(<span class="hljs-number">654</span>)
+<span class="hljs-comment">// GET /users/654</span>
+<span class="hljs-keyword">await</span> user.getRelated([<span class="hljs-string">'role'</span>]) <span class="hljs-comment">// Will ignore all but "role" field (notice the "groups" were not resolved)</span>
+<span class="hljs-comment">// GET /roles/2</span></code></pre>
+				<a href="#related-attribute-lookups-with-codegetasynccode" id="related-attribute-lookups-with-codegetasynccode" style="color: inherit; text-decoration: none;">
+					<h2>Related Attribute Lookups with <code>getAsync()</code></h2>
+				</a>
+				<p>REST Resource automatically resolves properties from related lookups, then decides what fields it needs to call <code>resource.getRelated()</code></p>
+				<pre><code class="language-javascript"><span class="hljs-keyword">let</span> roger = <span class="hljs-keyword">await</span> UserResource.detail(<span class="hljs-number">543</span>)
+<span class="hljs-comment">// GET /users/543</span>
+
+<span class="hljs-keyword">let</span> title = <span class="hljs-keyword">await</span> roger.getAsync(<span class="hljs-string">'role.title'</span>)
+<span class="hljs-comment">// GET /roles/&lt;id&gt;</span>
+
+<span class="hljs-built_in">console</span>.log(title)
+<span class="hljs-comment">// =&gt; Shrubber</span></code></pre>
+				<a href="#note-coderesourcegetasyncattributecode-is-one-of-the-most-useful-features-of-rest-resource-as-it-allows-you-to-define-the-fields-that-are-necessary-to-build-your-app-and-rest-resource-will-intelligently-request-only-the-data-it-emneedsem-from-the-api" id="note-coderesourcegetasyncattributecode-is-one-of-the-most-useful-features-of-rest-resource-as-it-allows-you-to-define-the-fields-that-are-necessary-to-build-your-app-and-rest-resource-will-intelligently-request-only-the-data-it-emneedsem-from-the-api" style="color: inherit; text-decoration: none;">
+					<h4>Note: <code>resource.getAsync(attribute)</code> is one of the most useful features of REST Resource as it allows you to define the fields that are necessary to build your app, and REST Resource will intelligently request only the data it <em>needs</em> from the API!</h4>
+				</a>
 				<a href="#acts-like-a-model" id="acts-like-a-model" style="color: inherit; text-decoration: none;">
 					<h1>Acts like a Model</h1>
 				</a>
@@ -248,13 +350,24 @@ robin.delete()
     <span class="hljs-keyword">static</span> defaults = {
         <span class="hljs-attr">name</span>: <span class="hljs-string">'Unknown User'</span>,
         <span class="hljs-attr">weapon</span>: <span class="hljs-string">'Hyperbolic Taunting'</span>,
-        <span class="hljs-attr">group</span>: <span class="hljs-number">1</span>
+        <span class="hljs-attr">groups</span>: [<span class="hljs-number">1</span>]
     }
 }
 
-<span class="hljs-keyword">let</span> unknown = <span class="hljs-keyword">new</span> UserResource({ <span class="hljs-attr">group</span>: <span class="hljs-number">2</span> })
+<span class="hljs-keyword">let</span> unknown = <span class="hljs-keyword">new</span> UserResource({ <span class="hljs-attr">groups</span>: [<span class="hljs-number">2</span>] })
 <span class="hljs-built_in">console</span>.log(unknown.get(<span class="hljs-string">'name'</span>))
 <span class="hljs-comment">// =&gt; Unknown User</span></code></pre>
+				<a href="#working-with-older-versions-of-node" id="working-with-older-versions-of-node" style="color: inherit; text-decoration: none;">
+					<h1>Working with older versions of Node</h1>
+				</a>
+				<p>If you aren&#39;t using a newer version of Node or TypeScript, you can use <code>Resource.extend</code> to define static members. For example:</p>
+				<pre><code class="language-javascript"><span class="hljs-keyword">const</span> UserResource = Resource.extend({
+    <span class="hljs-attr">endpoint</span>: <span class="hljs-string">'/users'</span>,
+    <span class="hljs-attr">defaults</span>: {
+        <span class="hljs-attr">name</span>: <span class="hljs-string">'Unknown User'</span>
+        <span class="hljs-comment">// ...etc</span>
+    }
+})</code></pre>
 				<a href="#the-codeclientcode-class" id="the-codeclientcode-class" style="color: inherit; text-decoration: none;">
 					<h1>The <code>Client</code> Class</h1>
 				</a>
@@ -307,10 +420,30 @@ CustomResource.client = <span class="hljs-keyword">new</span> CustomClient(<span
 				</a>
 				<p>Whenever the user wants to access a protected route or resource, the user agent should send the JWT, typically in the Authorization header using the Bearer schema. The content of the header should look like the following:</p>
 				<pre><code><span class="hljs-symbol">Authorization:</span> Bearer <span class="hljs-params">&lt;token&gt;</span></code></pre><p>For more information on how JWTs work, please see <a href="https://jwt.io/introduction/">JSON Web Token Documentation</a></p>
-				<a href="#documentation" id="documentation" style="color: inherit; text-decoration: none;">
-					<h1>Documentation</h1>
+				<a href="#customizing-relatedmanager" id="customizing-relatedmanager" style="color: inherit; text-decoration: none;">
+					<h1>Customizing RelatedManager</h1>
 				</a>
-				<p>Please see <a href="DOCUMENTATION.md">DOCUMENTATION.md</a></p>
+				<p>Whenever a related field is defined, a manager is created to that field. You can customize this class by extending it and assigning it when you create a class.</p>
+				<pre><code class="language-javascript"><span class="hljs-keyword">import</span> Resource <span class="hljs-keyword">from</span> <span class="hljs-string">'rest-resource'</span>
+<span class="hljs-keyword">import</span> RelatedManager <span class="hljs-keyword">from</span> <span class="hljs-string">'rest-resource/dist/related'</span>
+
+<span class="hljs-class"><span class="hljs-keyword">class</span> <span class="hljs-title">CustomRelatedManager</span> <span class="hljs-keyword">extends</span> <span class="hljs-title">RelatedManager</span> </span>{
+    batchSize: <span class="hljs-number">50</span> <span class="hljs-comment">// Only GET 50 related objects at a time (default: Infinity)</span>
+
+    <span class="hljs-comment">/**
+     * @param options Object (getRelated, etc.)
+     * @returns Resource[] List of Resource instances
+     */</span>
+    resolve(options) {
+        <span class="hljs-comment">// etc</span>
+    }
+}
+
+<span class="hljs-class"><span class="hljs-keyword">class</span> <span class="hljs-title">UserResource</span> <span class="hljs-keyword">extends</span> <span class="hljs-title">Resource</span> </span>{
+    <span class="hljs-keyword">static</span> endpoint = <span class="hljs-string">'/users'</span>
+    <span class="hljs-comment">// Define custom related manager here</span>
+    <span class="hljs-keyword">static</span> relatedManager = CustomRelatedManager
+}</code></pre>
 			</div>
 		</div>
 		<div class="col-4 col-menu menu-sticky-wrap menu-highlight">
@@ -335,7 +468,7 @@ CustomResource.client = <span class="hljs-keyword">new</span> CustomClient(<span
 						<a href="modules/_exceptions_.html">"exceptions"</a>
 					</li>
 					<li class=" tsd-kind-external-module tsd-is-external">
-						<a href="modules/_related_index_.html">"related/index"</a>
+						<a href="modules/_related_.html">"related"</a>
 					</li>
 					<li class=" tsd-kind-external-module tsd-is-external">
 						<a href="modules/_util_.html">"util"</a>
