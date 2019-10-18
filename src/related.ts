@@ -1,7 +1,7 @@
-import Resource, { DetailOpts } from '../index'
+import Resource, { DetailOpts } from './index'
 import { first as _first } from 'lodash'
 import assert from 'assert'
-import { AttributeError } from '../exceptions'
+import { AttributeError } from './exceptions'
 export type RelatedObjectValue = string | string[] | number | number[] | Record<string, any> | Record<string, any>[]
 export type CollectionValue = Record<string, any>[]
 
@@ -142,29 +142,31 @@ export default class RelatedManager<T extends typeof Resource = typeof Resource>
         return Object.values(this.objects)
     }
 
+    async next(options?: DetailOpts): Promise<InstanceType<T>[]> {
+        const promises: Promise<InstanceType<T>>[] = []
+
+        if (!this.resolved) {
+            return await this.resolve(options)
+        }
+
+        // Take 0 to n items from this.deferred where n is this.batchSize
+        this.deferred.splice(0, this.batchSize).forEach((deferredFn) => {
+            promises.push(deferredFn())
+        })
+
+        return await Promise.all(promises)
+    }
+
     /**
      * Calls pending functions in `this.deferred` until it's empty. Runs `this.resolve()` first if it hasn't been ran yet
      * @param options DetailOpts
      */
     async all(options?: DetailOpts): Promise<InstanceType<T>[]> {
-        const promises: Promise<InstanceType<T>>[] = []
-
-        if (!this.resolved) {
-            await this.resolve(options)
-        }
-
-        // Take 0 to n (this.batchSize) items from this.deferred
-        for (let i = 0; i < this.batchSize; i++) {
-            let deferredFn = this.deferred.shift()
-            if (deferredFn) {
-                promises.push(deferredFn())
-            }
-        }
-
-        await Promise.all(promises)
+        await this.next(options)
 
         if (this.deferred.length) {
-            return this.all()
+            // Still have some left
+            return await this.all(options)
         } else {
             return Object.values(this.objects)
         }
@@ -202,6 +204,10 @@ export default class RelatedManager<T extends typeof Resource = typeof Resource>
         const allObjects = Object.values(this._objects)
 
         return allObjects
+    }
+
+    get length(): number {
+        return this.primaryKeys.length
     }
 
     toJSON() {

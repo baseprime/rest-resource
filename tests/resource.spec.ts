@@ -23,7 +23,8 @@ const GroupResource = BaseTestingResource.extend({
     endpoint: '/groups',
     related: {
         owner: UserResource,
-        users: UserResource
+        users: UserResource,
+        todos: TodoResource
     }
 })
 
@@ -185,5 +186,32 @@ describe('', () => {
         expect(someGroup.get('users')).to.be.instanceOf(CustomGroupResource.relatedManager)
         expect(someGroup.get('users').objects).to.be.empty
         expect(someGroup.get('todos')).to.be.undefined
+    })
+
+    it('managers next() all() and resolve() work correctly', async () => {
+        const group = await GroupResource.detail('2')
+        const todosManager = group.managers.todos
+        const originalBatchSize = todosManager.batchSize
+        const thisBatchSize = 20
+        const expectedTodosInGroup = 90
+        const compareIDOfTodoOnFirstPage = String(thisBatchSize + 1)
+        const compareIDOfTodoOnLastPage = String(expectedTodosInGroup)
+        todosManager.batchSize = thisBatchSize
+        expect(todosManager.length).to.equal(expectedTodosInGroup) // If this returns false, make sure the group ID 2 listed in fixtures.json has exactly 90 IDs in it!
+        expect(GroupResource.client.requestTracker[TodoResource.getDetailRoutePath(compareIDOfTodoOnFirstPage)]).to.be.undefined
+        // Calling resolve() should only get the first page
+        await todosManager.resolve()
+        expect(GroupResource.client.requestTracker[TodoResource.getDetailRoutePath(compareIDOfTodoOnFirstPage)]).to.equal(1)
+        expect(GroupResource.client.requestTracker[TodoResource.getDetailRoutePath(compareIDOfTodoOnLastPage)]).to.be.undefined
+        await todosManager.next()
+        expect(GroupResource.client.requestTracker[TodoResource.getDetailRoutePath(compareIDOfTodoOnLastPage)]).to.be.undefined
+        await todosManager.next()
+        expect(GroupResource.client.requestTracker[TodoResource.getDetailRoutePath(compareIDOfTodoOnLastPage)]).to.be.undefined
+        // Now that we've retrieved a few pages, compareIDOfTodoOnLastPage should still not've been retrieved. Now we'll use all() to get the rest
+        await todosManager.all()
+        // ...and assert that compareIDOfTodoOnLastPage is now loaded
+        expect(GroupResource.client.requestTracker[TodoResource.getDetailRoutePath(compareIDOfTodoOnLastPage)]).to.equal(1)
+        // Reset batch size for later tests
+        todosManager.batchSize = originalBatchSize
     })
 })
