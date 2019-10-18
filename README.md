@@ -195,7 +195,6 @@ let users = await UserResource.list({ getRelated: true })
 #### Using `resourceInstance.getRelated()`:
 
 ```javascript
-// You can also call getRelated() manually
 let user = await UserResource.detail(654)
 // GET /users/654
 await user.getRelated()
@@ -206,7 +205,6 @@ await user.getRelated()
 
 Additionally, you can also provide a list of managers that you want to resolve:
 ```javascript
-// You can also call getRelated() manually
 let user = await UserResource.detail(654)
 // GET /users/654
 await user.getRelated(['role']) // Will ignore all but "role" field (notice the "groups" were not resolved)
