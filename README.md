@@ -1,19 +1,21 @@
 # REST Resource
 ### Simplified Interface for consuming REST APIs
-REST Resource is a library to make your life simpler when working with REST API Endpoints. It takes RESTful Resource/Service URIs and simplifies them into a Class that can be called with simple methods. **Think of it like a Model for REST API Endpoints.**
+REST Resource is a library to make your life simpler when working with REST API Endpoints. It takes RESTful Resource/Service URIs and simplifies them into a Class that can be called with simple methods. **[Think of it like a Model for REST API Endpoints.](#acts-like-a-model)**
 
 ### Features:
-- **Caching!**
+- **[Caching!](#supports-caching-out-of-the-box)**
   - You'll never have to worry about making multiple calls to the same endpoint
-- **Easily set up Related Resources**
+- **[Easily set up Related Resources](#related-resources)**
   - Quickly wire up your Resources and which ones they're related to, REST Resource takes care of the rest
-- **Nested attribute resolution on Related Resources**
+- **[Nested attribute resolution on Related Resources](#related-attribute-lookups-with-getasync)**
   - Get attributes on related resources as easily as:
     ```javascript
     await resource.getAsync('otherResource.evenDeeperResource.name')
     ```
 - **Class-Based/Custom clients**
   - Completely customize the way REST Resource works with your API
+    - [The Client Class](#the-client-class)
+    - [Customizing Related Manager](#customizing-relatedmanager)
 
 ## What is a REST Resource?
 REST is acronym for REpresentational State Transfer. It is architectural style for distributed hypermedia systems and was first presented by Roy Fielding in 2000 in his famous [dissertation](https://www.ics.uci.edu/~fielding/pubs/dissertation/rest_arch_style.htm).
@@ -93,6 +95,43 @@ let sameuser = await UserResource.detail(123)
 
 sameuser.greet()
 // => I am Arthur, King of the Britons!
+```
+
+If an object is cached and is called upon from other related models, REST Resource will save a request.
+
+In the example below, notice the `groups` ids are the same:
+
+```javascript
+let arthur = await UserResource.detail(123)
+console.log(arthur.attributes)
+// => {
+//        id: 123,
+//        name: 'King Arthur',
+//        weapon: 'Sword',
+//        role: 1,
+//        groups: [1]
+//    }
+
+let patsy = await UserResource.detail(654)
+console.log(patsy.attributes)
+// => {
+//        id: 654,
+//        name: 'Patsy',
+//        weapon: 'Coconuts',
+//        role: 2,
+//        groups: [1, 2] // Notice this list contains an already retrieved group (1)
+//    }
+
+let arthurTitle = arthur.getAsync('role.title')
+let arthurGroup = arthur.getAsync('groups.name')
+// GET /roles/1
+// GET /groups/1
+
+let patsyTitle = patsy.getAsync('role.title')
+let patsyGroup = patsy.getAsync('groups.name')
+// GET /roles/2
+// GET /groups/2
+// Does not need to GET /groups/1
 ```
 
 # Related Resources
@@ -211,7 +250,7 @@ await user.getRelated(['role']) // Will ignore all but "role" field (notice the 
 // GET /roles/2
 ```
 
-### Related Attribute Lookups with `getAsync()`
+## Related Attribute Lookups with `getAsync()`
 REST Resource automatically resolves properties from related lookups, then decides what fields it needs to call `resource.getRelated()`
 
 ```javascript
@@ -219,48 +258,13 @@ let roger = await UserResource.detail(543)
 // GET /users/543
 
 let title = await roger.getAsync('role.title')
-// Doesn't need send GET /roles/<id>
+// GET /roles/<id>
 
 console.log(title)
 // => Shrubber
 ```
 
-If an object is cached and is called upon from other related models, REST Resource will save a request.
-
-In the example below, notice the `groups` ids are the same:
-
-```javascript
-let arthur = await UserResource.detail(123)
-console.log(arthur.attributes)
-// => {
-//        id: 123,
-//        name: 'King Arthur',
-//        weapon: 'Sword',
-//        role: 1,
-//        groups: [1]
-//    }
-
-let patsy = await UserResource.detail(654)
-console.log(patsy.attributes)
-// => {
-//        id: 654,
-//        name: 'Patsy',
-//        weapon: 'Coconuts',
-//        role: 2,
-//        groups: [1, 2] // Notice this list contains an already retrieved group (1)
-//    }
-
-let arthurTitle = arthur.getAsync('role.title')
-let arthurGroup = arthur.getAsync('groups.name')
-// GET /roles/1
-// GET /groups/1
-
-let patsyTitle = patsy.getAsync('role.title')
-let patsyGroup = patsy.getAsync('groups.name')
-// GET /roles/2
-// GET /groups/2
-// Does not need to GET /groups/1
-```
+#### Note: `resource.getAsync(attribute)` is one of the most useful features of REST Resource as it allows you to define the fields that are necessary to build your app, and REST Resource will intelligently request only the data it _needs_ from the API!
 
 # Acts like a Model
 You can use REST Resource like a RESTful Model. REST Resource tracks changes in each Resource instance's attributes and uses RESTful HTTP Verbs like `GET`, `POST`, `PUT`, `PATCH`, and `DELETE` accordingly:
@@ -376,7 +380,7 @@ Authorization: Bearer <token>
 
 For more information on how JWTs work, please see [JSON Web Token Documentation](https://jwt.io/introduction/)
 
-# Customizing Related Manager 
+# Customizing RelatedManager 
 Whenever a related field is defined, a manager is created to that field. You can customize this class by extending it and assigning it when you create a class.
 
 ```javascript
