@@ -73,8 +73,8 @@
 					<h3>Features:</h3>
 				</a>
 				<ul>
-					<li><strong><a href="#supports-caching-out-of-the-box">Caching!</a></strong><ul>
-							<li>You&#39;ll never have to worry about making multiple calls to the same endpoint</li>
+					<li><strong><a href="#cached-resource-resolution">Cached Resource Resolution!</a></strong><ul>
+							<li>Grab the resources you need, REST Resource sorts out which resources to GET</li>
 						</ul>
 					</li>
 					<li><strong><a href="#related-resources">Easily set up Related Resources</a></strong><ul>
@@ -104,7 +104,8 @@
 				<a href="#installation" id="installation" style="color: inherit; text-decoration: none;">
 					<h2>Installation</h2>
 				</a>
-				<pre><code>npm <span class="hljs-keyword">install</span> rest-<span class="hljs-keyword">resource</span></code></pre>
+				<pre><code>npm <span class="hljs-keyword">install</span> rest-<span class="hljs-keyword">resource</span></code></pre><p>or</p>
+				<pre><code class="language-html"><span class="hljs-tag">&lt;<span class="hljs-name">script</span> <span class="hljs-attr">src</span>=<span class="hljs-string">"https://unpkg.com/rest-resource"</span>&gt;</span><span class="hljs-tag">&lt;/<span class="hljs-name">script</span>&gt;</span></code></pre>
 				<a href="#documentation" id="documentation" style="color: inherit; text-decoration: none;">
 					<h2>Documentation</h2>
 				</a>
@@ -132,25 +133,27 @@
     }
 }
 
-<span class="hljs-comment">// Sends a GET to /users</span>
-UserResource.list().then(<span class="hljs-function">(<span class="hljs-params">users</span>) =&gt;</span> {
-    <span class="hljs-keyword">let</span> user = users[<span class="hljs-number">0</span>]
-    user.greet()
-    <span class="hljs-comment">// =&gt; I am Arthur, King of the Britons!</span>
-    user.set(<span class="hljs-string">'weapon'</span>, <span class="hljs-string">'Sword'</span>)
-    user.save()
-    <span class="hljs-comment">// PATCH { weapon: 'Sword' } to /users/123</span>
-})
-
-<span class="hljs-comment">// Or, get details of a Resource</span>
 <span class="hljs-comment">// Sends a GET to /users/123</span>
-UserResource.detail(<span class="hljs-number">123</span>).then(<span class="hljs-function">(<span class="hljs-params">arthur</span>) =&gt;</span> {
-    arthur.greet()
-})</code></pre>
-				<a href="#supports-caching-out-of-the-box" id="supports-caching-out-of-the-box" style="color: inherit; text-decoration: none;">
-					<h1>Supports Caching out of the box</h1>
+<span class="hljs-keyword">const</span> arthur = <span class="hljs-keyword">await</span> UserResource.detail(<span class="hljs-number">123</span>)
+arthur.greet()
+<span class="hljs-comment">// =&gt; I am Arthur, King of the Britons!</span>
+
+<span class="hljs-comment">// Or, get many resources</span>
+<span class="hljs-comment">// Sends a GET to /users</span>
+<span class="hljs-keyword">const</span> users = <span class="hljs-keyword">await</span> UserResource.list()
+
+<span class="hljs-keyword">let</span> robin = users.resources[<span class="hljs-number">0</span>]
+robin.greet()
+<span class="hljs-comment">// =&gt; I am Brave Sir Robin, Knight of the Round Table!</span>
+<span class="hljs-built_in">console</span>.log(robin.id)
+<span class="hljs-comment">// =&gt; 456</span>
+robin.set(<span class="hljs-string">'weapon'</span>, <span class="hljs-string">'Sword'</span>)
+robin.save()
+<span class="hljs-comment">// PATCH { weapon: 'Sword' } to /users/456</span></code></pre>
+				<a href="#cached-resource-resolution" id="cached-resource-resolution" style="color: inherit; text-decoration: none;">
+					<h1>Cached Resource Resolution</h1>
 				</a>
-				<p>REST Resource has a caching mechanism that caches objects returned by your API.</p>
+				<p>REST Resource has a caching mechanism that sorts out which resources your app needs and resolves both requirements once that resource has been obtained. In the example below, only one request is made:</p>
 				<pre><code class="language-javascript"><span class="hljs-keyword">let</span> user = <span class="hljs-keyword">await</span> UserResource.detail(<span class="hljs-number">123</span>)
 <span class="hljs-comment">// GET /users/123</span>
 
@@ -161,9 +164,11 @@ user.greet()
 <span class="hljs-comment">// Cache is still good, did not send GET to /users/123</span>
 
 sameuser.greet()
-<span class="hljs-comment">// =&gt; I am Arthur, King of the Britons!</span></code></pre>
-				<p>If an object is cached and is called upon from other related models, REST Resource will save a request.</p>
-				<p>In the example below, notice the <code>groups</code> ids are the same:</p>
+<span class="hljs-comment">// =&gt; I am Arthur, King of the Britons!</span>
+
+<span class="hljs-built_in">console</span>.log(user === sameuser)
+<span class="hljs-comment">// =&gt; true</span></code></pre>
+				<p>If an object has been retrieved and is called upon from other related models, REST Resource will resolve cross-referenced lookups, provided they&#39;re made within <code>n</code> seconds where <code>n</code> is a Resource&#39;s <code>cacheMaxAge</code>. In the example below, notice the <code>groups</code> attribute contains an already-retrieved Group Resource:</p>
 				<pre><code class="language-javascript"><span class="hljs-keyword">let</span> arthur = <span class="hljs-keyword">await</span> UserResource.detail(<span class="hljs-number">123</span>)
 <span class="hljs-built_in">console</span>.log(arthur.attributes)
 <span class="hljs-comment">// =&gt; {</span>
@@ -198,8 +203,8 @@ sameuser.greet()
 					<h1>Related Resources</h1>
 				</a>
 				<p>Related Resources can be wired up very easily.</p>
-				<a href="#one-to-many-relationships" id="one-to-many-relationships" style="color: inherit; text-decoration: none;">
-					<h2>One to Many relationships</h2>
+				<a href="#defining-one-to-many-relationships" id="defining-one-to-many-relationships" style="color: inherit; text-decoration: none;">
+					<h2>Defining One to Many relationships</h2>
 				</a>
 				<pre><code class="language-javascript"><span class="hljs-keyword">import</span> Resource <span class="hljs-keyword">from</span> <span class="hljs-string">'rest-resource'</span>
 
@@ -226,8 +231,8 @@ sameuser.greet()
 
 <span class="hljs-built_in">console</span>.log(user.get(<span class="hljs-string">'role'</span>))
 <span class="hljs-comment">// =&gt; RoleResource({ id: 654, title: 'Enchanter' })</span></code></pre>
-				<a href="#many-to-many-relationships" id="many-to-many-relationships" style="color: inherit; text-decoration: none;">
-					<h2>Many to Many relationships</h2>
+				<a href="#defining-many-to-many-relationships" id="defining-many-to-many-relationships" style="color: inherit; text-decoration: none;">
+					<h2>Defining Many to Many relationships</h2>
 				</a>
 				<p>Many to many relationships work exactly the same as One to Many relationships with one key difference: when using <code>resource.get(attribute)</code> where <code>attribute</code> is the field of a related resource, the returned value is not the related <code>Resource</code> instance, it&#39;s a <code>RelatedManager</code> instance:</p>
 				<pre><code class="language-javascript"><span class="hljs-class"><span class="hljs-keyword">class</span> <span class="hljs-title">UserResource</span> <span class="hljs-keyword">extends</span> <span class="hljs-title">Resource</span> </span>{
@@ -386,7 +391,7 @@ robin.delete()
 				</a>
 				<p>There are a number of ways you can set the client:</p>
 				<pre><code class="language-javascript"><span class="hljs-keyword">import</span> Resource <span class="hljs-keyword">from</span> <span class="hljs-string">'rest-resource'</span>
-<span class="hljs-keyword">import</span> { DefaultClient } <span class="hljs-keyword">from</span> <span class="hljs-string">'rest-resource/client'</span>
+<span class="hljs-keyword">import</span> { DefaultClient } <span class="hljs-keyword">from</span> <span class="hljs-string">'rest-resource/dist/client'</span>
 
 <span class="hljs-class"><span class="hljs-keyword">class</span> <span class="hljs-title">CustomClient</span> <span class="hljs-keyword">extends</span> <span class="hljs-title">DefaultClient</span> </span>{
     negotiateContent(ResourceClass) {
