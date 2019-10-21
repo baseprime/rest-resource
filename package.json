@@ -3,10 +3,11 @@
   "version": "0.6.2",
   "description": "Simplify your REST API resources, supports automatic caching",
   "main": "./dist/index.js",
+  "unpkg": "./dist/dom/rest-resource.js",
   "types": "types",
   "scripts": {
     "test": "mocha -r ts-node/register ./tests/**/*.spec.ts",
-    "build": "tsc --target es5 --module commonjs --outDir ./dist && npm run generate-docs",
+    "build": "tsc && webpack && npm run generate-docs",
     "dev": "tsc --watch",
     "prettier": "./node_modules/prettier/bin-prettier.js --write ./src/**/*.ts ./src/*.ts",
     "repl": "ts-node ./tests/repl.ts",
@@ -48,10 +49,14 @@
   "dependencies": {
     "@types/lodash": "^4.14.137",
     "@types/node": "^10.12.19",
+    "babel-core": "^6.26.0",
+    "babel-loader": "^6.4.1",
+    "babel-preset-es2015": "^6.24.1",
     "assert": "^1.4.1",
     "axios": "^0.18.0",
     "lodash": "^4.17.15",
     "tslib": "^1.9.3",
-    "typescript": "^3.3.3"
+    "typescript": "^3.3.3",
+    "webpack": "^3.4.1"
   }
 }
