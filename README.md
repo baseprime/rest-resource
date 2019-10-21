@@ -3,8 +3,8 @@
 REST Resource is a library to make your life simpler when working with REST API Endpoints. It takes RESTful Resource/Service URIs and simplifies them into a Class that can be called with simple methods. **[Think of it like a Model for REST API Endpoints.](#acts-like-a-model)**
 
 ### Features:
-- **[Caching!](#supports-caching-out-of-the-box)**
-  - You'll never have to worry about making multiple calls to the same endpoint
+- **[Cached Resource Resolution!](#cached-resource-resolution)**
+  - Grab the resources you need, REST Resource sorts out which resources to GET
 - **[Easily set up Related Resources](#related-resources)**
   - Quickly wire up your Resources and which ones they're related to, REST Resource takes care of the rest
 - **[Nested attribute resolution on Related Resources](#related-attribute-lookups-with-getasync)**
@@ -63,25 +63,27 @@ class UserResource extends Resource {
     }
 }
 
-// Sends a GET to /users
-UserResource.list().then((users) => {
-    let user = users[0]
-    user.greet()
-    // => I am Arthur, King of the Britons!
-    user.set('weapon', 'Sword')
-    user.save()
-    // PATCH { weapon: 'Sword' } to /users/123
-})
-
-// Or, get details of a Resource
 // Sends a GET to /users/123
-UserResource.detail(123).then((arthur) => {
-    arthur.greet()
-})
+const arthur = await UserResource.detail(123)
+arthur.greet()
+// => I am Arthur, King of the Britons!
+
+// Or, get many resources
+// Sends a GET to /users
+const users = await UserResource.list()
+
+let robin = users.resources[0]
+robin.greet()
+// => I am Brave Sir Robin, Knight of the Round Table!
+console.log(robin.id)
+// => 456
+robin.set('weapon', 'Sword')
+robin.save()
+// PATCH { weapon: 'Sword' } to /users/456
 ```
 
-# Supports Caching out of the box
-REST Resource has a caching mechanism that caches objects returned by your API.
+# Cached Resource Resolution
+REST Resource has a caching mechanism that sorts out which resources your app needs and resolves both requirements once that resource has been obtained. In the example below, only one request is made:
 
 ```javascript
 let user = await UserResource.detail(123)
@@ -95,11 +97,12 @@ let sameuser = await UserResource.detail(123)
 
 sameuser.greet()
 // => I am Arthur, King of the Britons!
+
+console.log(user === sameuser)
+// => true
 ```
 
-If an object is cached and is called upon from other related models, REST Resource will save a request.
-
-In the example below, notice the `groups` ids are the same:
+If an object has been retrieved and is called upon from other related models, REST Resource will resolve cross-referenced lookups, provided they're made within `n` seconds where `n` is a Resource's `cacheMaxAge`. In the example below, notice the `groups` attribute contains an already-retrieved Group Resource:
 
 ```javascript
 let arthur = await UserResource.detail(123)
@@ -137,7 +140,7 @@ let patsyGroup = patsy.getAsync('groups.name')
 # Related Resources
 Related Resources can be wired up very easily.
 
-## One to Many relationships
+## Defining One to Many relationships
 
 ```javascript
 import Resource from 'rest-resource'
@@ -167,7 +170,7 @@ console.log(user.get('role'))
 // => RoleResource({ id: 654, title: 'Enchanter' })
 ```
 
-## Many to Many relationships
+## Defining Many to Many relationships
 Many to many relationships work exactly the same as One to Many relationships with one key difference: when using `resource.get(attribute)` where `attribute` is the field of a related resource, the returned value is not the related `Resource` instance, it's a `RelatedManager` instance:
 
 ```javascript
@@ -340,7 +343,7 @@ There are a number of ways you can set the client:
 
 ```javascript
 import Resource from 'rest-resource'
-import { DefaultClient } from 'rest-resource/client'
+import { DefaultClient } from 'rest-resource/dist/client'
 
 class CustomClient extends DefaultClient {
     negotiateContent(ResourceClass) {
