@@ -4,7 +4,7 @@ REST Resource is a library to make your life simpler when working with REST API 
 
 ### Features:
 - **[Cached Resource Resolution!](#cached-resource-resolution)**
-  - Grab the resources you need, REST Resource sorts out which resources to GET
+  - Call to your resources as if they're already loaded, REST Resource sorts out which ones to GET
 - **[Easily set up Related Resources](#related-resources)**
   - Quickly wire up your Resources and which ones they're related to, REST Resource takes care of the rest
 - **[Nested attribute resolution on Related Resources](#related-attribute-lookups-with-getasync)**
