@@ -42,7 +42,7 @@ npm run serve-docs
 ```
 
 ## Examples
-[Play around with a working example using RunKit](https://runkit.com/baseprime/rest-resource-example)
+[Play around with a working example on JSFiddle](https://jsfiddle.net/ro6fj51n/)
 
 (assuming `Node >= v12.0.0`)
 
