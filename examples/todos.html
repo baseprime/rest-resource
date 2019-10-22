@@ -1,0 +1,82 @@
+<!DOCTYPE html>
+
+<head>
+    <title>REST Resource Example</title>
+</head>
+
+<body>
+    <div id="app">
+        <h2>Todos:</h2>
+        <h3 v-if="!todos.length">Loading...</h3>
+        <table cellpadding="5" border="1" width="100%" v-else>
+            <tr>
+                <th width="10">&nbsp;</th>
+                <th>Title</th>
+                <th width="250">Author</th>
+            </tr>
+            <tr v-for="todo in todos">
+                <td><input type="checkbox" v-on:change="toggle(todo)" v-bind:checked="todo.done" />&nbsp;</td>
+                <td>
+                    <del v-if="todo.done">
+                        {{ todo.title }}
+                    </del>
+                    <span v-else>
+                        {{ todo.title }}
+                    </span>
+                </td>
+                <td>{{ todo.author }}</td>
+            </tr>
+        </table>
+    </div>
+    <script src="https://cdn.jsdelivr.net/npm/vue"></script>
+    <script src="https://unpkg.com/rest-resource"></script>
+    <script>
+        const BaseResource = Resource.extend({
+            cacheMaxAge: Infinity,
+            client: new Resource.client.constructor('https://jsonplaceholder.typicode.com')
+        })
+
+        const UserResource = BaseResource.extend({
+            endpoint: '/users'
+        })
+
+        const TodoResource = BaseResource.extend({
+            endpoint: '/todos',
+            related: {
+                userId: UserResource
+            }
+        })
+
+        new Vue({
+            el: "#app",
+            data: {
+                todos: []
+            },
+            methods: {
+                toggle(todo) {
+                    todo.done = !todo.done
+                    TodoResource.detail(todo.id).then((resource) => {
+                        resource.set('completed', todo.done)
+                        return resource.save()
+                    })
+                }
+            },
+            mounted() {
+                TodoResource.list()
+                    .then((response) => {
+                        response.resources.forEach(async (resource) => {
+                            let title = await resource.getAsync('title')
+                            let author = await resource.getAsync('userId.name')
+                            let done = await resource.getAsync('completed')
+                            this.$data.todos.push({
+                                id: resource.id,
+                                title,
+                                author,
+                                done
+                            })
+                        })
+                    })
+            }
+        })
+    </script>
+</body>
