@@ -29,7 +29,7 @@ export default class RelatedManager<T extends typeof Resource = typeof Resource>
     _objects: Record<string, InstanceType<T>> = {}
 
     constructor(to: T, value: RelatedObjectValue) {
-        assert(typeof to === 'function', `Can't use RelatedManager without Resource class: recieved ${to}`)
+        assert(typeof to === 'function', `Can't use RelatedManager without Resource class: received ${to}`)
         this.to = to
         this.value = value
         this.many = Array.isArray(value)
@@ -180,7 +180,7 @@ export default class RelatedManager<T extends typeof Resource = typeof Resource>
     add(resource: InstanceType<T>) {
         assert(this.many, `Related Manager "many" must be true to add()`)
         assert(resource.id, `Resource must be saved before adding to Related Manager`)
-        assert(resource.getConstructor() === this.to, `Related Manager add() expected ${this.to.toResourceName()}, recieved ${resource.getConstructor().toResourceName()}`)
+        assert(resource.getConstructor() === this.to, `Related Manager add() expected ${this.to.toResourceName()}, received ${resource.getConstructor().toResourceName()}`)
         const ContentCtor = this.getValueContentType()
         var value
         if (ContentCtor === Object) {
