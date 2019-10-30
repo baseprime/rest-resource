@@ -29,6 +29,7 @@ export default class RelatedManager<T extends typeof Resource = typeof Resource>
     _objects: Record<string, InstanceType<T>> = {}
 
     constructor(to: T, value: RelatedObjectValue) {
+        assert(typeof to === 'function', `Can't use RelatedManager without Resource class: recieved ${to}`)
         this.to = to
         this.value = value
         this.many = Array.isArray(value)
