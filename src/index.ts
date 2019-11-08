@@ -531,7 +531,7 @@ export default class Resource {
     /**
      * Saves the instance -- sends changes as a PATCH or sends whole object as a POST if it's new
      */
-    save<T extends Resource = Resource>(this: T, options: SaveOptions = {}): Promise<ResourceResponse<T>> {
+    save<T extends this>(options: SaveOptions = {}): Promise<ResourceResponse<T>> {
         let promise
         const Ctor = this.getConstructor()
 
@@ -559,7 +559,7 @@ export default class Resource {
             return {
                 response,
                 resources: [this],
-            }
+            } as ResourceResponse<T>
         })
     }
 

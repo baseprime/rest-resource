@@ -165,7 +165,7 @@ export default class Resource {
     /**
      * Saves the instance -- sends changes as a PATCH or sends whole object as a POST if it's new
      */
-    save<T extends Resource = Resource>(this: T, options?: SaveOptions): Promise<ResourceResponse<T>>;
+    save<T extends this>(options?: SaveOptions): Promise<ResourceResponse<T>>;
     /**
      * Validate attributes -- returns empty if no errors exist -- you should throw new errors here
      * @returns `Error[]` Array of Exceptions

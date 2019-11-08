@@ -120,7 +120,7 @@ export class JWTBearerClient extends BaseClient {
         try {
             let jwtPieces = this.token.split('.')
             let payloadBase64 = jwtPieces[1]
-            let payloadBuffer = new Buffer(payloadBase64, 'base64')
+            let payloadBuffer = Buffer.from(payloadBase64, 'base64').toString()
             return JSON.parse(payloadBuffer.toString())
         } catch (e) {
             return undefined
