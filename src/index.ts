@@ -3,50 +3,11 @@ import { DefaultClient, RequestConfig, ResourceResponse } from './client'
 import { AxiosResponse } from 'axios'
 import { uuidWeak } from './util'
 import RelatedManager from './related'
+import { BaseFormatter } from './formatting'
 
 const exceptions = require('./exceptions')
 const assert = require('assert')
-const isEqual = require('lodash').isEqual
-
-export type IterableDict = {
-    [index: string]: any
-}
-
-export interface ResourceClassDict<T extends typeof Resource = typeof Resource> extends IterableDict {
-    [key: string]: T
-}
-
-export interface ResourceDict<T extends Resource = Resource> {
-    [key: string]: T | T[]
-}
-
-export interface ValidatorDict extends IterableDict {
-    [key: string]: (value?: any, resource?: Resource) => void
-}
-
-export interface CachedResource<T extends Resource> {
-    expires: number
-    resource: T
-}
-
-export interface SaveOptions {
-    partial?: boolean
-    replaceCache?: boolean
-    force?: boolean
-}
-
-export interface GetRelatedOpts {
-    managers?: string[]
-    deep?: boolean
-}
-
-export type ListOpts = RequestConfig & {
-    getRelated?: boolean
-}
-
-export type DetailOpts = RequestConfig & {
-    getRelated?: boolean
-}
+const _ = require('lodash')
 
 export default class Resource {
     static endpoint: string = ''
@@ -58,9 +19,11 @@ export default class Resource {
     static uniqueKey: string = 'id'
     static perPage: number | null = null
     static defaults: Record<string, any> = {}
-    static relatedManager: typeof RelatedManager = RelatedManager
+    static RelatedManagerClass: typeof RelatedManager = RelatedManager
     static validators: ValidatorDict = {}
-    static related: ResourceClassDict = {}
+    static formatting: Record<string, BaseFormatter> = {}
+    static fields: string[] = []
+    static related: Record<string, typeof Resource> = {}
     _attributes: Record<string, any> = {}
     uuid: string
     attributes: Record<string, any> = {}
@@ -69,12 +32,13 @@ export default class Resource {
 
     constructor(attributes: any = {}, options: any = {}) {
         const Ctor = this.getConstructor()
-        const RelatedManagerCtor = Ctor.relatedManager
+        const RelatedManagerCtor = Ctor.RelatedManagerClass
         if (typeof Ctor.client !== 'object') {
             throw new exceptions.ImproperlyConfiguredError("Resource can't be used without Client class instance")
         }
-        // Set up attributes and defaults
-        this._attributes = Object.assign({}, Ctor.makeDefaultsObject(), attributes)
+        this._attributes = {}
+        let _attrKeys = Object.keys(attributes)
+        let _defaults = Ctor.makeDefaultsObject()
         // Set up Proxy to this._attributes
         this.attributes = new Proxy(this._attributes, {
             set: (receiver: any, key: string, value: any) => {
@@ -88,10 +52,27 @@ export default class Resource {
                 return Reflect.defineProperty(target, prop, descriptor)
             },
         })
+        // Default attributes, ignore any that will be overridden
+        for (let defaultsKey in _defaults) {
+            if (_attrKeys.includes(defaultsKey)) {
+                continue
+            }
+
+            this.attributes[defaultsKey] = _defaults[defaultsKey]
+        }
+        // Attributes parameters, will fire setter
+        for (let attrKey in attributes) {
+            this.attributes[attrKey] = attributes[attrKey]
+        }
+        this.changes = {}
         // Create related managers
-        // Because we're using Object.assign above, we shouldn't have to iterate here again -- @todo improve it
-        for (let attrKey in Ctor.related) {
-            this.managers[attrKey] = new RelatedManagerCtor(Ctor.related[attrKey], this._attributes[attrKey])
+        for (let relAttrKey in Ctor.related) {
+            let to = Ctor.related[relAttrKey]
+            try {
+                this.managers[relAttrKey] = new RelatedManagerCtor(to, this._attributes[relAttrKey])
+            } catch (e) {
+                throw new Error(`${e} -- Relation: ${this.toResourceName()}.related[${relAttrKey}]`)
+            }
         }
 
         if (this.id) {
@@ -350,25 +331,25 @@ export default class Resource {
             const pieces = key.split('.')
             const thisKey = String(pieces.shift())
             const thisValue = this.attributes[thisKey]
-            const relatedManager: RelatedManager = this.managers[thisKey]
+            const RelatedManagerClass: RelatedManager = this.managers[thisKey]
 
             if (pieces.length > 0) {
                 // We need to go deeper...
-                if (!relatedManager) {
+                if (!RelatedManagerClass) {
                     throw new exceptions.ImproperlyConfiguredError(`No relation found on ${this.toResourceName()}[${thisKey}]. Did you define it on ${this.toResourceName()}.related?`)
                 }
 
-                if (relatedManager.many) {
-                    return relatedManager.objects.map((thisResource) => {
+                if (RelatedManagerClass.many) {
+                    return RelatedManagerClass.objects.map((thisResource) => {
                         return thisResource.get(pieces.join('.'))
                     })
                 }
 
-                return relatedManager.objects[0].get(pieces.join('.'))
-            } else if (Boolean(thisValue) && relatedManager) {
+                return RelatedManagerClass.objects[0].get(pieces.join('.'))
+            } else if (Boolean(thisValue) && RelatedManagerClass) {
                 // If the related manager is a single object and is inflated, auto resolve the resource.get(key) to that object
                 // @todo Maybe we should always return the manager? Or maybe we should always return the resolved object(s)? I am skeptical about this part
-                return !relatedManager.many && relatedManager.resolved ? relatedManager.objects[0] : relatedManager
+                return !RelatedManagerClass.many && RelatedManagerClass.resolved ? RelatedManagerClass.objects[0] : RelatedManagerClass
             } else {
                 return thisValue
             }
@@ -439,8 +420,9 @@ export default class Resource {
     toInternalValue(key: string, value: any): any {
         let currentValue = this.attributes[key]
         let newValue = value
+        let Ctor = this.getConstructor()
 
-        if (!isEqual(currentValue, newValue)) {
+        if (!_.isEqual(currentValue, newValue)) {
             // Also resolve any related Resources back into foreign keys
             if (newValue && newValue['getConstructor']) {
                 // newValue is a Resource instance
@@ -450,21 +432,26 @@ export default class Resource {
                 }
                 // Create a RelatedManager
                 let RelatedCtor = newValue.getConstructor()
-                let RelatedManager = this.getConstructor().relatedManager
-                let manager = new RelatedManager(RelatedCtor, newValue)
+                let RelatedManagerClass = Ctor.RelatedManagerClass
+                let manager = new RelatedManagerClass(RelatedCtor, newValue)
                 newValue = manager.toJSON()
                 this.managers[key] = manager
             } else if (newValue && this.managers[key]) {
                 // newValue has an old manager -- needs a new one
                 // Create a RelatedManager
                 let RelatedCtor = newValue.to
-                let RelatedManager = this.getConstructor().relatedManager
-                let manager = new RelatedManager(RelatedCtor, newValue)
+                let RelatedManagerClass = Ctor.RelatedManagerClass
+                let manager = new RelatedManagerClass(RelatedCtor, newValue)
                 newValue = manager.toJSON()
                 this.managers[key] = manager
             }
 
             this.changes[key] = newValue
+        }
+
+        if ('object' === typeof Ctor.formatting[key] && 'function' === typeof Ctor.formatting[key].normalize) {
+            let formatter = Ctor.formatting[key]
+            newValue = formatter.normalize(newValue)
         }
 
         return newValue
@@ -536,26 +523,37 @@ export default class Resource {
         const Ctor = this.getConstructor()
 
         let errors = this.validate()
+        let fields = options.fields || Ctor.fields
 
         if (errors.length > 0 && !options.force) {
             throw new exceptions.ValidationError(errors)
         }
 
         if (this.isNew()) {
-            promise = Ctor.client.post(Ctor.getListRoutePath(), this.attributes)
+            let attrs = fields.length ? _.pick(this.attributes, fields) : this.attributes
+            promise = Ctor.client.post(Ctor.getListRoutePath(), attrs)
         } else if (options.partial === false) {
-            promise = Ctor.client.put(Ctor.getDetailRoutePath(this.id), this.attributes)
+            let attrs = fields.length ? _.pick(this.attributes, fields) : this.attributes
+            promise = Ctor.client.put(Ctor.getDetailRoutePath(this.id), attrs)
         } else {
-            promise = Ctor.client.patch(Ctor.getDetailRoutePath(this.id), this.changes)
+            let attrs = fields.length ? _.pick(this.changes, fields) : this.changes
+            promise = Ctor.client.patch(Ctor.getDetailRoutePath(this.id), attrs)
         }
 
         return promise.then((response: AxiosResponse<T>) => {
-            this.changes = {}
             for (const resKey in response.data) {
                 this.set(resKey, response.data[resKey])
             }
-            // Replace cache
-            this.cache(options.replaceCache === false ? false : true)
+
+            for (let fieldKey of fields) {
+                delete this.changes[fieldKey]
+            }
+
+            if (this.id) {
+                // Replace cache
+                this.cache(options.replaceCache === false ? false : true)
+            }
+
             return {
                 response,
                 resources: [this],
@@ -631,4 +629,33 @@ export default class Resource {
     toJSON(): any {
         return this.get()
     }
+}
+
+export interface ValidatorDict extends Record<string, any> {
+    [key: string]: (value?: any, resource?: Resource) => void
+}
+
+export interface CachedResource<T extends Resource> {
+    expires: number
+    resource: T
+}
+
+export interface SaveOptions {
+    partial?: boolean
+    replaceCache?: boolean
+    force?: boolean
+    fields?: any
+}
+
+export interface GetRelatedOpts {
+    managers?: string[]
+    deep?: boolean
+}
+
+export type ListOpts = RequestConfig & {
+    getRelated?: boolean
+}
+
+export type DetailOpts = RequestConfig & {
+    getRelated?: boolean
 }

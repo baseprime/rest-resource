@@ -1,36 +1,6 @@
 import { DefaultClient, RequestConfig, ResourceResponse } from './client';
 import RelatedManager from './related';
-export declare type IterableDict = {
-    [index: string]: any;
-};
-export interface ResourceClassDict<T extends typeof Resource = typeof Resource> extends IterableDict {
-    [key: string]: T;
-}
-export interface ResourceDict<T extends Resource = Resource> {
-    [key: string]: T | T[];
-}
-export interface ValidatorDict extends IterableDict {
-    [key: string]: (value?: any, resource?: Resource) => void;
-}
-export interface CachedResource<T extends Resource> {
-    expires: number;
-    resource: T;
-}
-export interface SaveOptions {
-    partial?: boolean;
-    replaceCache?: boolean;
-    force?: boolean;
-}
-export interface GetRelatedOpts {
-    managers?: string[];
-    deep?: boolean;
-}
-export declare type ListOpts = RequestConfig & {
-    getRelated?: boolean;
-};
-export declare type DetailOpts = RequestConfig & {
-    getRelated?: boolean;
-};
+import { BaseFormatter } from './formatting';
 export default class Resource {
     static endpoint: string;
     static cacheMaxAge: number;
@@ -41,9 +11,11 @@ export default class Resource {
     static uniqueKey: string;
     static perPage: number | null;
     static defaults: Record<string, any>;
-    static relatedManager: typeof RelatedManager;
+    static RelatedManagerClass: typeof RelatedManager;
     static validators: ValidatorDict;
-    static related: ResourceClassDict;
+    static formatting: Record<string, BaseFormatter>;
+    static fields: string[];
+    static related: Record<string, typeof Resource>;
     _attributes: Record<string, any>;
     uuid: string;
     attributes: Record<string, any>;
@@ -181,3 +153,26 @@ export default class Resource {
     toResourceName(): string;
     toJSON(): any;
 }
+export interface ValidatorDict extends Record<string, any> {
+    [key: string]: (value?: any, resource?: Resource) => void;
+}
+export interface CachedResource<T extends Resource> {
+    expires: number;
+    resource: T;
+}
+export interface SaveOptions {
+    partial?: boolean;
+    replaceCache?: boolean;
+    force?: boolean;
+    fields?: any;
+}
+export interface GetRelatedOpts {
+    managers?: string[];
+    deep?: boolean;
+}
+export declare type ListOpts = RequestConfig & {
+    getRelated?: boolean;
+};
+export declare type DetailOpts = RequestConfig & {
+    getRelated?: boolean;
+};

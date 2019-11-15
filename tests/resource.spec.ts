@@ -44,7 +44,7 @@ describe('', () => {
         expect(user.get('name')).to.exist
     })
 
-    it('creates resources', async () => {
+    it('creates and saves resources', async () => {
         let user = new UserResource({
             name: 'Test User',
             username: 'testing123321',
@@ -55,6 +55,44 @@ describe('', () => {
         expect(user).to.have.property('id')
         expect(user.id).to.exist
         expect(user._attributes.id).to.exist
+
+        // Make sure save() only sends requested fields
+        const CustomUserResource = UserResource.extend({
+            fields: ['username', 'email']
+        })
+
+        let user2 = new CustomUserResource({
+            name: 'Another Test User',
+            username: 'testing54321',
+            email: 'anothertest@dsf.com'
+        })
+
+        let result = await user2.save()
+        expect(user).to.have.property('id')
+        expect(user.changes.id).to.exist
+        expect(result.response.data.email).to.exist
+        expect(result.response.data.username).to.exist
+        expect(result.response.data.name).to.be.undefined
+
+        // Make sure this also works with save({ fields: [...] }
+        let user3 = new CustomUserResource({
+            name: 'Another Another Test User',
+            username: 'testing3212',
+            email: 'anothertest2@dsf.com',
+            address: '123 Fake St'
+        })
+
+        let result2 = await user3.save({ fields: ['address'] })
+        expect(result2.response.data.address).to.equal('123 Fake St')
+        expect(result2.response.data.email).to.be.undefined
+        expect(result2.response.data.username).to.be.undefined
+        expect(result2.response.data.name).to.be.undefined
+        
+        // Make sure changes are unset after they're sent
+        user3.set('city', 'San Francisco')
+        expect(user3.changes).to.have.property('city')
+        await user3.save({ fields: ['city'] })
+        expect(user3.changes.city).to.be.undefined
     })
 
     it('gets/sets properties correctly (static)', async () => {
@@ -83,13 +121,13 @@ describe('', () => {
     it('correctly gets related objects and managers', async () => {
         let post = await PostResource.detail('1')
         let group = await GroupResource.detail('1')
-        expect(post.get('user')).to.be.instanceOf(PostResource.relatedManager)
+        expect(post.get('user')).to.be.instanceOf(PostResource.RelatedManagerClass)
         await post.getRelated()
         await group.getRelated()
         expect(post.get('user')).to.be.instanceOf(UserResource)
-        expect(post.managers.user).to.be.instanceOf(PostResource.relatedManager)
-        expect(group.managers.users).to.be.instanceOf(GroupResource.relatedManager)
-        expect(group.get('users')).to.be.instanceOf(GroupResource.relatedManager)
+        expect(post.managers.user).to.be.instanceOf(PostResource.RelatedManagerClass)
+        expect(group.managers.users).to.be.instanceOf(GroupResource.RelatedManagerClass)
+        expect(group.get('users')).to.be.instanceOf(GroupResource.RelatedManagerClass)
         expect(group.managers.users.many).to.be.true
         expect(group.managers.users.resolved).to.be.true
         expect(group.managers.users.primaryKeys.length).to.equal(3)
@@ -183,7 +221,7 @@ describe('', () => {
         })
         
         expect(someGroup.get('owner')).to.be.null
-        expect(someGroup.get('users')).to.be.instanceOf(CustomGroupResource.relatedManager)
+        expect(someGroup.get('users')).to.be.instanceOf(CustomGroupResource.RelatedManagerClass)
         expect(someGroup.get('users').objects).to.be.empty
         expect(someGroup.get('todos')).to.be.undefined
     })

@@ -7,7 +7,7 @@ var util_1 = require("./util");
 var related_1 = tslib_1.__importDefault(require("./related"));
 var exceptions = require('./exceptions');
 var assert = require('assert');
-var isEqual = require('lodash').isEqual;
+var _ = require('lodash');
 var Resource = /** @class */ (function () {
     function Resource(attributes, options) {
         var _this = this;
@@ -18,12 +18,13 @@ var Resource = /** @class */ (function () {
         this.managers = {};
         this.changes = {};
         var Ctor = this.getConstructor();
-        var RelatedManagerCtor = Ctor.relatedManager;
+        var RelatedManagerCtor = Ctor.RelatedManagerClass;
         if (typeof Ctor.client !== 'object') {
             throw new exceptions.ImproperlyConfiguredError("Resource can't be used without Client class instance");
         }
-        // Set up attributes and defaults
-        this._attributes = Object.assign({}, Ctor.makeDefaultsObject(), attributes);
+        this._attributes = {};
+        var _attrKeys = Object.keys(attributes);
+        var _defaults = Ctor.makeDefaultsObject();
         // Set up Proxy to this._attributes
         this.attributes = new Proxy(this._attributes, {
             set: function (receiver, key, value) {
@@ -37,10 +38,27 @@ var Resource = /** @class */ (function () {
                 return Reflect.defineProperty(target, prop, descriptor);
             },
         });
+        // Default attributes, ignore any that will be overridden
+        for (var defaultsKey in _defaults) {
+            if (_attrKeys.includes(defaultsKey)) {
+                continue;
+            }
+            this.attributes[defaultsKey] = _defaults[defaultsKey];
+        }
+        // Attributes parameters, will fire setter
+        for (var attrKey in attributes) {
+            this.attributes[attrKey] = attributes[attrKey];
+        }
+        this.changes = {};
         // Create related managers
-        // Because we're using Object.assign above, we shouldn't have to iterate here again -- @todo improve it
-        for (var attrKey in Ctor.related) {
-            this.managers[attrKey] = new RelatedManagerCtor(Ctor.related[attrKey], this._attributes[attrKey]);
+        for (var relAttrKey in Ctor.related) {
+            var to = Ctor.related[relAttrKey];
+            try {
+                this.managers[relAttrKey] = new RelatedManagerCtor(to, this._attributes[relAttrKey]);
+            }
+            catch (e) {
+                throw new Error(e + " -- Relation: " + this.toResourceName() + ".related[" + relAttrKey + "]");
+            }
         }
         if (this.id) {
             Ctor.cacheResource(this);
@@ -313,23 +331,23 @@ var Resource = /** @class */ (function () {
             var pieces_1 = key.split('.');
             var thisKey = String(pieces_1.shift());
             var thisValue = this.attributes[thisKey];
-            var relatedManager = this.managers[thisKey];
+            var RelatedManagerClass = this.managers[thisKey];
             if (pieces_1.length > 0) {
                 // We need to go deeper...
-                if (!relatedManager) {
+                if (!RelatedManagerClass) {
                     throw new exceptions.ImproperlyConfiguredError("No relation found on " + this.toResourceName() + "[" + thisKey + "]. Did you define it on " + this.toResourceName() + ".related?");
                 }
-                if (relatedManager.many) {
-                    return relatedManager.objects.map(function (thisResource) {
+                if (RelatedManagerClass.many) {
+                    return RelatedManagerClass.objects.map(function (thisResource) {
                         return thisResource.get(pieces_1.join('.'));
                     });
                 }
-                return relatedManager.objects[0].get(pieces_1.join('.'));
+                return RelatedManagerClass.objects[0].get(pieces_1.join('.'));
             }
-            else if (Boolean(thisValue) && relatedManager) {
+            else if (Boolean(thisValue) && RelatedManagerClass) {
                 // If the related manager is a single object and is inflated, auto resolve the resource.get(key) to that object
                 // @todo Maybe we should always return the manager? Or maybe we should always return the resolved object(s)? I am skeptical about this part
-                return !relatedManager.many && relatedManager.resolved ? relatedManager.objects[0] : relatedManager;
+                return !RelatedManagerClass.many && RelatedManagerClass.resolved ? RelatedManagerClass.objects[0] : RelatedManagerClass;
             }
             else {
                 return thisValue;
@@ -404,7 +422,8 @@ var Resource = /** @class */ (function () {
     Resource.prototype.toInternalValue = function (key, value) {
         var currentValue = this.attributes[key];
         var newValue = value;
-        if (!isEqual(currentValue, newValue)) {
+        var Ctor = this.getConstructor();
+        if (!_.isEqual(currentValue, newValue)) {
             // Also resolve any related Resources back into foreign keys
             if (newValue && newValue['getConstructor']) {
                 // newValue is a Resource instance
@@ -414,8 +433,8 @@ var Resource = /** @class */ (function () {
                 }
                 // Create a RelatedManager
                 var RelatedCtor = newValue.getConstructor();
-                var RelatedManager_1 = this.getConstructor().relatedManager;
-                var manager = new RelatedManager_1(RelatedCtor, newValue);
+                var RelatedManagerClass = Ctor.RelatedManagerClass;
+                var manager = new RelatedManagerClass(RelatedCtor, newValue);
                 newValue = manager.toJSON();
                 this.managers[key] = manager;
             }
@@ -423,12 +442,16 @@ var Resource = /** @class */ (function () {
                 // newValue has an old manager -- needs a new one
                 // Create a RelatedManager
                 var RelatedCtor = newValue.to;
-                var RelatedManager_2 = this.getConstructor().relatedManager;
-                var manager = new RelatedManager_2(RelatedCtor, newValue);
+                var RelatedManagerClass = Ctor.RelatedManagerClass;
+                var manager = new RelatedManagerClass(RelatedCtor, newValue);
                 newValue = manager.toJSON();
                 this.managers[key] = manager;
             }
             this.changes[key] = newValue;
+        }
+        if ('object' === typeof Ctor.formatting[key] && 'function' === typeof Ctor.formatting[key].normalize) {
+            var formatter = Ctor.formatting[key];
+            newValue = formatter.normalize(newValue);
         }
         return newValue;
     };
@@ -494,25 +517,34 @@ var Resource = /** @class */ (function () {
         var promise;
         var Ctor = this.getConstructor();
         var errors = this.validate();
+        var fields = options.fields || Ctor.fields;
         if (errors.length > 0 && !options.force) {
             throw new exceptions.ValidationError(errors);
         }
         if (this.isNew()) {
-            promise = Ctor.client.post(Ctor.getListRoutePath(), this.attributes);
+            var attrs = fields.length ? _.pick(this.attributes, fields) : this.attributes;
+            promise = Ctor.client.post(Ctor.getListRoutePath(), attrs);
         }
         else if (options.partial === false) {
-            promise = Ctor.client.put(Ctor.getDetailRoutePath(this.id), this.attributes);
+            var attrs = fields.length ? _.pick(this.attributes, fields) : this.attributes;
+            promise = Ctor.client.put(Ctor.getDetailRoutePath(this.id), attrs);
         }
         else {
-            promise = Ctor.client.patch(Ctor.getDetailRoutePath(this.id), this.changes);
+            var attrs = fields.length ? _.pick(this.changes, fields) : this.changes;
+            promise = Ctor.client.patch(Ctor.getDetailRoutePath(this.id), attrs);
         }
         return promise.then(function (response) {
-            _this.changes = {};
             for (var resKey in response.data) {
                 _this.set(resKey, response.data[resKey]);
             }
-            // Replace cache
-            _this.cache(options.replaceCache === false ? false : true);
+            for (var _i = 0, fields_1 = fields; _i < fields_1.length; _i++) {
+                var fieldKey = fields_1[_i];
+                delete _this.changes[fieldKey];
+            }
+            if (_this.id) {
+                // Replace cache
+                _this.cache(options.replaceCache === false ? false : true);
+            }
             return {
                 response: response,
                 resources: [_this],
@@ -591,8 +623,10 @@ var Resource = /** @class */ (function () {
     Resource.uniqueKey = 'id';
     Resource.perPage = null;
     Resource.defaults = {};
-    Resource.relatedManager = related_1.default;
+    Resource.RelatedManagerClass = related_1.default;
     Resource.validators = {};
+    Resource.formatting = {};
+    Resource.fields = [];
     Resource.related = {};
     return Resource;
 }());

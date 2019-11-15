@@ -1,7 +1,7 @@
 import Resource, { DetailOpts } from './index'
-import { first as _first } from 'lodash'
 import assert from 'assert'
 import { AttributeError } from './exceptions'
+import { getContentTypeWeak } from './util'
 export type RelatedObjectValue = string | string[] | number | number[] | Record<string, any> | Record<string, any>[]
 export type CollectionValue = Record<string, any>[]
 
@@ -29,7 +29,7 @@ export default class RelatedManager<T extends typeof Resource = typeof Resource>
     _objects: Record<string, InstanceType<T>> = {}
 
     constructor(to: T, value: RelatedObjectValue) {
-        assert(typeof to === 'function', `RelatedManager expected first parameter to be Resource class. Received "${to}"`)
+        assert(typeof to === 'function', `RelatedManager expected first parameter to be Resource class, received "${to}". Please double check related definitions on class.`)
         this.to = to
         this.value = value
         this.many = Array.isArray(value)
@@ -41,21 +41,15 @@ export default class RelatedManager<T extends typeof Resource = typeof Resource>
     }
 
     /**
-     * Return a constructor so we can guess the content type. For example, if an object literal 
-     * is passed, this function should return `Object`, and it's likely one single object literal representing attributes. 
-     * If the constructor is an `Array`, then all we know is that there are many of these sub items (in which case, we're 
-     * taking the first node of that array and using that node to guess). If it's a `Number`, then it's likely 
+     * Return a constructor so we can guess the content type. For example, if an object literal
+     * is passed, this function should return `Object`, and it's likely one single object literal representing attributes.
+     * If the constructor is an `Array`, then all we know is that there are many of these sub items (in which case, we're
+     * taking the first node of that array and using that node to guess). If it's a `Number`, then it's likely
      * that it's just a primary key. If it's a `Resource` instance, it should return `Resource`. Etc.
      * @returns Function
      */
     getValueContentType() {
-        let node = _first([].concat(this.value))
-        let Ctor = node.constructor
-        if (Ctor.prototype instanceof Resource) {
-            return Resource
-        } else {
-            return Ctor
-        }
+        return getContentTypeWeak(this.value)
     }
 
     /**
@@ -118,9 +112,9 @@ export default class RelatedManager<T extends typeof Resource = typeof Resource>
     }
 
     /**
-     * Primary function of the RelatedManager -- get some objects (`this.primaryKeys`) related to some 
-     * other Resource (`this.to` instance). Load the first n objects (`this.batchSize`) and set `this.resolved = true`. 
-     * Subsequent calls may be required to get all objects in `this.primaryKeys` because there is an inherent 
+     * Primary function of the RelatedManager -- get some objects (`this.primaryKeys`) related to some
+     * other Resource (`this.to` instance). Load the first n objects (`this.batchSize`) and set `this.resolved = true`.
+     * Subsequent calls may be required to get all objects in `this.primaryKeys` because there is an inherent
      * limit to how many requests that can be made at one time. If you want to remove this limit, set `this.batchSize` to `Infinity`
      * @param options DetailOpts
      */
