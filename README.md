@@ -418,29 +418,3 @@ class UserResource extends Resource {
     static RelatedManagerClass = CustomRelatedManager
 }
 ```
-
-# Attribute Formatting 
-Whenever an attribute is set, you can specify a 
-
-```javascript
-import Resource from 'rest-resource'
-import RelatedManager from 'rest-resource/dist/related'
-
-class CustomRelatedManager extends RelatedManager {
-    batchSize: 50 // Only GET 50 related objects at a time (default: Infinity)
-
-    /**
-     * @param options Object (getRelated, etc.)
-     * @returns Resource[] List of Resource instances
-     */
-    resolve(options) {
-        // etc
-    }
-}
-
-class UserResource extends Resource {
-    static endpoint = '/users'
-    // Define custom related manager here
-    static RelatedManagerClass = CustomRelatedManager
-}
-```
