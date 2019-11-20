@@ -600,11 +600,11 @@ export default class Resource {
                 // Declare call of validator with params:
                 //    attribute, resource, ValidationError class
                 func.call(null, this.attributes[key], this, exceptions.ValidationError)
-            } catch(e) {
+            } catch (e) {
                 errs.push(e)
             }
         }
-        
+
         for (let key in validators) {
             if ('function' === typeof validators[key]) {
                 tryFn(validators[key] as ValidatorFunc, key)
