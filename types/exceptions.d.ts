@@ -23,6 +23,3 @@ export declare class ValidationError extends BaseError {
     field: string;
     constructor(fieldOrArray: string | Error[], message?: string);
 }
-export interface ValidationError {
-    [index: string]: any;
-}

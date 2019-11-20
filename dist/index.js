@@ -5,7 +5,7 @@ var querystring_1 = require("querystring");
 var client_1 = require("./client");
 var util_1 = require("./util");
 var related_1 = tslib_1.__importDefault(require("./related"));
-var exceptions = require('./exceptions');
+var exceptions = tslib_1.__importStar(require("./exceptions"));
 var assert = require('assert');
 var _ = require('lodash');
 var Resource = /** @class */ (function () {
@@ -53,6 +53,10 @@ var Resource = /** @class */ (function () {
         // Create related managers
         for (var relAttrKey in Ctor.related) {
             var to = Ctor.related[relAttrKey];
+            if ('object' === typeof to) {
+                var relatedLiteral = to;
+                to = relatedLiteral.to;
+            }
             try {
                 this.managers[relAttrKey] = new RelatedManagerCtor(to, this._attributes[relAttrKey]);
             }
@@ -164,6 +168,24 @@ var Resource = /** @class */ (function () {
          */
         set: function (client) {
             this._client = client;
+        },
+        enumerable: true,
+        configurable: true
+    });
+    Object.defineProperty(Resource, "validators", {
+        /**
+         * Backwards compatibility
+         * Remove in next major release @todo
+         */
+        get: function () {
+            return this.validation;
+        },
+        /**
+         * Backwards compatibility
+         * Remove in next major release @todo
+         */
+        set: function (value) {
+            this.validation = value;
         },
         enumerable: true,
         configurable: true
@@ -449,9 +471,14 @@ var Resource = /** @class */ (function () {
             }
             this.changes[key] = newValue;
         }
-        if ('object' === typeof Ctor.formatting[key] && 'function' === typeof Ctor.formatting[key].normalize) {
-            var formatter = Ctor.formatting[key];
-            newValue = formatter.normalize(newValue);
+        if ('undefined' !== typeof Ctor.normalization[key]) {
+            var normalizer = Ctor.normalization[key];
+            if ('function' === typeof normalizer.normalize) {
+                newValue = normalizer.normalize(newValue);
+            }
+            else if ('function' === typeof normalizer) {
+                newValue = normalizer(newValue);
+            }
         }
         return newValue;
     };
@@ -556,23 +583,27 @@ var Resource = /** @class */ (function () {
      * @returns `Error[]` Array of Exceptions
      */
     Resource.prototype.validate = function () {
+        var _this = this;
         var errs = [];
-        var validators = this.getConstructor().validators;
-        for (var key in validators) {
+        var validators = this.getConstructor().validation;
+        var tryFn = function (func, key) {
             try {
-                if ('function' === typeof validators[key]) {
-                    validators[key].call(null, this.attributes[key], this);
-                }
+                // Declare call of validator with params:
+                //    attribute, resource, ValidationError class
+                func.call(null, _this.attributes[key], _this, exceptions.ValidationError);
             }
             catch (e) {
-                // One of the downsides of using Webpack is that you can't strict compare from
-                //  another module because the exported member will be transpiled and therefore will not
-                //  be the same address in memory. So we have a handy function to detect ValidationError
-                if (exceptions.ValidationError.isInstance(e)) {
-                    errs.push(e);
-                }
-                else {
-                    throw e;
+                errs.push(e);
+            }
+        };
+        for (var key in validators) {
+            if ('function' === typeof validators[key]) {
+                tryFn(validators[key], key);
+            }
+            else if (Array.isArray(validators[key])) {
+                var validatorArray = validators[key];
+                for (var vKey in validatorArray) {
+                    tryFn(validatorArray[vKey], key);
                 }
             }
         }
@@ -624,8 +655,8 @@ var Resource = /** @class */ (function () {
     Resource.perPage = null;
     Resource.defaults = {};
     Resource.RelatedManagerClass = related_1.default;
-    Resource.validators = {};
-    Resource.formatting = {};
+    Resource.validation = {};
+    Resource.normalization = {};
     Resource.fields = [];
     Resource.related = {};
     return Resource;

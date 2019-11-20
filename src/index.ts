@@ -3,9 +3,9 @@ import { DefaultClient, RequestConfig, ResourceResponse } from './client'
 import { AxiosResponse } from 'axios'
 import { uuidWeak } from './util'
 import RelatedManager from './related'
-import { BaseFormatter } from './formatting'
+import { BaseNormalizer, NormalizerDict, ValidNormalizer } from './helpers/normalization'
+import * as exceptions from './exceptions'
 
-const exceptions = require('./exceptions')
 const assert = require('assert')
 const _ = require('lodash')
 
@@ -20,10 +20,10 @@ export default class Resource {
     static perPage: number | null = null
     static defaults: Record<string, any> = {}
     static RelatedManagerClass: typeof RelatedManager = RelatedManager
-    static validators: ValidatorDict = {}
-    static formatting: Record<string, BaseFormatter> = {}
+    static validation: ValidatorDict = {}
+    static normalization: NormalizerDict = {}
     static fields: string[] = []
-    static related: Record<string, typeof Resource> = {}
+    static related: RelatedDict = {}
     _attributes: Record<string, any> = {}
     uuid: string
     attributes: Record<string, any> = {}
@@ -68,6 +68,12 @@ export default class Resource {
         // Create related managers
         for (let relAttrKey in Ctor.related) {
             let to = Ctor.related[relAttrKey]
+
+            if ('object' === typeof to) {
+                let relatedLiteral = to as RelatedLiteral
+                to = relatedLiteral.to
+            }
+
             try {
                 this.managers[relAttrKey] = new RelatedManagerCtor(to, this._attributes[relAttrKey])
             } catch (e) {
@@ -104,7 +110,7 @@ export default class Resource {
      * @param resource
      * @param replace
      */
-    static cacheResource<T extends typeof Resource = typeof Resource>(this: T, resource: InstanceType<T>, replace: boolean = false) {
+    static cacheResource<T extends typeof Resource>(this: T, resource: InstanceType<T>, replace: boolean = false) {
         if (!resource.id) {
             throw new exceptions.CacheError(`Can't cache ${resource.toResourceName()} resource without ${resource.getConstructor().uniqueKey} field`)
         } else if (replace) {
@@ -123,7 +129,7 @@ export default class Resource {
      * Replace attributes on a cached resource onto this class' cache for cacheMaxAge seconds (useful for bubbling up changes to states that may be already rendered)
      * @param resource
      */
-    static replaceCache<T extends Resource = Resource>(resource: T) {
+    static replaceCache<T extends Resource>(resource: T) {
         if (!this.cache[resource.id]) {
             throw new exceptions.CacheError("Can't replace cache: resource doesn't exist")
         }
@@ -181,6 +187,22 @@ export default class Resource {
     }
 
     /**
+     * Backwards compatibility
+     * Remove in next major release @todo
+     */
+    static get validators() {
+        return this.validation
+    }
+
+    /**
+     * Backwards compatibility
+     * Remove in next major release @todo
+     */
+    static set validators(value: any) {
+        this.validation = value
+    }
+
+    /**
      * Get list route path (eg. /users) to be used with HTTP requests and allow a querystring object
      * @param query Querystring
      */
@@ -207,7 +229,7 @@ export default class Resource {
      * @param options Options object
      * @returns Promise
      */
-    static list<T extends typeof Resource = typeof Resource>(this: T, options: ListOpts = {}): Promise<ResourceResponse<InstanceType<T>>> {
+    static list<T extends typeof Resource>(this: T, options: ListOpts = {}): Promise<ResourceResponse<InstanceType<T>>> {
         return this.client.list<T>(this as T, options).then((result) => {
             if (options.getRelated) {
                 const promises: Promise<void>[] = []
@@ -220,7 +242,7 @@ export default class Resource {
         })
     }
 
-    static detail<T extends typeof Resource = typeof Resource>(this: T, id: string, options: DetailOpts = {}): Promise<InstanceType<T>> {
+    static detail<T extends typeof Resource>(this: T, id: string, options: DetailOpts = {}): Promise<InstanceType<T>> {
         // Check cache first
         const cached: CachedResource<InstanceType<T>> = this.getCached(String(id))
         return new Promise((resolve, reject) => {
@@ -449,9 +471,13 @@ export default class Resource {
             this.changes[key] = newValue
         }
 
-        if ('object' === typeof Ctor.formatting[key] && 'function' === typeof Ctor.formatting[key].normalize) {
-            let formatter = Ctor.formatting[key]
-            newValue = formatter.normalize(newValue)
+        if ('undefined' !== typeof Ctor.normalization[key]) {
+            let normalizer = <BaseNormalizer | Function & { normalize: () => any }>Ctor.normalization[key]
+            if ('function' === typeof normalizer.normalize) {
+                newValue = normalizer.normalize(newValue)
+            } else if ('function' === typeof normalizer) {
+                newValue = normalizer(newValue)
+            }
         }
 
         return newValue
@@ -461,7 +487,7 @@ export default class Resource {
      * Like calling instance.constructor but safer:
      * changing objects down the line won't creep up the prototype chain and end up on native global objects like Function or Object
      */
-    getConstructor<T extends typeof Resource = typeof Resource>(): T {
+    getConstructor<T extends typeof Resource>(): T {
         if (this.constructor === Function) {
             // Safe guard in case something goes wrong in subclasses, we don't want to change native Function
             return Resource as T
@@ -566,21 +592,26 @@ export default class Resource {
      * @returns `Error[]` Array of Exceptions
      */
     validate(): Error[] {
-        let errs = []
-        let validators = this.getConstructor().validators
-        for (let key in validators) {
+        let errs: Error[] = []
+        let validators = this.getConstructor().validation
+
+        let tryFn = (func: ValidatorFunc, key: string) => {
             try {
-                if ('function' === typeof validators[key]) {
-                    validators[key].call(null, this.attributes[key], this)
-                }
-            } catch (e) {
-                // One of the downsides of using Webpack is that you can't strict compare from
-                //  another module because the exported member will be transpiled and therefore will not
-                //  be the same address in memory. So we have a handy function to detect ValidationError
-                if (exceptions.ValidationError.isInstance(e)) {
-                    errs.push(e)
-                } else {
-                    throw e
+                // Declare call of validator with params:
+                //    attribute, resource, ValidationError class
+                func.call(null, this.attributes[key], this, exceptions.ValidationError)
+            } catch(e) {
+                errs.push(e)
+            }
+        }
+        
+        for (let key in validators) {
+            if ('function' === typeof validators[key]) {
+                tryFn(validators[key] as ValidatorFunc, key)
+            } else if (Array.isArray(validators[key])) {
+                let validatorArray = validators[key] as ValidatorFunc[]
+                for (let vKey in validatorArray) {
+                    tryFn(validatorArray[vKey], key)
                 }
             }
         }
@@ -588,7 +619,7 @@ export default class Resource {
         return errs
     }
 
-    update<T extends Resource = Resource>(this: T): Promise<T> {
+    update<T extends Resource>(this: T): Promise<T> {
         return this.getConstructor().detail(this.id) as Promise<T>
     }
 
@@ -596,12 +627,12 @@ export default class Resource {
         return this.getConstructor().client.delete(this.getConstructor().getDetailRoutePath(this.id), options)
     }
 
-    cache<T extends Resource = Resource>(this: T, replace: boolean = false): T {
+    cache<T extends Resource>(this: T, replace: boolean = false): T {
         this.getConstructor().cacheResource(this, !!replace)
         return this
     }
 
-    getCached<T extends Resource = Resource>(this: T) {
+    getCached<T extends Resource>(this: T) {
         return this.getConstructor().getCached(this.id) as CachedResource<T>
     }
 
@@ -631,9 +662,17 @@ export default class Resource {
     }
 }
 
-export interface ValidatorDict extends Record<string, any> {
-    [key: string]: (value?: any, resource?: Resource) => void
+export type RelatedDict = Record<string, typeof Resource | RelatedLiteral>
+
+export interface RelatedLiteral {
+    to: typeof Resource
+    normalization?: ValidNormalizer
+    validation?: ValidatorDict
 }
+
+export type ValidatorFunc = (value?: any, resource?: Resource, validationExceptionClass?: typeof exceptions.ValidationError) => void
+
+export type ValidatorDict = Record<string, ValidatorFunc | ValidatorFunc[]>
 
 export interface CachedResource<T extends Resource> {
     expires: number

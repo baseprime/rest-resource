@@ -1,6 +1,7 @@
 import { DefaultClient, RequestConfig, ResourceResponse } from './client';
 import RelatedManager from './related';
-import { BaseFormatter } from './formatting';
+import { NormalizerDict, ValidNormalizer } from './helpers/normalization';
+import * as exceptions from './exceptions';
 export default class Resource {
     static endpoint: string;
     static cacheMaxAge: number;
@@ -12,10 +13,10 @@ export default class Resource {
     static perPage: number | null;
     static defaults: Record<string, any>;
     static RelatedManagerClass: typeof RelatedManager;
-    static validators: ValidatorDict;
-    static formatting: Record<string, BaseFormatter>;
+    static validation: ValidatorDict;
+    static normalization: NormalizerDict;
     static fields: string[];
-    static related: Record<string, typeof Resource>;
+    static related: RelatedDict;
     _attributes: Record<string, any>;
     uuid: string;
     attributes: Record<string, any>;
@@ -32,12 +33,12 @@ export default class Resource {
      * @param resource
      * @param replace
      */
-    static cacheResource<T extends typeof Resource = typeof Resource>(this: T, resource: InstanceType<T>, replace?: boolean): void;
+    static cacheResource<T extends typeof Resource>(this: T, resource: InstanceType<T>, replace?: boolean): void;
     /**
      * Replace attributes on a cached resource onto this class' cache for cacheMaxAge seconds (useful for bubbling up changes to states that may be already rendered)
      * @param resource
      */
-    static replaceCache<T extends Resource = Resource>(resource: T): void;
+    static replaceCache<T extends Resource>(resource: T): void;
     static clearCache(): void;
     /**
      * Get time delta in seconds of cache expiry
@@ -59,6 +60,15 @@ export default class Resource {
     */
     static client: DefaultClient;
     /**
+     * Backwards compatibility
+     * Remove in next major release @todo
+     */
+    /**
+    * Backwards compatibility
+    * Remove in next major release @todo
+    */
+    static validators: any;
+    /**
      * Get list route path (eg. /users) to be used with HTTP requests and allow a querystring object
      * @param query Querystring
      */
@@ -74,8 +84,8 @@ export default class Resource {
      * @param options Options object
      * @returns Promise
      */
-    static list<T extends typeof Resource = typeof Resource>(this: T, options?: ListOpts): Promise<ResourceResponse<InstanceType<T>>>;
-    static detail<T extends typeof Resource = typeof Resource>(this: T, id: string, options?: DetailOpts): Promise<InstanceType<T>>;
+    static list<T extends typeof Resource>(this: T, options?: ListOpts): Promise<ResourceResponse<InstanceType<T>>>;
+    static detail<T extends typeof Resource>(this: T, id: string, options?: DetailOpts): Promise<InstanceType<T>>;
     static toResourceName(): string;
     static makeDefaultsObject(): any;
     /**
@@ -118,7 +128,7 @@ export default class Resource {
      * Like calling instance.constructor but safer:
      * changing objects down the line won't creep up the prototype chain and end up on native global objects like Function or Object
      */
-    getConstructor<T extends typeof Resource = typeof Resource>(): T;
+    getConstructor<T extends typeof Resource>(): T;
     /**
      * Match all related values in `attributes[key]` where key is primary key of related instance defined in `Resource.related[key]`
      * @param options GetRelatedDict
@@ -143,19 +153,24 @@ export default class Resource {
      * @returns `Error[]` Array of Exceptions
      */
     validate(): Error[];
-    update<T extends Resource = Resource>(this: T): Promise<T>;
+    update<T extends Resource>(this: T): Promise<T>;
     delete(options?: RequestConfig): Promise<any>;
-    cache<T extends Resource = Resource>(this: T, replace?: boolean): T;
-    getCached<T extends Resource = Resource>(this: T): CachedResource<T>;
+    cache<T extends Resource>(this: T, replace?: boolean): T;
+    getCached<T extends Resource>(this: T): CachedResource<T>;
     isNew(): boolean;
     id: string;
     toString(): string;
     toResourceName(): string;
     toJSON(): any;
 }
-export interface ValidatorDict extends Record<string, any> {
-    [key: string]: (value?: any, resource?: Resource) => void;
+export declare type RelatedDict = Record<string, typeof Resource | RelatedLiteral>;
+export interface RelatedLiteral {
+    to: typeof Resource;
+    normalization?: ValidNormalizer;
+    validation?: ValidatorDict;
 }
+export declare type ValidatorFunc = (value?: any, resource?: Resource, validationExceptionClass?: typeof exceptions.ValidationError) => void;
+export declare type ValidatorDict = Record<string, ValidatorFunc | ValidatorFunc[]>;
 export interface CachedResource<T extends Resource> {
     expires: number;
     resource: T;

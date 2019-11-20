@@ -97,10 +97,10 @@
 				<section class="tsd-panel tsd-member tsd-kind-type-alias tsd-parent-kind-external-module tsd-has-type-parameter tsd-is-external">
 					<a name="extractorfunction" class="tsd-anchor"></a>
 					<h3>Extractor<wbr>Function</h3>
-					<div class="tsd-signature tsd-kind-icon">Extractor<wbr>Function&lt;T&gt;<span class="tsd-signature-symbol">:</span> <span class="tsd-signature-type">function</span></div>
+					<div class="tsd-signature tsd-kind-icon">Extractor<wbr>Function&lt;T, U&gt;<span class="tsd-signature-symbol">:</span> <span class="tsd-signature-type">function</span></div>
 					<aside class="tsd-sources">
 						<ul>
-							<li>Defined in <a href="https://github.com/baseprime/rest-resource/blob/6e4fb55/src/client.ts#L22">client.ts:22</a></li>
+							<li>Defined in <a href="https://github.com/baseprime/rest-resource/blob/1051628/src/client.ts#L22">client.ts:22</a></li>
 						</ul>
 					</aside>
 					<h4 class="tsd-type-parameters-title">Type parameters</h4>
@@ -108,13 +108,16 @@
 						<li>
 							<h4>T<span class="tsd-signature-symbol">: </span><a href="../classes/_index_.resource.html" class="tsd-signature-type">Resource</a></h4>
 						</li>
+						<li>
+							<h4>U<span class="tsd-signature-symbol">: </span><span class="tsd-signature-type">any</span></h4>
+						</li>
 					</ul>
 					<div class="tsd-type-declaration">
 						<h4>Type declaration</h4>
 						<ul class="tsd-parameters">
 							<li class="tsd-parameter-siganture">
 								<ul class="tsd-signatures tsd-kind-type-literal tsd-parent-kind-type-alias tsd-is-not-exported">
-									<li class="tsd-signature tsd-kind-icon"><span class="tsd-signature-symbol">(</span>result<span class="tsd-signature-symbol">: </span><span class="tsd-signature-type">AxiosResponse</span><span class="tsd-signature-symbol">)</span><span class="tsd-signature-symbol">: </span><a href="../interfaces/_client_.resourceresponse.html" class="tsd-signature-type">ResourceResponse</a><span class="tsd-signature-symbol">&lt;</span><span class="tsd-signature-type">T</span><span class="tsd-signature-symbol">&gt;</span></li>
+									<li class="tsd-signature tsd-kind-icon"><span class="tsd-signature-symbol">(</span>result<span class="tsd-signature-symbol">: </span><span class="tsd-signature-type">AxiosResponse</span><span class="tsd-signature-symbol">)</span><span class="tsd-signature-symbol">: </span><a href="../interfaces/_client_.resourceresponse.html" class="tsd-signature-type">ResourceResponse</a><span class="tsd-signature-symbol">&lt;</span><span class="tsd-signature-type">T</span><span class="tsd-signature-symbol">, </span><span class="tsd-signature-type">U</span><span class="tsd-signature-symbol">&gt;</span></li>
 								</ul>
 								<ul class="tsd-descriptions">
 									<li class="tsd-description">
@@ -124,7 +127,7 @@
 												<h5>result: <span class="tsd-signature-type">AxiosResponse</span></h5>
 											</li>
 										</ul>
-										<h4 class="tsd-returns-title">Returns <a href="../interfaces/_client_.resourceresponse.html" class="tsd-signature-type">ResourceResponse</a><span class="tsd-signature-symbol">&lt;</span><span class="tsd-signature-type">T</span><span class="tsd-signature-symbol">&gt;</span></h4>
+										<h4 class="tsd-returns-title">Returns <a href="../interfaces/_client_.resourceresponse.html" class="tsd-signature-type">ResourceResponse</a><span class="tsd-signature-symbol">&lt;</span><span class="tsd-signature-type">T</span><span class="tsd-signature-symbol">, </span><span class="tsd-signature-type">U</span><span class="tsd-signature-symbol">&gt;</span></h4>
 									</li>
 								</ul>
 							</li>
@@ -153,6 +156,9 @@
 					</li>
 					<li class=" tsd-kind-external-module tsd-is-external">
 						<a href="_exceptions_.html">"exceptions"</a>
+					</li>
+					<li class=" tsd-kind-external-module tsd-is-external">
+						<a href="_helpers_normalization_.html">"helpers/normalization"</a>
 					</li>
 					<li class=" tsd-kind-external-module tsd-is-external">
 						<a href="_related_.html">"related"</a>

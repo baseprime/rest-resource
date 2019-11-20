@@ -60,7 +60,7 @@
 					<a href="_client_.resourceresponse.html">ResourceResponse</a>
 				</li>
 			</ul>
-			<h1>Interface ResourceResponse&lt;T&gt;</h1>
+			<h1>Interface ResourceResponse&lt;T, U&gt;</h1>
 		</div>
 	</div>
 </header>
@@ -72,6 +72,9 @@
 				<ul class="tsd-type-parameters">
 					<li>
 						<h4>T<span class="tsd-signature-symbol">: </span><a href="../classes/_index_.resource.html" class="tsd-signature-type">Resource</a></h4>
+					</li>
+					<li>
+						<h4>U<span class="tsd-signature-symbol">: </span><span class="tsd-signature-type">any</span></h4>
 					</li>
 				</ul>
 			</section>
@@ -111,7 +114,7 @@
 					<div class="tsd-signature tsd-kind-icon">count<span class="tsd-signature-symbol">:</span> <span class="tsd-signature-type">function</span></div>
 					<aside class="tsd-sources">
 						<ul>
-							<li>Defined in <a href="https://github.com/baseprime/rest-resource/blob/6e4fb55/src/client.ts#L14">client.ts:14</a></li>
+							<li>Defined in <a href="https://github.com/baseprime/rest-resource/blob/1051628/src/client.ts#L14">client.ts:14</a></li>
 						</ul>
 					</aside>
 					<div class="tsd-type-declaration">
@@ -136,7 +139,7 @@
 					<div class="tsd-signature tsd-kind-icon">current<wbr>Page<span class="tsd-signature-symbol">:</span> <span class="tsd-signature-type">function</span></div>
 					<aside class="tsd-sources">
 						<ul>
-							<li>Defined in <a href="https://github.com/baseprime/rest-resource/blob/6e4fb55/src/client.ts#L16">client.ts:16</a></li>
+							<li>Defined in <a href="https://github.com/baseprime/rest-resource/blob/1051628/src/client.ts#L16">client.ts:16</a></li>
 						</ul>
 					</aside>
 					<div class="tsd-type-declaration">
@@ -161,7 +164,7 @@
 					<div class="tsd-signature tsd-kind-icon">next<span class="tsd-signature-symbol">:</span> <span class="tsd-signature-type">function</span></div>
 					<aside class="tsd-sources">
 						<ul>
-							<li>Defined in <a href="https://github.com/baseprime/rest-resource/blob/6e4fb55/src/client.ts#L18">client.ts:18</a></li>
+							<li>Defined in <a href="https://github.com/baseprime/rest-resource/blob/1051628/src/client.ts#L18">client.ts:18</a></li>
 						</ul>
 					</aside>
 					<div class="tsd-type-declaration">
@@ -186,7 +189,7 @@
 					<div class="tsd-signature tsd-kind-icon">pages<span class="tsd-signature-symbol">:</span> <span class="tsd-signature-type">function</span></div>
 					<aside class="tsd-sources">
 						<ul>
-							<li>Defined in <a href="https://github.com/baseprime/rest-resource/blob/6e4fb55/src/client.ts#L15">client.ts:15</a></li>
+							<li>Defined in <a href="https://github.com/baseprime/rest-resource/blob/1051628/src/client.ts#L15">client.ts:15</a></li>
 						</ul>
 					</aside>
 					<div class="tsd-type-declaration">
@@ -211,7 +214,7 @@
 					<div class="tsd-signature tsd-kind-icon">per<wbr>Page<span class="tsd-signature-symbol">:</span> <span class="tsd-signature-type">function</span></div>
 					<aside class="tsd-sources">
 						<ul>
-							<li>Defined in <a href="https://github.com/baseprime/rest-resource/blob/6e4fb55/src/client.ts#L17">client.ts:17</a></li>
+							<li>Defined in <a href="https://github.com/baseprime/rest-resource/blob/1051628/src/client.ts#L17">client.ts:17</a></li>
 						</ul>
 					</aside>
 					<div class="tsd-type-declaration">
@@ -236,7 +239,7 @@
 					<div class="tsd-signature tsd-kind-icon">previous<span class="tsd-signature-symbol">:</span> <span class="tsd-signature-type">function</span></div>
 					<aside class="tsd-sources">
 						<ul>
-							<li>Defined in <a href="https://github.com/baseprime/rest-resource/blob/6e4fb55/src/client.ts#L19">client.ts:19</a></li>
+							<li>Defined in <a href="https://github.com/baseprime/rest-resource/blob/1051628/src/client.ts#L19">client.ts:19</a></li>
 						</ul>
 					</aside>
 					<div class="tsd-type-declaration">
@@ -261,17 +264,17 @@
 					<div class="tsd-signature tsd-kind-icon">resources<span class="tsd-signature-symbol">:</span> <span class="tsd-signature-type">T</span><span class="tsd-signature-symbol">[]</span></div>
 					<aside class="tsd-sources">
 						<ul>
-							<li>Defined in <a href="https://github.com/baseprime/rest-resource/blob/6e4fb55/src/client.ts#L13">client.ts:13</a></li>
+							<li>Defined in <a href="https://github.com/baseprime/rest-resource/blob/1051628/src/client.ts#L13">client.ts:13</a></li>
 						</ul>
 					</aside>
 				</section>
 				<section class="tsd-panel tsd-member tsd-kind-property tsd-parent-kind-interface tsd-is-external">
 					<a name="response" class="tsd-anchor"></a>
 					<h3>response</h3>
-					<div class="tsd-signature tsd-kind-icon">response<span class="tsd-signature-symbol">:</span> <span class="tsd-signature-type">AxiosResponse</span></div>
+					<div class="tsd-signature tsd-kind-icon">response<span class="tsd-signature-symbol">:</span> <span class="tsd-signature-type">AxiosResponse</span><span class="tsd-signature-symbol">&lt;</span><span class="tsd-signature-type">U</span><span class="tsd-signature-symbol">&gt;</span></div>
 					<aside class="tsd-sources">
 						<ul>
-							<li>Defined in <a href="https://github.com/baseprime/rest-resource/blob/6e4fb55/src/client.ts#L12">client.ts:12</a></li>
+							<li>Defined in <a href="https://github.com/baseprime/rest-resource/blob/1051628/src/client.ts#L12">client.ts:12</a></li>
 						</ul>
 					</aside>
 				</section>
@@ -297,6 +300,9 @@
 					</li>
 					<li class=" tsd-kind-external-module tsd-is-external">
 						<a href="../modules/_exceptions_.html">"exceptions"</a>
+					</li>
+					<li class=" tsd-kind-external-module tsd-is-external">
+						<a href="../modules/_helpers_normalization_.html">"helpers/normalization"</a>
 					</li>
 					<li class=" tsd-kind-external-module tsd-is-external">
 						<a href="../modules/_related_.html">"related"</a>

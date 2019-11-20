@@ -1,26 +1,22 @@
-import Resource from './index'
+import Resource from '../index'
 
-export interface BaseFormatterOptions {
-    uniqueKey?: string
-}
-
-export function formatFactory<T extends string>(name: T, options: BaseFormatterOptions = {}): BaseFormatter {
+export function normalizerFactory<T extends string>(name: T, options: BaseNormalizerOptions = {}): BaseNormalizer {
     try {
         return new exports[name](options)
     } catch (e) {
         if (e instanceof TypeError) {
-            throw new Error(`${name} is not a valid formatter. Please see ${__filename} for valid choices`)
+            throw new Error(`${name} is not a valid normalizer instance. Please see ${__filename} for valid choices`)
         } else {
             throw e
         }
     }
 }
 
-export class BaseFormatter {
+export class BaseNormalizer {
     normalizeTo: Function = String
     uniqueKey: string = 'id'
 
-    constructor({ uniqueKey = 'id' }: BaseFormatterOptions = {}) {
+    constructor({ uniqueKey = 'id' }: BaseNormalizerOptions = {}) {
         this.uniqueKey = uniqueKey
     }
 
@@ -55,18 +51,28 @@ export class BaseFormatter {
     }
 }
 
-export class StringFormatter extends BaseFormatter {}
+export class StringNormalizer extends BaseNormalizer {}
 
-export class NumberFormatter extends BaseFormatter {
+export class NumberNormalizer extends BaseNormalizer {
     normalizeTo = Number
 }
 
-export class BooleanFormatter extends StringFormatter {
+export class BooleanNormalizer extends StringNormalizer {
     normalizeTo = Boolean
 }
 
-export class CurrencyFormatter extends NumberFormatter {
+export class CurrencyNormalizer extends NumberNormalizer {
     normalize(value: any): string | string[] {
         return super.normalize(value).toFixed(2)
     }
 }
+
+export interface BaseNormalizerOptions {
+    uniqueKey?: string
+}
+
+export type NormalizerFunc = (value: any) => any
+
+export type ValidNormalizer = BaseNormalizer | NormalizerFunc
+
+export type NormalizerDict = Record<string, ValidNormalizer>

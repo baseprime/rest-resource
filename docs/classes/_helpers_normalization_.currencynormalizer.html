@@ -3,7 +3,7 @@
 <head>
 	<meta charset="utf-8">
 	<meta http-equiv="X-UA-Compatible" content="IE=edge">
-	<title>ValidationError | rest-resource</title>
+	<title>CurrencyNormalizer | rest-resource</title>
 	<meta name="description" content="">
 	<meta name="viewport" content="width=device-width, initial-scale=1">
 	<link rel="stylesheet" href="../assets/css/main.css">
@@ -54,13 +54,13 @@
 					<a href="../globals.html">Globals</a>
 				</li>
 				<li>
-					<a href="../modules/_exceptions_.html">&quot;exceptions&quot;</a>
+					<a href="../modules/_helpers_normalization_.html">&quot;helpers/normalization&quot;</a>
 				</li>
 				<li>
-					<a href="_exceptions_.validationerror.html">ValidationError</a>
+					<a href="_helpers_normalization_.currencynormalizer.html">CurrencyNormalizer</a>
 				</li>
 			</ul>
-			<h1>Class ValidationError</h1>
+			<h1>Class CurrencyNormalizer</h1>
 		</div>
 	</div>
 </header>
@@ -71,10 +71,10 @@
 				<h3>Hierarchy</h3>
 				<ul class="tsd-hierarchy">
 					<li>
-						<a href="_exceptions_.baseerror.html" class="tsd-signature-type">BaseError</a>
+						<a href="_helpers_normalization_.numbernormalizer.html" class="tsd-signature-type">NumberNormalizer</a>
 						<ul class="tsd-hierarchy">
 							<li>
-								<span class="target">ValidationError</span>
+								<span class="target">CurrencyNormalizer</span>
 							</li>
 						</ul>
 					</li>
@@ -84,139 +84,134 @@
 				<h2>Index</h2>
 				<section class="tsd-panel tsd-index-panel">
 					<div class="tsd-index-content">
-						<section class="tsd-index-section tsd-is-external">
+						<section class="tsd-index-section tsd-is-inherited tsd-is-external">
 							<h3>Constructors</h3>
 							<ul class="tsd-index-list">
-								<li class="tsd-kind-constructor tsd-parent-kind-class tsd-is-external"><a href="_exceptions_.validationerror.html#constructor" class="tsd-kind-icon">constructor</a></li>
-							</ul>
-						</section>
-						<section class="tsd-index-section tsd-is-external">
-							<h3>Properties</h3>
-							<ul class="tsd-index-list">
-								<li class="tsd-kind-property tsd-parent-kind-class tsd-is-external"><a href="_exceptions_.validationerror.html#field" class="tsd-kind-icon">field</a></li>
-								<li class="tsd-kind-property tsd-parent-kind-class tsd-is-inherited tsd-is-external"><a href="_exceptions_.validationerror.html#message" class="tsd-kind-icon">message</a></li>
-								<li class="tsd-kind-property tsd-parent-kind-class tsd-is-overwrite tsd-is-external"><a href="_exceptions_.validationerror.html#name" class="tsd-kind-icon">name</a></li>
-								<li class="tsd-kind-property tsd-parent-kind-class tsd-is-overwrite tsd-is-inherited tsd-is-external"><a href="_exceptions_.validationerror.html#stack" class="tsd-kind-icon">stack</a></li>
+								<li class="tsd-kind-constructor tsd-parent-kind-class tsd-is-inherited tsd-is-external"><a href="_helpers_normalization_.currencynormalizer.html#constructor" class="tsd-kind-icon">constructor</a></li>
 							</ul>
 						</section>
 						<section class="tsd-index-section tsd-is-inherited tsd-is-external">
+							<h3>Properties</h3>
+							<ul class="tsd-index-list">
+								<li class="tsd-kind-property tsd-parent-kind-class tsd-is-overwrite tsd-is-inherited tsd-is-external"><a href="_helpers_normalization_.currencynormalizer.html#normalizeto" class="tsd-kind-icon">normalize<wbr>To</a></li>
+								<li class="tsd-kind-property tsd-parent-kind-class tsd-is-inherited tsd-is-external"><a href="_helpers_normalization_.currencynormalizer.html#uniquekey" class="tsd-kind-icon">unique<wbr>Key</a></li>
+							</ul>
+						</section>
+						<section class="tsd-index-section tsd-is-external">
 							<h3>Methods</h3>
 							<ul class="tsd-index-list">
-								<li class="tsd-kind-method tsd-parent-kind-class tsd-is-inherited tsd-is-static tsd-is-external"><a href="_exceptions_.validationerror.html#isinstance" class="tsd-kind-icon">is<wbr>Instance</a></li>
+								<li class="tsd-kind-method tsd-parent-kind-class tsd-is-inherited tsd-is-external"><a href="_helpers_normalization_.currencynormalizer.html#gettype" class="tsd-kind-icon">get<wbr>Type</a></li>
+								<li class="tsd-kind-method tsd-parent-kind-class tsd-is-overwrite tsd-is-external"><a href="_helpers_normalization_.currencynormalizer.html#normalize" class="tsd-kind-icon">normalize</a></li>
 							</ul>
 						</section>
 					</div>
 				</section>
 			</section>
-			<section class="tsd-panel-group tsd-member-group tsd-is-external">
+			<section class="tsd-panel-group tsd-member-group tsd-is-inherited tsd-is-external">
 				<h2>Constructors</h2>
-				<section class="tsd-panel tsd-member tsd-kind-constructor tsd-parent-kind-class tsd-is-external">
+				<section class="tsd-panel tsd-member tsd-kind-constructor tsd-parent-kind-class tsd-is-inherited tsd-is-external">
 					<a name="constructor" class="tsd-anchor"></a>
 					<h3>constructor</h3>
-					<ul class="tsd-signatures tsd-kind-constructor tsd-parent-kind-class tsd-is-external">
-						<li class="tsd-signature tsd-kind-icon">new <wbr>Validation<wbr>Error<span class="tsd-signature-symbol">(</span>fieldOrArray<span class="tsd-signature-symbol">: </span><span class="tsd-signature-type">string</span><span class="tsd-signature-symbol"> | </span><span class="tsd-signature-type">Error</span><span class="tsd-signature-symbol">[]</span>, message<span class="tsd-signature-symbol">?: </span><span class="tsd-signature-type">string</span><span class="tsd-signature-symbol">)</span><span class="tsd-signature-symbol">: </span><a href="_exceptions_.validationerror.html" class="tsd-signature-type">ValidationError</a></li>
+					<ul class="tsd-signatures tsd-kind-constructor tsd-parent-kind-class tsd-is-inherited tsd-is-external">
+						<li class="tsd-signature tsd-kind-icon">new <wbr>Currency<wbr>Normalizer<span class="tsd-signature-symbol">(</span>__namedParameters<span class="tsd-signature-symbol">?: </span><span class="tsd-signature-type">object</span><span class="tsd-signature-symbol">)</span><span class="tsd-signature-symbol">: </span><a href="_helpers_normalization_.currencynormalizer.html" class="tsd-signature-type">CurrencyNormalizer</a></li>
 					</ul>
 					<ul class="tsd-descriptions">
 						<li class="tsd-description">
 							<aside class="tsd-sources">
+								<p>Inherited from <a href="_helpers_normalization_.basenormalizer.html">BaseNormalizer</a>.<a href="_helpers_normalization_.basenormalizer.html#constructor">constructor</a></p>
 								<ul>
-									<li>Defined in <a href="https://github.com/baseprime/rest-resource/blob/1051628/src/exceptions.ts#L29">exceptions.ts:29</a></li>
+									<li>Defined in helpers/normalization.ts:17</li>
 								</ul>
 							</aside>
 							<h4 class="tsd-parameters-title">Parameters</h4>
 							<ul class="tsd-parameters">
 								<li>
-									<h5>fieldOrArray: <span class="tsd-signature-type">string</span><span class="tsd-signature-symbol"> | </span><span class="tsd-signature-type">Error</span><span class="tsd-signature-symbol">[]</span></h5>
-								</li>
-								<li>
-									<h5><span class="tsd-flag ts-flagDefault value">Default value</span> message: <span class="tsd-signature-type">string</span><span class="tsd-signature-symbol"> =&nbsp;&quot;&quot;</span></h5>
+									<h5><span class="tsd-flag ts-flagDefault value">Default value</span> __namedParameters: <span class="tsd-signature-type">object</span><span class="tsd-signature-symbol"> =&nbsp;{}</span></h5>
+									<ul class="tsd-parameters">
+									</ul>
 								</li>
 							</ul>
-							<h4 class="tsd-returns-title">Returns <a href="_exceptions_.validationerror.html" class="tsd-signature-type">ValidationError</a></h4>
+							<h4 class="tsd-returns-title">Returns <a href="_helpers_normalization_.currencynormalizer.html" class="tsd-signature-type">CurrencyNormalizer</a></h4>
 						</li>
 					</ul>
 				</section>
 			</section>
-			<section class="tsd-panel-group tsd-member-group tsd-is-external">
+			<section class="tsd-panel-group tsd-member-group tsd-is-inherited tsd-is-external">
 				<h2>Properties</h2>
-				<section class="tsd-panel tsd-member tsd-kind-property tsd-parent-kind-class tsd-is-external">
-					<a name="field" class="tsd-anchor"></a>
-					<h3>field</h3>
-					<div class="tsd-signature tsd-kind-icon">field<span class="tsd-signature-symbol">:</span> <span class="tsd-signature-type">string</span></div>
+				<section class="tsd-panel tsd-member tsd-kind-property tsd-parent-kind-class tsd-is-overwrite tsd-is-inherited tsd-is-external">
+					<a name="normalizeto" class="tsd-anchor"></a>
+					<h3>normalize<wbr>To</h3>
+					<div class="tsd-signature tsd-kind-icon">normalize<wbr>To<span class="tsd-signature-symbol">:</span> <span class="tsd-signature-type">NumberConstructor</span><span class="tsd-signature-symbol"> =&nbsp;Number</span></div>
 					<aside class="tsd-sources">
+						<p>Inherited from <a href="_helpers_normalization_.numbernormalizer.html">NumberNormalizer</a>.<a href="_helpers_normalization_.numbernormalizer.html#normalizeto">normalizeTo</a></p>
+						<p>Overrides <a href="_helpers_normalization_.basenormalizer.html">BaseNormalizer</a>.<a href="_helpers_normalization_.basenormalizer.html#normalizeto">normalizeTo</a></p>
 						<ul>
-							<li>Defined in <a href="https://github.com/baseprime/rest-resource/blob/1051628/src/exceptions.ts#L29">exceptions.ts:29</a></li>
+							<li>Defined in helpers/normalization.ts:57</li>
 						</ul>
 					</aside>
 				</section>
 				<section class="tsd-panel tsd-member tsd-kind-property tsd-parent-kind-class tsd-is-inherited tsd-is-external">
-					<a name="message" class="tsd-anchor"></a>
-					<h3>message</h3>
-					<div class="tsd-signature tsd-kind-icon">message<span class="tsd-signature-symbol">:</span> <span class="tsd-signature-type">string</span></div>
+					<a name="uniquekey" class="tsd-anchor"></a>
+					<h3>unique<wbr>Key</h3>
+					<div class="tsd-signature tsd-kind-icon">unique<wbr>Key<span class="tsd-signature-symbol">:</span> <span class="tsd-signature-type">string</span><span class="tsd-signature-symbol"> =&nbsp;&quot;id&quot;</span></div>
 					<aside class="tsd-sources">
-						<p>Inherited from Error.message</p>
+						<p>Inherited from <a href="_helpers_normalization_.basenormalizer.html">BaseNormalizer</a>.<a href="_helpers_normalization_.basenormalizer.html#uniquekey">uniqueKey</a></p>
 						<ul>
-							<li>Defined in /Users/gstucker/Repositories/rest-resource/node_modules/typedoc/node_modules/typescript/lib/lib.es5.d.ts:974</li>
-						</ul>
-					</aside>
-				</section>
-				<section class="tsd-panel tsd-member tsd-kind-property tsd-parent-kind-class tsd-is-overwrite tsd-is-external">
-					<a name="name" class="tsd-anchor"></a>
-					<h3>name</h3>
-					<div class="tsd-signature tsd-kind-icon">name<span class="tsd-signature-symbol">:</span> <span class="tsd-signature-type">string</span><span class="tsd-signature-symbol"> =&nbsp;&quot;ValidationError&quot;</span></div>
-					<aside class="tsd-sources">
-						<p>Overrides <a href="_exceptions_.baseerror.html">BaseError</a>.<a href="_exceptions_.baseerror.html#name">name</a></p>
-						<ul>
-							<li>Defined in <a href="https://github.com/baseprime/rest-resource/blob/1051628/src/exceptions.ts#L28">exceptions.ts:28</a></li>
-						</ul>
-					</aside>
-				</section>
-				<section class="tsd-panel tsd-member tsd-kind-property tsd-parent-kind-class tsd-is-overwrite tsd-is-inherited tsd-is-external">
-					<a name="stack" class="tsd-anchor"></a>
-					<h3><span class="tsd-flag ts-flagOptional">Optional</span> stack</h3>
-					<div class="tsd-signature tsd-kind-icon">stack<span class="tsd-signature-symbol">:</span> <span class="tsd-signature-type">string</span></div>
-					<aside class="tsd-sources">
-						<p>Inherited from Error.stack</p>
-						<p>Overrides Error.stack</p>
-						<ul>
-							<li>Defined in /Users/gstucker/Repositories/rest-resource/node_modules/typedoc/node_modules/typescript/lib/lib.es5.d.ts:975</li>
+							<li>Defined in helpers/normalization.ts:17</li>
 						</ul>
 					</aside>
 				</section>
 			</section>
-			<section class="tsd-panel-group tsd-member-group tsd-is-inherited tsd-is-external">
+			<section class="tsd-panel-group tsd-member-group tsd-is-external">
 				<h2>Methods</h2>
-				<section class="tsd-panel tsd-member tsd-kind-method tsd-parent-kind-class tsd-is-inherited tsd-is-static tsd-is-external">
-					<a name="isinstance" class="tsd-anchor"></a>
-					<h3><span class="tsd-flag ts-flagStatic">Static</span> is<wbr>Instance</h3>
-					<ul class="tsd-signatures tsd-kind-method tsd-parent-kind-class tsd-is-inherited tsd-is-static tsd-is-external">
-						<li class="tsd-signature tsd-kind-icon">is<wbr>Instance<span class="tsd-signature-symbol">(</span>exception<span class="tsd-signature-symbol">: </span><span class="tsd-signature-type">Error</span><span class="tsd-signature-symbol">)</span><span class="tsd-signature-symbol">: </span><span class="tsd-signature-type">boolean</span></li>
+				<section class="tsd-panel tsd-member tsd-kind-method tsd-parent-kind-class tsd-is-inherited tsd-is-external">
+					<a name="gettype" class="tsd-anchor"></a>
+					<h3>get<wbr>Type</h3>
+					<ul class="tsd-signatures tsd-kind-method tsd-parent-kind-class tsd-is-inherited tsd-is-external">
+						<li class="tsd-signature tsd-kind-icon">get<wbr>Type<span class="tsd-signature-symbol">(</span>value<span class="tsd-signature-symbol">: </span><span class="tsd-signature-type">any</span><span class="tsd-signature-symbol">)</span><span class="tsd-signature-symbol">: </span><span class="tsd-signature-type">any</span></li>
 					</ul>
 					<ul class="tsd-descriptions">
 						<li class="tsd-description">
 							<aside class="tsd-sources">
-								<p>Inherited from <a href="_exceptions_.baseerror.html">BaseError</a>.<a href="_exceptions_.baseerror.html#isinstance">isInstance</a></p>
+								<p>Inherited from <a href="_helpers_normalization_.basenormalizer.html">BaseNormalizer</a>.<a href="_helpers_normalization_.basenormalizer.html#gettype">getType</a></p>
 								<ul>
-									<li>Defined in <a href="https://github.com/baseprime/rest-resource/blob/1051628/src/exceptions.ts#L10">exceptions.ts:10</a></li>
+									<li>Defined in helpers/normalization.ts:23</li>
 								</ul>
 							</aside>
-							<div class="tsd-comment tsd-typography">
-								<div class="lead">
-									<p>This exists because Webpack creates a whole new copy of this class, except when you&#39;re
-										comparing types in memory (eg. exception instanceof ValidationError) where exception is
-										a transpiled instance of this class, and ValidationError is imported via non-transpiled
-									methods (TypeScript). We need a way to check if either are instanceof ValidationError</p>
-								</div>
-							</div>
 							<h4 class="tsd-parameters-title">Parameters</h4>
 							<ul class="tsd-parameters">
 								<li>
-									<h5>exception: <span class="tsd-signature-type">Error</span></h5>
-									<div class="tsd-comment tsd-typography">
-									</div>
+									<h5>value: <span class="tsd-signature-type">any</span></h5>
 								</li>
 							</ul>
-							<h4 class="tsd-returns-title">Returns <span class="tsd-signature-type">boolean</span></h4>
+							<h4 class="tsd-returns-title">Returns <span class="tsd-signature-type">any</span></h4>
+						</li>
+					</ul>
+				</section>
+				<section class="tsd-panel tsd-member tsd-kind-method tsd-parent-kind-class tsd-is-overwrite tsd-is-external">
+					<a name="normalize" class="tsd-anchor"></a>
+					<h3>normalize</h3>
+					<ul class="tsd-signatures tsd-kind-method tsd-parent-kind-class tsd-is-overwrite tsd-is-external">
+						<li class="tsd-signature tsd-kind-icon">normalize<span class="tsd-signature-symbol">(</span>value<span class="tsd-signature-symbol">: </span><span class="tsd-signature-type">any</span><span class="tsd-signature-symbol">)</span><span class="tsd-signature-symbol">: </span><span class="tsd-signature-type">string</span><span class="tsd-signature-symbol"> | </span><span class="tsd-signature-type">string</span><span class="tsd-signature-symbol">[]</span></li>
+					</ul>
+					<ul class="tsd-descriptions">
+						<li class="tsd-description">
+							<aside class="tsd-sources">
+								<p>Overrides <a href="_helpers_normalization_.basenormalizer.html">BaseNormalizer</a>.<a href="_helpers_normalization_.basenormalizer.html#normalize">normalize</a></p>
+								<ul>
+									<li>Defined in helpers/normalization.ts:65</li>
+								</ul>
+							</aside>
+							<h4 class="tsd-parameters-title">Parameters</h4>
+							<ul class="tsd-parameters">
+								<li>
+									<h5>value: <span class="tsd-signature-type">any</span></h5>
+								</li>
+							</ul>
+							<h4 class="tsd-returns-title">Returns <span class="tsd-signature-type">string</span>
+								<span class="tsd-signature-symbol"> | </span>
+								<span class="tsd-signature-type">string</span><span class="tsd-signature-symbol">[]</span>
+							</h4>
 						</li>
 					</ul>
 				</section>
@@ -240,10 +235,10 @@
 					<li class=" tsd-kind-external-module tsd-is-external">
 						<a href="../modules/_client_.html">"client"</a>
 					</li>
-					<li class="current tsd-kind-external-module tsd-is-external">
+					<li class=" tsd-kind-external-module tsd-is-external">
 						<a href="../modules/_exceptions_.html">"exceptions"</a>
 					</li>
-					<li class=" tsd-kind-external-module tsd-is-external">
+					<li class="current tsd-kind-external-module tsd-is-external">
 						<a href="../modules/_helpers_normalization_.html">"helpers/normalization"</a>
 					</li>
 					<li class=" tsd-kind-external-module tsd-is-external">
@@ -257,44 +252,56 @@
 			<nav class="tsd-navigation secondary menu-sticky">
 				<ul class="before-current">
 					<li class=" tsd-kind-class tsd-parent-kind-external-module tsd-is-external">
-						<a href="_exceptions_.attributeerror.html" class="tsd-kind-icon">Attribute<wbr>Error</a>
+						<a href="_helpers_normalization_.basenormalizer.html" class="tsd-kind-icon">Base<wbr>Normalizer</a>
 					</li>
 					<li class=" tsd-kind-class tsd-parent-kind-external-module tsd-is-external">
-						<a href="_exceptions_.baseerror.html" class="tsd-kind-icon">Base<wbr>Error</a>
-					</li>
-					<li class=" tsd-kind-class tsd-parent-kind-external-module tsd-is-external">
-						<a href="_exceptions_.cacheerror.html" class="tsd-kind-icon">Cache<wbr>Error</a>
-					</li>
-					<li class=" tsd-kind-class tsd-parent-kind-external-module tsd-is-external">
-						<a href="_exceptions_.improperlyconfigurederror.html" class="tsd-kind-icon">Improperly<wbr>Configured<wbr>Error</a>
+						<a href="_helpers_normalization_.booleannormalizer.html" class="tsd-kind-icon">Boolean<wbr>Normalizer</a>
 					</li>
 				</ul>
 				<ul class="current">
 					<li class="current tsd-kind-class tsd-parent-kind-external-module tsd-is-external">
-						<a href="_exceptions_.validationerror.html" class="tsd-kind-icon">Validation<wbr>Error</a>
+						<a href="_helpers_normalization_.currencynormalizer.html" class="tsd-kind-icon">Currency<wbr>Normalizer</a>
 						<ul>
-							<li class=" tsd-kind-constructor tsd-parent-kind-class tsd-is-external">
-								<a href="_exceptions_.validationerror.html#constructor" class="tsd-kind-icon">constructor</a>
-							</li>
-							<li class=" tsd-kind-property tsd-parent-kind-class tsd-is-external">
-								<a href="_exceptions_.validationerror.html#field" class="tsd-kind-icon">field</a>
-							</li>
-							<li class=" tsd-kind-property tsd-parent-kind-class tsd-is-inherited tsd-is-external">
-								<a href="_exceptions_.validationerror.html#message" class="tsd-kind-icon">message</a>
-							</li>
-							<li class=" tsd-kind-property tsd-parent-kind-class tsd-is-overwrite tsd-is-external">
-								<a href="_exceptions_.validationerror.html#name" class="tsd-kind-icon">name</a>
+							<li class=" tsd-kind-constructor tsd-parent-kind-class tsd-is-inherited tsd-is-external">
+								<a href="_helpers_normalization_.currencynormalizer.html#constructor" class="tsd-kind-icon">constructor</a>
 							</li>
 							<li class=" tsd-kind-property tsd-parent-kind-class tsd-is-overwrite tsd-is-inherited tsd-is-external">
-								<a href="_exceptions_.validationerror.html#stack" class="tsd-kind-icon">stack</a>
+								<a href="_helpers_normalization_.currencynormalizer.html#normalizeto" class="tsd-kind-icon">normalize<wbr>To</a>
 							</li>
-							<li class=" tsd-kind-method tsd-parent-kind-class tsd-is-inherited tsd-is-static tsd-is-external">
-								<a href="_exceptions_.validationerror.html#isinstance" class="tsd-kind-icon">is<wbr>Instance</a>
+							<li class=" tsd-kind-property tsd-parent-kind-class tsd-is-inherited tsd-is-external">
+								<a href="_helpers_normalization_.currencynormalizer.html#uniquekey" class="tsd-kind-icon">unique<wbr>Key</a>
+							</li>
+							<li class=" tsd-kind-method tsd-parent-kind-class tsd-is-inherited tsd-is-external">
+								<a href="_helpers_normalization_.currencynormalizer.html#gettype" class="tsd-kind-icon">get<wbr>Type</a>
+							</li>
+							<li class=" tsd-kind-method tsd-parent-kind-class tsd-is-overwrite tsd-is-external">
+								<a href="_helpers_normalization_.currencynormalizer.html#normalize" class="tsd-kind-icon">normalize</a>
 							</li>
 						</ul>
 					</li>
 				</ul>
 				<ul class="after-current">
+					<li class=" tsd-kind-class tsd-parent-kind-external-module tsd-is-external">
+						<a href="_helpers_normalization_.numbernormalizer.html" class="tsd-kind-icon">Number<wbr>Normalizer</a>
+					</li>
+					<li class=" tsd-kind-class tsd-parent-kind-external-module tsd-is-external">
+						<a href="_helpers_normalization_.stringnormalizer.html" class="tsd-kind-icon">String<wbr>Normalizer</a>
+					</li>
+					<li class=" tsd-kind-interface tsd-parent-kind-external-module tsd-is-external">
+						<a href="../interfaces/_helpers_normalization_.basenormalizeroptions.html" class="tsd-kind-icon">Base<wbr>Normalizer<wbr>Options</a>
+					</li>
+					<li class=" tsd-kind-type-alias tsd-parent-kind-external-module tsd-is-external">
+						<a href="../modules/_helpers_normalization_.html#normalizerdict" class="tsd-kind-icon">Normalizer<wbr>Dict</a>
+					</li>
+					<li class=" tsd-kind-type-alias tsd-parent-kind-external-module tsd-is-external">
+						<a href="../modules/_helpers_normalization_.html#normalizerfunc" class="tsd-kind-icon">Normalizer<wbr>Func</a>
+					</li>
+					<li class=" tsd-kind-type-alias tsd-parent-kind-external-module tsd-is-external">
+						<a href="../modules/_helpers_normalization_.html#validnormalizer" class="tsd-kind-icon">Valid<wbr>Normalizer</a>
+					</li>
+					<li class=" tsd-kind-function tsd-parent-kind-external-module tsd-has-type-parameter tsd-is-external">
+						<a href="../modules/_helpers_normalization_.html#normalizerfactory" class="tsd-kind-icon">normalizer<wbr>Factory</a>
+					</li>
 				</ul>
 			</nav>
 		</div>

@@ -40,7 +40,3 @@ export class ValidationError extends BaseError {
         }
     }
 }
-
-export interface ValidationError {
-    [index: string]: any
-}

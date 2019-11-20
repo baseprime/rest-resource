@@ -8,8 +8,8 @@ export interface RequestConfig extends AxiosRequestConfig {
     query?: any
 }
 
-export interface ResourceResponse<T extends Resource = Resource> {
-    response: AxiosResponse
+export interface ResourceResponse<T extends Resource, U extends any = any> {
+    response: AxiosResponse<U>
     resources: T[]
     count?: () => number
     pages?: () => number
@@ -19,7 +19,7 @@ export interface ResourceResponse<T extends Resource = Resource> {
     previous?: () => ResourceResponse<T>
 }
 
-export type ExtractorFunction<T extends Resource = Resource> = (result: ResourceResponse['response']) => ResourceResponse<T>
+export type ExtractorFunction<T extends Resource, U extends any = any> = (result: ResourceResponse<T, U>['response']) => ResourceResponse<T, U>
 
 export class BaseClient {
     axios: AxiosInstance
@@ -37,7 +37,7 @@ export class BaseClient {
         return Object.assign(class extends this {}, classProps)
     }
 
-    negotiateContent<T extends typeof Resource = typeof Resource>(ResourceClass: T): ExtractorFunction<InstanceType<T>> {
+    negotiateContent<T extends typeof Resource>(ResourceClass: T): ExtractorFunction<InstanceType<T>> {
         // Should always return a function
         return (response: ResourceResponse<InstanceType<T>>['response']) => {
             let objects: InstanceType<T>[] = []
@@ -58,11 +58,11 @@ export class BaseClient {
         }
     }
 
-    list<T extends typeof Resource = typeof Resource>(ResourceClass: T, options: RequestConfig = {}): Promise<ResourceResponse<InstanceType<T>>> {
+    list<T extends typeof Resource>(ResourceClass: T, options: RequestConfig = {}): Promise<ResourceResponse<InstanceType<T>>> {
         return this.get(ResourceClass.getListRoutePath(options.query)).then(this.negotiateContent(ResourceClass))
     }
 
-    detail<T extends typeof Resource = typeof Resource>(ResourceClass: T, id: string, options: RequestConfig = {}) {
+    detail<T extends typeof Resource>(ResourceClass: T, id: string, options: RequestConfig = {}) {
         return this.get(ResourceClass.getDetailRoutePath(id, options.query)).then(this.negotiateContent(ResourceClass))
     }
 
