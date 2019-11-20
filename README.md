@@ -10,7 +10,7 @@ REST Resource is a library to make your life simpler when working with REST API 
 - **[Attribute resolution on Related Resources](#related-attribute-lookups-with-getasync)**
   - Get attributes on related resources as easily as:
     ```javascript
-    await resource.attr('user.address.city.name')
+    await resource.getAsync('user.address.city.name')
     // GET /users/1
     // GET /addresses/1
     // GET /cities/1
