@@ -121,7 +121,7 @@ var JWTBearerClient = /** @class */ (function (_super) {
         try {
             var jwtPieces = this.token.split('.');
             var payloadBase64 = jwtPieces[1];
-            var payloadBuffer = new Buffer(payloadBase64, 'base64');
+            var payloadBuffer = Buffer.from(payloadBase64, 'base64').toString();
             return JSON.parse(payloadBuffer.toString());
         }
         catch (e) {

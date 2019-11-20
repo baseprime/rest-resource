@@ -1,3 +1,6 @@
+import Resource from './index'
+import { first as _first } from 'lodash'
+
 /**
  * Takes an input and camelizes it
  * @param str
@@ -20,4 +23,14 @@ export function uuidWeak() {
         let value = character === 'x' ? rand : (rand & 0x3) | 0x8
         return value.toString(16)
     })
+}
+
+export function getContentTypeWeak(value: any): any {
+    let node = _first([].concat(value))
+    let Ctor = node.constructor
+    if (Ctor.prototype instanceof Resource) {
+        return Resource
+    } else {
+        return Ctor
+    }
 }

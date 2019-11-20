@@ -1,5 +1,8 @@
 "use strict";
 Object.defineProperty(exports, "__esModule", { value: true });
+var tslib_1 = require("tslib");
+var index_1 = tslib_1.__importDefault(require("./index"));
+var lodash_1 = require("lodash");
 /**
  * Takes an input and camelizes it
  * @param str
@@ -25,4 +28,15 @@ function uuidWeak() {
     });
 }
 exports.uuidWeak = uuidWeak;
+function getContentTypeWeak(value) {
+    var node = lodash_1.first([].concat(value));
+    var Ctor = node.constructor;
+    if (Ctor.prototype instanceof index_1.default) {
+        return index_1.default;
+    }
+    else {
+        return Ctor;
+    }
+}
+exports.getContentTypeWeak = getContentTypeWeak;
 //# sourceMappingURL=util.js.map

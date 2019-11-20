@@ -9,3 +9,4 @@ export declare function camelize(str: string): string;
  * Warning: Shouldn't be used of N >> 1e9
  */
 export declare function uuidWeak(): string;
+export declare function getContentTypeWeak(value: any): any;

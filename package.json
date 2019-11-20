@@ -1,6 +1,6 @@
 {
   "name": "rest-resource",
-  "version": "0.6.5",
+  "version": "0.6.6",
   "description": "Simplify your REST API resources",
   "main": "./dist/index.js",
   "unpkg": "./dist/dom/rest-resource.js",
@@ -12,6 +12,7 @@
     "prettier": "./node_modules/prettier/bin-prettier.js --write ./src/**/*.ts ./src/*.ts",
     "repl": "ts-node ./tests/repl.ts",
     "generate-docs": "./node_modules/typedoc/bin/typedoc --out ./docs ./src/index.ts --excludeNotExported --excludePrivate",
+    "reset:ts": "rm -r ./dist && rm -r ./types && ./node_modules/.bin/tsc",
     "serve-tests": "cp ./tests/fixtures.json ./tests/fixtures-local.json && json-server -p ${TEST_PORT:-8099} ./tests/fixtures-local.json",
     "serve-docs": "./node_modules/serve/bin/serve.js ./docs/"
   },

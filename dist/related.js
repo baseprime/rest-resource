@@ -2,9 +2,9 @@
 Object.defineProperty(exports, "__esModule", { value: true });
 var tslib_1 = require("tslib");
 var index_1 = tslib_1.__importDefault(require("./index"));
-var lodash_1 = require("lodash");
 var assert_1 = tslib_1.__importDefault(require("assert"));
 var exceptions_1 = require("./exceptions");
+var util_1 = require("./util");
 var RelatedManager = /** @class */ (function () {
     function RelatedManager(to, value) {
         this.many = false;
@@ -22,6 +22,7 @@ var RelatedManager = /** @class */ (function () {
          */
         this.batchSize = Infinity;
         this._objects = {};
+        assert_1.default(typeof to === 'function', "RelatedManager expected first parameter to be Resource class, received \"" + to + "\". Please double check related definitions on class.");
         this.to = to;
         this.value = value;
         this.many = Array.isArray(value);
@@ -39,14 +40,7 @@ var RelatedManager = /** @class */ (function () {
      * @returns Function
      */
     RelatedManager.prototype.getValueContentType = function () {
-        var node = lodash_1.first([].concat(this.value));
-        var Ctor = node.constructor;
-        if (Ctor.prototype instanceof index_1.default) {
-            return index_1.default;
-        }
-        else {
-            return Ctor;
-        }
+        return util_1.getContentTypeWeak(this.value);
     };
     /**
      * Get the current value and the content type and turn it into a list of primary keys
@@ -190,7 +184,7 @@ var RelatedManager = /** @class */ (function () {
     RelatedManager.prototype.add = function (resource) {
         assert_1.default(this.many, "Related Manager \"many\" must be true to add()");
         assert_1.default(resource.id, "Resource must be saved before adding to Related Manager");
-        assert_1.default(resource.getConstructor() === this.to, "Related Manager add() expected " + this.to.toResourceName() + ", recieved " + resource.getConstructor().toResourceName());
+        assert_1.default(resource.getConstructor() === this.to, "Related Manager add() expected " + this.to.toResourceName() + ", received " + resource.getConstructor().toResourceName());
         var ContentCtor = this.getValueContentType();
         var value;
         if (ContentCtor === Object) {

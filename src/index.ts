@@ -3,50 +3,11 @@ import { DefaultClient, RequestConfig, ResourceResponse } from './client'
 import { AxiosResponse } from 'axios'
 import { uuidWeak } from './util'
 import RelatedManager from './related'
+import { BaseNormalizer, NormalizerDict, ValidNormalizer } from './helpers/normalization'
+import * as exceptions from './exceptions'
 
-const exceptions = require('./exceptions')
 const assert = require('assert')
-const isEqual = require('lodash').isEqual
-
-export type IterableDict = {
-    [index: string]: any
-}
-
-export interface ResourceClassDict<T extends typeof Resource = typeof Resource> extends IterableDict {
-    [key: string]: T
-}
-
-export interface ResourceDict<T extends Resource = Resource> {
-    [key: string]: T | T[]
-}
-
-export interface ValidatorDict extends IterableDict {
-    [key: string]: (value?: any, resource?: Resource) => void
-}
-
-export interface CachedResource<T extends Resource> {
-    expires: number
-    resource: T
-}
-
-export interface SaveOptions {
-    partial?: boolean
-    replaceCache?: boolean
-    force?: boolean
-}
-
-export interface GetRelatedOpts {
-    managers?: string[]
-    deep?: boolean
-}
-
-export type ListOpts = RequestConfig & {
-    getRelated?: boolean
-}
-
-export type DetailOpts = RequestConfig & {
-    getRelated?: boolean
-}
+const _ = require('lodash')
 
 export default class Resource {
     static endpoint: string = ''
@@ -58,9 +19,11 @@ export default class Resource {
     static uniqueKey: string = 'id'
     static perPage: number | null = null
     static defaults: Record<string, any> = {}
-    static relatedManager: typeof RelatedManager = RelatedManager
-    static validators: ValidatorDict = {}
-    static related: ResourceClassDict = {}
+    static RelatedManagerClass: typeof RelatedManager = RelatedManager
+    static validation: ValidatorDict = {}
+    static normalization: NormalizerDict = {}
+    static fields: string[] = []
+    static related: RelatedDict = {}
     _attributes: Record<string, any> = {}
     uuid: string
     attributes: Record<string, any> = {}
@@ -69,12 +32,13 @@ export default class Resource {
 
     constructor(attributes: any = {}, options: any = {}) {
         const Ctor = this.getConstructor()
-        const RelatedManagerCtor = Ctor.relatedManager
+        const RelatedManagerCtor = Ctor.RelatedManagerClass
         if (typeof Ctor.client !== 'object') {
             throw new exceptions.ImproperlyConfiguredError("Resource can't be used without Client class instance")
         }
-        // Set up attributes and defaults
-        this._attributes = Object.assign({}, Ctor.makeDefaultsObject(), attributes)
+        this._attributes = {}
+        let _attrKeys = Object.keys(attributes)
+        let _defaults = Ctor.makeDefaultsObject()
         // Set up Proxy to this._attributes
         this.attributes = new Proxy(this._attributes, {
             set: (receiver: any, key: string, value: any) => {
@@ -88,10 +52,33 @@ export default class Resource {
                 return Reflect.defineProperty(target, prop, descriptor)
             },
         })
+        // Default attributes, ignore any that will be overridden
+        for (let defaultsKey in _defaults) {
+            if (_attrKeys.includes(defaultsKey)) {
+                continue
+            }
+
+            this.attributes[defaultsKey] = _defaults[defaultsKey]
+        }
+        // Attributes parameters, will fire setter
+        for (let attrKey in attributes) {
+            this.attributes[attrKey] = attributes[attrKey]
+        }
+        this.changes = {}
         // Create related managers
-        // Because we're using Object.assign above, we shouldn't have to iterate here again -- @todo improve it
-        for (let attrKey in Ctor.related) {
-            this.managers[attrKey] = new RelatedManagerCtor(Ctor.related[attrKey], this._attributes[attrKey])
+        for (let relAttrKey in Ctor.related) {
+            let to = Ctor.related[relAttrKey]
+
+            if ('object' === typeof to) {
+                let relatedLiteral = to as RelatedLiteral
+                to = relatedLiteral.to
+            }
+
+            try {
+                this.managers[relAttrKey] = new RelatedManagerCtor(to, this._attributes[relAttrKey])
+            } catch (e) {
+                throw new Error(`${e} -- Relation: ${this.toResourceName()}.related[${relAttrKey}]`)
+            }
         }
 
         if (this.id) {
@@ -123,7 +110,7 @@ export default class Resource {
      * @param resource
      * @param replace
      */
-    static cacheResource<T extends typeof Resource = typeof Resource>(this: T, resource: InstanceType<T>, replace: boolean = false) {
+    static cacheResource<T extends typeof Resource>(this: T, resource: InstanceType<T>, replace: boolean = false) {
         if (!resource.id) {
             throw new exceptions.CacheError(`Can't cache ${resource.toResourceName()} resource without ${resource.getConstructor().uniqueKey} field`)
         } else if (replace) {
@@ -142,7 +129,7 @@ export default class Resource {
      * Replace attributes on a cached resource onto this class' cache for cacheMaxAge seconds (useful for bubbling up changes to states that may be already rendered)
      * @param resource
      */
-    static replaceCache<T extends Resource = Resource>(resource: T) {
+    static replaceCache<T extends Resource>(resource: T) {
         if (!this.cache[resource.id]) {
             throw new exceptions.CacheError("Can't replace cache: resource doesn't exist")
         }
@@ -200,6 +187,22 @@ export default class Resource {
     }
 
     /**
+     * Backwards compatibility
+     * Remove in next major release @todo
+     */
+    static get validators() {
+        return this.validation
+    }
+
+    /**
+     * Backwards compatibility
+     * Remove in next major release @todo
+     */
+    static set validators(value: any) {
+        this.validation = value
+    }
+
+    /**
      * Get list route path (eg. /users) to be used with HTTP requests and allow a querystring object
      * @param query Querystring
      */
@@ -226,7 +229,7 @@ export default class Resource {
      * @param options Options object
      * @returns Promise
      */
-    static list<T extends typeof Resource = typeof Resource>(this: T, options: ListOpts = {}): Promise<ResourceResponse<InstanceType<T>>> {
+    static list<T extends typeof Resource>(this: T, options: ListOpts = {}): Promise<ResourceResponse<InstanceType<T>>> {
         return this.client.list<T>(this as T, options).then((result) => {
             if (options.getRelated) {
                 const promises: Promise<void>[] = []
@@ -239,7 +242,7 @@ export default class Resource {
         })
     }
 
-    static detail<T extends typeof Resource = typeof Resource>(this: T, id: string, options: DetailOpts = {}): Promise<InstanceType<T>> {
+    static detail<T extends typeof Resource>(this: T, id: string, options: DetailOpts = {}): Promise<InstanceType<T>> {
         // Check cache first
         const cached: CachedResource<InstanceType<T>> = this.getCached(String(id))
         return new Promise((resolve, reject) => {
@@ -350,25 +353,25 @@ export default class Resource {
             const pieces = key.split('.')
             const thisKey = String(pieces.shift())
             const thisValue = this.attributes[thisKey]
-            const relatedManager: RelatedManager = this.managers[thisKey]
+            const RelatedManagerClass: RelatedManager = this.managers[thisKey]
 
             if (pieces.length > 0) {
                 // We need to go deeper...
-                if (!relatedManager) {
+                if (!RelatedManagerClass) {
                     throw new exceptions.ImproperlyConfiguredError(`No relation found on ${this.toResourceName()}[${thisKey}]. Did you define it on ${this.toResourceName()}.related?`)
                 }
 
-                if (relatedManager.many) {
-                    return relatedManager.objects.map((thisResource) => {
+                if (RelatedManagerClass.many) {
+                    return RelatedManagerClass.objects.map((thisResource) => {
                         return thisResource.get(pieces.join('.'))
                     })
                 }
 
-                return relatedManager.objects[0].get(pieces.join('.'))
-            } else if (Boolean(thisValue) && relatedManager) {
+                return RelatedManagerClass.objects[0].get(pieces.join('.'))
+            } else if (Boolean(thisValue) && RelatedManagerClass) {
                 // If the related manager is a single object and is inflated, auto resolve the resource.get(key) to that object
                 // @todo Maybe we should always return the manager? Or maybe we should always return the resolved object(s)? I am skeptical about this part
-                return !relatedManager.many && relatedManager.resolved ? relatedManager.objects[0] : relatedManager
+                return !RelatedManagerClass.many && RelatedManagerClass.resolved ? RelatedManagerClass.objects[0] : RelatedManagerClass
             } else {
                 return thisValue
             }
@@ -439,8 +442,9 @@ export default class Resource {
     toInternalValue(key: string, value: any): any {
         let currentValue = this.attributes[key]
         let newValue = value
+        let Ctor = this.getConstructor()
 
-        if (!isEqual(currentValue, newValue)) {
+        if (!_.isEqual(currentValue, newValue)) {
             // Also resolve any related Resources back into foreign keys
             if (newValue && newValue['getConstructor']) {
                 // newValue is a Resource instance
@@ -450,21 +454,30 @@ export default class Resource {
                 }
                 // Create a RelatedManager
                 let RelatedCtor = newValue.getConstructor()
-                let RelatedManager = this.getConstructor().relatedManager
-                let manager = new RelatedManager(RelatedCtor, newValue)
+                let RelatedManagerClass = Ctor.RelatedManagerClass
+                let manager = new RelatedManagerClass(RelatedCtor, newValue)
                 newValue = manager.toJSON()
                 this.managers[key] = manager
             } else if (newValue && this.managers[key]) {
                 // newValue has an old manager -- needs a new one
                 // Create a RelatedManager
                 let RelatedCtor = newValue.to
-                let RelatedManager = this.getConstructor().relatedManager
-                let manager = new RelatedManager(RelatedCtor, newValue)
+                let RelatedManagerClass = Ctor.RelatedManagerClass
+                let manager = new RelatedManagerClass(RelatedCtor, newValue)
                 newValue = manager.toJSON()
                 this.managers[key] = manager
             }
 
             this.changes[key] = newValue
+        }
+
+        if ('undefined' !== typeof Ctor.normalization[key]) {
+            let normalizer = <BaseNormalizer | Function & { normalize: () => any }>Ctor.normalization[key]
+            if ('function' === typeof normalizer.normalize) {
+                newValue = normalizer.normalize(newValue)
+            } else if ('function' === typeof normalizer) {
+                newValue = normalizer(newValue)
+            }
         }
 
         return newValue
@@ -474,7 +487,7 @@ export default class Resource {
      * Like calling instance.constructor but safer:
      * changing objects down the line won't creep up the prototype chain and end up on native global objects like Function or Object
      */
-    getConstructor<T extends typeof Resource = typeof Resource>(): T {
+    getConstructor<T extends typeof Resource>(): T {
         if (this.constructor === Function) {
             // Safe guard in case something goes wrong in subclasses, we don't want to change native Function
             return Resource as T
@@ -531,35 +544,46 @@ export default class Resource {
     /**
      * Saves the instance -- sends changes as a PATCH or sends whole object as a POST if it's new
      */
-    save<T extends Resource = Resource>(this: T, options: SaveOptions = {}): Promise<ResourceResponse<T>> {
+    save<T extends this>(options: SaveOptions = {}): Promise<ResourceResponse<T>> {
         let promise
         const Ctor = this.getConstructor()
 
         let errors = this.validate()
+        let fields = options.fields || Ctor.fields
 
         if (errors.length > 0 && !options.force) {
             throw new exceptions.ValidationError(errors)
         }
 
         if (this.isNew()) {
-            promise = Ctor.client.post(Ctor.getListRoutePath(), this.attributes)
+            let attrs = fields.length ? _.pick(this.attributes, fields) : this.attributes
+            promise = Ctor.client.post(Ctor.getListRoutePath(), attrs)
         } else if (options.partial === false) {
-            promise = Ctor.client.put(Ctor.getDetailRoutePath(this.id), this.attributes)
+            let attrs = fields.length ? _.pick(this.attributes, fields) : this.attributes
+            promise = Ctor.client.put(Ctor.getDetailRoutePath(this.id), attrs)
         } else {
-            promise = Ctor.client.patch(Ctor.getDetailRoutePath(this.id), this.changes)
+            let attrs = fields.length ? _.pick(this.changes, fields) : this.changes
+            promise = Ctor.client.patch(Ctor.getDetailRoutePath(this.id), attrs)
         }
 
         return promise.then((response: AxiosResponse<T>) => {
-            this.changes = {}
             for (const resKey in response.data) {
                 this.set(resKey, response.data[resKey])
             }
-            // Replace cache
-            this.cache(options.replaceCache === false ? false : true)
+
+            for (let fieldKey of fields) {
+                delete this.changes[fieldKey]
+            }
+
+            if (this.id) {
+                // Replace cache
+                this.cache(options.replaceCache === false ? false : true)
+            }
+
             return {
                 response,
                 resources: [this],
-            }
+            } as ResourceResponse<T>
         })
     }
 
@@ -568,21 +592,26 @@ export default class Resource {
      * @returns `Error[]` Array of Exceptions
      */
     validate(): Error[] {
-        let errs = []
-        let validators = this.getConstructor().validators
-        for (let key in validators) {
+        let errs: Error[] = []
+        let validators = this.getConstructor().validation
+
+        let tryFn = (func: ValidatorFunc, key: string) => {
             try {
-                if ('function' === typeof validators[key]) {
-                    validators[key].call(null, this.attributes[key], this)
-                }
+                // Declare call of validator with params:
+                //    attribute, resource, ValidationError class
+                func.call(null, this.attributes[key], this, exceptions.ValidationError)
             } catch (e) {
-                // One of the downsides of using Webpack is that you can't strict compare from
-                //  another module because the exported member will be transpiled and therefore will not
-                //  be the same address in memory. So we have a handy function to detect ValidationError
-                if (exceptions.ValidationError.isInstance(e)) {
-                    errs.push(e)
-                } else {
-                    throw e
+                errs.push(e)
+            }
+        }
+
+        for (let key in validators) {
+            if ('function' === typeof validators[key]) {
+                tryFn(validators[key] as ValidatorFunc, key)
+            } else if (Array.isArray(validators[key])) {
+                let validatorArray = validators[key] as ValidatorFunc[]
+                for (let vKey in validatorArray) {
+                    tryFn(validatorArray[vKey], key)
                 }
             }
         }
@@ -590,7 +619,7 @@ export default class Resource {
         return errs
     }
 
-    update<T extends Resource = Resource>(this: T): Promise<T> {
+    update<T extends Resource>(this: T): Promise<T> {
         return this.getConstructor().detail(this.id) as Promise<T>
     }
 
@@ -598,12 +627,12 @@ export default class Resource {
         return this.getConstructor().client.delete(this.getConstructor().getDetailRoutePath(this.id), options)
     }
 
-    cache<T extends Resource = Resource>(this: T, replace: boolean = false): T {
+    cache<T extends Resource>(this: T, replace: boolean = false): T {
         this.getConstructor().cacheResource(this, !!replace)
         return this
     }
 
-    getCached<T extends Resource = Resource>(this: T) {
+    getCached<T extends Resource>(this: T) {
         return this.getConstructor().getCached(this.id) as CachedResource<T>
     }
 
@@ -631,4 +660,41 @@ export default class Resource {
     toJSON(): any {
         return this.get()
     }
+}
+
+export type RelatedDict = Record<string, typeof Resource | RelatedLiteral>
+
+export interface RelatedLiteral {
+    to: typeof Resource
+    normalization?: ValidNormalizer
+    validation?: ValidatorDict
+}
+
+export type ValidatorFunc = (value?: any, resource?: Resource, validationExceptionClass?: typeof exceptions.ValidationError) => void
+
+export type ValidatorDict = Record<string, ValidatorFunc | ValidatorFunc[]>
+
+export interface CachedResource<T extends Resource> {
+    expires: number
+    resource: T
+}
+
+export interface SaveOptions {
+    partial?: boolean
+    replaceCache?: boolean
+    force?: boolean
+    fields?: any
+}
+
+export interface GetRelatedOpts {
+    managers?: string[]
+    deep?: boolean
+}
+
+export type ListOpts = RequestConfig & {
+    getRelated?: boolean
+}
+
+export type DetailOpts = RequestConfig & {
+    getRelated?: boolean
 }

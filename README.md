@@ -3,14 +3,18 @@
 REST Resource is a library to make your life simpler when working with REST API Endpoints. It takes RESTful Resource/Service URIs and simplifies them into a Class that can be called with simple methods. **[Think of it like a Model for REST API Endpoints.](#acts-like-a-model)**
 
 ### Features:
-- **[Cached Resource Resolution!](#cached-resource-resolution)**
+- **[Cached Resource Resolution](#cached-resource-resolution)**
   - Call to your resources as if they're already loaded, REST Resource sorts out which ones to GET
-- **[Easily set up Related Resources](#related-resources)**
+- **[Related Resources](#related-resources)**
   - Quickly wire up your Resources and which ones they're related to, REST Resource takes care of the rest
-- **[Nested attribute resolution on Related Resources](#related-attribute-lookups-with-getasync)**
+- **[Attribute resolution on Related Resources](#related-attribute-lookups-with-getasync)**
   - Get attributes on related resources as easily as:
     ```javascript
-    await resource.getAsync('otherResource.evenDeeperResource.name')
+    await resource.attr('user.address.city.name')
+    // GET /users/1
+    // GET /addresses/1
+    // GET /cities/1
+    // => San Francisco, CA
     ```
 - **Class-Based/Custom clients**
   - Completely customize the way REST Resource works with your API
@@ -411,6 +415,32 @@ class CustomRelatedManager extends RelatedManager {
 class UserResource extends Resource {
     static endpoint = '/users'
     // Define custom related manager here
-    static relatedManager = CustomRelatedManager
+    static RelatedManagerClass = CustomRelatedManager
+}
+```
+
+# Attribute Formatting 
+Whenever an attribute is set, you can specify a 
+
+```javascript
+import Resource from 'rest-resource'
+import RelatedManager from 'rest-resource/dist/related'
+
+class CustomRelatedManager extends RelatedManager {
+    batchSize: 50 // Only GET 50 related objects at a time (default: Infinity)
+
+    /**
+     * @param options Object (getRelated, etc.)
+     * @returns Resource[] List of Resource instances
+     */
+    resolve(options) {
+        // etc
+    }
+}
+
+class UserResource extends Resource {
+    static endpoint = '/users'
+    // Define custom related manager here
+    static RelatedManagerClass = CustomRelatedManager
 }
 ```

@@ -73,16 +73,20 @@
 					<h3>Features:</h3>
 				</a>
 				<ul>
-					<li><strong><a href="#cached-resource-resolution">Cached Resource Resolution!</a></strong><ul>
+					<li><strong><a href="#cached-resource-resolution">Cached Resource Resolution</a></strong><ul>
 							<li>Call to your resources as if they&#39;re already loaded, REST Resource sorts out which ones to GET</li>
 						</ul>
 					</li>
-					<li><strong><a href="#related-resources">Easily set up Related Resources</a></strong><ul>
+					<li><strong><a href="#related-resources">Related Resources</a></strong><ul>
 							<li>Quickly wire up your Resources and which ones they&#39;re related to, REST Resource takes care of the rest</li>
 						</ul>
 					</li>
-					<li><strong><a href="#related-attribute-lookups-with-getasync">Nested attribute resolution on Related Resources</a></strong><ul>
-							<li>Get attributes on related resources as easily as:<pre><code class="language-javascript"><span class="hljs-keyword">await</span> resource.getAsync(<span class="hljs-string">'otherResource.evenDeeperResource.name'</span>)</code></pre>
+					<li><strong><a href="#related-attribute-lookups-with-getasync">Attribute resolution on Related Resources</a></strong><ul>
+							<li>Get attributes on related resources as easily as:<pre><code class="language-javascript"><span class="hljs-keyword">await</span> resource.attr(<span class="hljs-string">'user.address.city.name'</span>)
+<span class="hljs-comment">// GET /users/1</span>
+<span class="hljs-comment">// GET /addresses/1</span>
+<span class="hljs-comment">// GET /cities/1</span>
+<span class="hljs-comment">// =&gt; San Francisco, CA</span></code></pre>
 							</li>
 						</ul>
 					</li>
@@ -447,7 +451,31 @@ CustomResource.client = <span class="hljs-keyword">new</span> CustomClient(<span
 <span class="hljs-class"><span class="hljs-keyword">class</span> <span class="hljs-title">UserResource</span> <span class="hljs-keyword">extends</span> <span class="hljs-title">Resource</span> </span>{
     <span class="hljs-keyword">static</span> endpoint = <span class="hljs-string">'/users'</span>
     <span class="hljs-comment">// Define custom related manager here</span>
-    <span class="hljs-keyword">static</span> relatedManager = CustomRelatedManager
+    <span class="hljs-keyword">static</span> RelatedManagerClass = CustomRelatedManager
+}</code></pre>
+				<a href="#attribute-formatting" id="attribute-formatting" style="color: inherit; text-decoration: none;">
+					<h1>Attribute Formatting</h1>
+				</a>
+				<p>Whenever an attribute is set, you can specify a </p>
+				<pre><code class="language-javascript"><span class="hljs-keyword">import</span> Resource <span class="hljs-keyword">from</span> <span class="hljs-string">'rest-resource'</span>
+<span class="hljs-keyword">import</span> RelatedManager <span class="hljs-keyword">from</span> <span class="hljs-string">'rest-resource/dist/related'</span>
+
+<span class="hljs-class"><span class="hljs-keyword">class</span> <span class="hljs-title">CustomRelatedManager</span> <span class="hljs-keyword">extends</span> <span class="hljs-title">RelatedManager</span> </span>{
+    batchSize: <span class="hljs-number">50</span> <span class="hljs-comment">// Only GET 50 related objects at a time (default: Infinity)</span>
+
+    <span class="hljs-comment">/**
+     * @param options Object (getRelated, etc.)
+     * @returns Resource[] List of Resource instances
+     */</span>
+    resolve(options) {
+        <span class="hljs-comment">// etc</span>
+    }
+}
+
+<span class="hljs-class"><span class="hljs-keyword">class</span> <span class="hljs-title">UserResource</span> <span class="hljs-keyword">extends</span> <span class="hljs-title">Resource</span> </span>{
+    <span class="hljs-keyword">static</span> endpoint = <span class="hljs-string">'/users'</span>
+    <span class="hljs-comment">// Define custom related manager here</span>
+    <span class="hljs-keyword">static</span> RelatedManagerClass = CustomRelatedManager
 }</code></pre>
 			</div>
 		</div>
@@ -471,6 +499,9 @@ CustomResource.client = <span class="hljs-keyword">new</span> CustomClient(<span
 					</li>
 					<li class=" tsd-kind-external-module tsd-is-external">
 						<a href="modules/_exceptions_.html">"exceptions"</a>
+					</li>
+					<li class=" tsd-kind-external-module tsd-is-external">
+						<a href="modules/_helpers_normalization_.html">"helpers/normalization"</a>
 					</li>
 					<li class=" tsd-kind-external-module tsd-is-external">
 						<a href="modules/_related_.html">"related"</a>

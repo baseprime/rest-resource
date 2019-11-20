@@ -4,7 +4,7 @@
  * 
  * @author Greg Sabia Tucker <greg@narrowlabs.com> (http://basepri.me)
  * @link undefined
- * @version 0.6.5
+ * @version 0.6.6
  * 
  * Released under MIT License. See LICENSE.txt or http://opensource.org/licenses/MIT
  */
@@ -71,7 +71,7 @@ var Resource =
 /******/ 	__webpack_require__.p = "";
 /******/
 /******/ 	// Load entry module and return exports
-/******/ 	return __webpack_require__(__webpack_require__.s = 5);
+/******/ 	return __webpack_require__(__webpack_require__.s = 2);
 /******/ })
 /************************************************************************/
 /******/ ([
@@ -84,7 +84,7 @@ var Resource =
 var _typeof = typeof Symbol === "function" && typeof Symbol.iterator === "symbol" ? function (obj) { return typeof obj; } : function (obj) { return obj && typeof Symbol === "function" && obj.constructor === Symbol && obj !== Symbol.prototype ? "symbol" : typeof obj; };
 
 var bind = __webpack_require__(8);
-var isBuffer = __webpack_require__(25);
+var isBuffer = __webpack_require__(26);
 
 /*global toString:true*/
 
@@ -721,6 +721,689 @@ function __importDefault(mod) {
 /***/ (function(module, exports, __webpack_require__) {
 
 "use strict";
+/* WEBPACK VAR INJECTION */(function(Buffer) {
+
+var _typeof = typeof Symbol === "function" && typeof Symbol.iterator === "symbol" ? function (obj) { return typeof obj; } : function (obj) { return obj && typeof Symbol === "function" && obj.constructor === Symbol && obj !== Symbol.prototype ? "symbol" : typeof obj; };
+
+Object.defineProperty(exports, "__esModule", { value: true });
+var tslib_1 = __webpack_require__(1);
+var querystring_1 = __webpack_require__(21);
+var client_1 = __webpack_require__(24);
+var util_1 = __webpack_require__(13);
+var related_1 = tslib_1.__importDefault(__webpack_require__(44));
+var exceptions = tslib_1.__importStar(__webpack_require__(17));
+var assert = __webpack_require__(16);
+var _ = __webpack_require__(14);
+var Resource = /** @class */function () {
+    function Resource(attributes, options) {
+        var _this = this;
+        if (attributes === void 0) {
+            attributes = {};
+        }
+        if (options === void 0) {
+            options = {};
+        }
+        this._attributes = {};
+        this.attributes = {};
+        this.managers = {};
+        this.changes = {};
+        var Ctor = this.getConstructor();
+        var RelatedManagerCtor = Ctor.RelatedManagerClass;
+        if (_typeof(Ctor.client) !== 'object') {
+            throw new exceptions.ImproperlyConfiguredError("Resource can't be used without Client class instance");
+        }
+        this._attributes = {};
+        var _attrKeys = Object.keys(attributes);
+        var _defaults = Ctor.makeDefaultsObject();
+        // Set up Proxy to this._attributes
+        this.attributes = new Proxy(this._attributes, {
+            set: function set(receiver, key, value) {
+                receiver[key] = _this.toInternalValue(key, value);
+                return true;
+            },
+            get: function get(receiver, key) {
+                return receiver[key];
+            },
+            defineProperty: function defineProperty(target, prop, descriptor) {
+                return Reflect.defineProperty(target, prop, descriptor);
+            }
+        });
+        // Default attributes, ignore any that will be overridden
+        for (var defaultsKey in _defaults) {
+            if (_attrKeys.includes(defaultsKey)) {
+                continue;
+            }
+            this.attributes[defaultsKey] = _defaults[defaultsKey];
+        }
+        // Attributes parameters, will fire setter
+        for (var attrKey in attributes) {
+            this.attributes[attrKey] = attributes[attrKey];
+        }
+        this.changes = {};
+        // Create related managers
+        for (var relAttrKey in Ctor.related) {
+            var to = Ctor.related[relAttrKey];
+            if ('object' === (typeof to === "undefined" ? "undefined" : _typeof(to))) {
+                var relatedLiteral = to;
+                to = relatedLiteral.to;
+            }
+            try {
+                this.managers[relAttrKey] = new RelatedManagerCtor(to, this._attributes[relAttrKey]);
+            } catch (e) {
+                throw new Error(e + " -- Relation: " + this.toResourceName() + ".related[" + relAttrKey + "]");
+            }
+        }
+        if (this.id) {
+            Ctor.cacheResource(this);
+        }
+    }
+    Object.defineProperty(Resource, "cache", {
+        /**
+         * Cache getter
+         */
+        get: function get() {
+            if (!this._cache || this._cache === Resource._cache) {
+                this._cache = {};
+                return this._cache;
+            }
+            return this._cache;
+        },
+        enumerable: true,
+        configurable: true
+    });
+    Object.defineProperty(Resource, "uuid", {
+        get: function get() {
+            if (!this._uuid) {
+                this._uuid = util_1.uuidWeak();
+                return this._uuid;
+            }
+            return this._uuid;
+        },
+        enumerable: true,
+        configurable: true
+    });
+    /**
+     * Cache a resource onto this class' cache for cacheMaxAge seconds
+     * @param resource
+     * @param replace
+     */
+    Resource.cacheResource = function (resource, replace) {
+        if (replace === void 0) {
+            replace = false;
+        }
+        if (!resource.id) {
+            throw new exceptions.CacheError("Can't cache " + resource.toResourceName() + " resource without " + resource.getConstructor().uniqueKey + " field");
+        } else if (replace) {
+            try {
+                return this.replaceCache(resource);
+            } catch (e) {}
+        }
+        this.cache[resource.id] = {
+            resource: resource,
+            expires: this.cacheDeltaSeconds()
+        };
+    };
+    /**
+     * Replace attributes on a cached resource onto this class' cache for cacheMaxAge seconds (useful for bubbling up changes to states that may be already rendered)
+     * @param resource
+     */
+    Resource.replaceCache = function (resource) {
+        if (!this.cache[resource.id]) {
+            throw new exceptions.CacheError("Can't replace cache: resource doesn't exist");
+        }
+        Object.assign(this.cache[resource.id].resource.attributes, resource.attributes);
+        this.cache[resource.id].expires = this.cacheDeltaSeconds();
+    };
+    Resource.clearCache = function () {
+        this._cache = {};
+    };
+    /**
+     * Get time delta in seconds of cache expiry
+     */
+    Resource.cacheDeltaSeconds = function () {
+        return Date.now() + this.cacheMaxAge * 1000;
+    };
+    /**
+     * Get a cached resource by ID
+     * @param id
+     */
+    Resource.getCached = function (id) {
+        var cached = this.cache[id];
+        if (cached && cached.expires > Date.now()) {
+            return cached;
+        }
+        return undefined;
+    };
+    Resource.getCachedAll = function () {
+        var _this = this;
+        return Object.keys(this.cache).map(function (cacheKey) {
+            return _this.getCached(cacheKey);
+        }).filter(function (valid) {
+            return !!valid;
+        });
+    };
+    Object.defineProperty(Resource, "client", {
+        /**
+         * Get HTTP client for a resource Class
+         * This is meant to be overridden if we want to define a client at any time
+         */
+        get: function get() {
+            if (!this._client) {
+                throw new exceptions.ImproperlyConfiguredError('Resource client class not defined. Did you try Resource.setClient or overriding Resource.getClient?');
+            }
+            return this._client;
+        },
+        /**
+         * Set HTTP client
+         * @param client instanceof Client
+         */
+        set: function set(client) {
+            this._client = client;
+        },
+        enumerable: true,
+        configurable: true
+    });
+    Object.defineProperty(Resource, "validators", {
+        /**
+         * Backwards compatibility
+         * Remove in next major release @todo
+         */
+        get: function get() {
+            return this.validation;
+        },
+        /**
+         * Backwards compatibility
+         * Remove in next major release @todo
+         */
+        set: function set(value) {
+            this.validation = value;
+        },
+        enumerable: true,
+        configurable: true
+    });
+    /**
+     * Get list route path (eg. /users) to be used with HTTP requests and allow a querystring object
+     * @param query Querystring
+     */
+    Resource.getListRoutePath = function (query) {
+        if (query && Object.keys(query).length) {
+            var qs = querystring_1.stringify(query);
+            return this.endpoint + "?" + qs;
+        }
+        return this.endpoint;
+    };
+    /**
+     * Get detail route path (eg. /users/123) to be used with HTTP requests
+     * @param id
+     * @param query Querystring
+     */
+    Resource.getDetailRoutePath = function (id, query) {
+        var qs = querystring_1.stringify(query);
+        return this.endpoint + "/" + id + (query && Object.keys(query).length ? '?' : '') + qs;
+    };
+    /**
+     * HTTP Get of resource's list route--returns a promise
+     * @param options Options object
+     * @returns Promise
+     */
+    Resource.list = function (options) {
+        if (options === void 0) {
+            options = {};
+        }
+        return this.client.list(this, options).then(function (result) {
+            if (options.getRelated) {
+                var promises_1 = [];
+                result.resources.forEach(function (resource) {
+                    promises_1.push(resource.getRelated({ deep: true }));
+                });
+                return Promise.all(promises_1).then(function () {
+                    return result;
+                });
+            }
+            return result;
+        });
+    };
+    Resource.detail = function (id, options) {
+        var _this = this;
+        if (options === void 0) {
+            options = {};
+        }
+        // Check cache first
+        var cached = this.getCached(String(id));
+        return new Promise(function (resolve, reject) {
+            // Do we want to use cache?
+            if (!cached || options.useCache === false) {
+                // Set a hash key for the queue (keeps it organized by type+id)
+                var queueHashKey_1 = _this.getResourceHashKey(id);
+                // If we want to use cache and cache wasn't found...
+                if (!cached && !_this.queued[queueHashKey_1]) {
+                    // We want to use cached and a resource with this ID hasn't been requested yet
+                    _this.queued[queueHashKey_1] = [];
+                    _this.client.detail(_this, id, options).then(function (result) {
+                        return tslib_1.__awaiter(_this, void 0, void 0, function () {
+                            var correctResource;
+                            return tslib_1.__generator(this, function (_a) {
+                                switch (_a.label) {
+                                    case 0:
+                                        correctResource = result.resources.pop();
+                                        if (!options.getRelated) return [3 /*break*/, 2];
+                                        return [4 /*yield*/, correctResource.getRelated({ deep: true })];
+                                    case 1:
+                                        _a.sent();
+                                        _a.label = 2;
+                                    case 2:
+                                        // Resolve first-sent request
+                                        setTimeout(function () {
+                                            return resolve(correctResource);
+                                        }, 0);
+                                        // Then resolve any deferred requests if there are any
+                                        this.queued[queueHashKey_1].forEach(function (deferred) {
+                                            deferred(correctResource);
+                                        });
+                                        return [2 /*return*/];
+                                }
+                            });
+                        });
+                    }).catch(function (e) {
+                        reject(e);
+                    }).finally(function () {
+                        // Finally, remove the fact that we've queued any requests with this ID
+                        delete _this.queued[queueHashKey_1];
+                    });
+                } else {
+                    // We want to use cache, but a resource with this ID has already been queued--defer promise and resolve when queued resource actually completes
+                    var deferredPromise = new Promise(function (resolveDeferred) {
+                        _this.queued[queueHashKey_1].push(resolveDeferred);
+                    });
+                    // Resolve related call to detail() but deferredPromise doesn't run until the first queued resource is completed
+                    resolve(deferredPromise);
+                }
+            } else {
+                // We want to use cache, and we found it!
+                var cachedResource_1 = cached.resource;
+                // Get related resources?
+                if (options.getRelated) {
+                    cached.resource.getRelated({ deep: true }).then(function () {
+                        return resolve(cachedResource_1);
+                    });
+                } else {
+                    resolve(cachedResource_1);
+                }
+            }
+        });
+    };
+    Resource.toResourceName = function () {
+        return this.name;
+    };
+    Resource.makeDefaultsObject = function () {
+        var defaults = {};
+        for (var key in this.defaults) {
+            var thisDefault = this.defaults[key];
+            if ('function' === typeof thisDefault) {
+                defaults[key] = thisDefault.call(null);
+            } else {
+                defaults[key] = thisDefault;
+            }
+        }
+        return defaults;
+    };
+    /**
+     * Unique resource hash key used for caching and organizing requests
+     * @param resourceId
+     */
+    Resource.getResourceHashKey = function (resourceId) {
+        assert(Boolean(resourceId), "Can't generate resource hash key with an empty Resource ID. Please ensure Resource is saved first.");
+        return Buffer.from(this.uuid + ":" + resourceId).toString('base64');
+    };
+    Resource.extend = function (classProps) {
+        // @todo Figure out typings here -- this works perfectly but typings are not happy
+        // @ts-ignore
+        return Object.assign( /** @class */function (_super) {
+            tslib_1.__extends(class_1, _super);
+            function class_1() {
+                return _super !== null && _super.apply(this, arguments) || this;
+            }
+            return class_1;
+        }(this), classProps);
+    };
+    /**
+     * Set an attribute of Resource instance and apply getters/setters
+     * Do not use Dot Notation here
+     * @param key
+     * @param value
+     */
+    Resource.prototype.set = function (key, value) {
+        this.attributes[key] = value;
+        return this;
+    };
+    /**
+     * Get an attribute of Resource instance
+     * You can use dot notation here -- eg. `resource.get('user.username')`
+     * You can also get all properties by not providing any arguments
+     * @param? key
+     */
+    Resource.prototype.get = function (key) {
+        if (typeof key !== 'undefined') {
+            // Get a value
+            var pieces_1 = key.split('.');
+            var thisKey = String(pieces_1.shift());
+            var thisValue = this.attributes[thisKey];
+            var RelatedManagerClass = this.managers[thisKey];
+            if (pieces_1.length > 0) {
+                // We need to go deeper...
+                if (!RelatedManagerClass) {
+                    throw new exceptions.ImproperlyConfiguredError("No relation found on " + this.toResourceName() + "[" + thisKey + "]. Did you define it on " + this.toResourceName() + ".related?");
+                }
+                if (RelatedManagerClass.many) {
+                    return RelatedManagerClass.objects.map(function (thisResource) {
+                        return thisResource.get(pieces_1.join('.'));
+                    });
+                }
+                return RelatedManagerClass.objects[0].get(pieces_1.join('.'));
+            } else if (Boolean(thisValue) && RelatedManagerClass) {
+                // If the related manager is a single object and is inflated, auto resolve the resource.get(key) to that object
+                // @todo Maybe we should always return the manager? Or maybe we should always return the resolved object(s)? I am skeptical about this part
+                return !RelatedManagerClass.many && RelatedManagerClass.resolved ? RelatedManagerClass.objects[0] : RelatedManagerClass;
+            } else {
+                return thisValue;
+            }
+        } else {
+            // We're getting all attributes -- any related resources also get converted to an object
+            var managers = Object.keys(this.managers);
+            var obj = Object.assign({}, this.attributes);
+            while (managers.length) {
+                var key_1 = String(managers.shift());
+                var manager = this.managers[key_1];
+                if (manager.many) {
+                    obj[key_1] = manager.objects.map(function (subResource) {
+                        return subResource.get();
+                    });
+                } else if (!manager.many && manager.objects[0]) {
+                    obj[key_1] = manager.objects[0].get();
+                }
+            }
+            return obj;
+        }
+    };
+    /**
+     * Persist getting an attribute and get related keys until a key can be found (or not found)
+     * TypeError in get() will be thrown, we're just doing the getRelated() work for you...
+     * @param key
+     */
+    Resource.prototype.getAsync = function (key) {
+        var _this = this;
+        return new Promise(function (resolve, reject) {
+            try {
+                resolve(_this.get(key));
+            } catch (e) {
+                if (exceptions.AttributeError.isInstance(e)) {
+                    var pieces_2 = key.split('.');
+                    var thisKey = String(pieces_2.shift());
+                    var manager_1 = _this.managers[thisKey];
+                    manager_1.resolve().then(function () {
+                        var relatedKey = pieces_2.join('.');
+                        var promises = manager_1.objects.map(function (resource) {
+                            return resource.getAsync(relatedKey);
+                        });
+                        Promise.all(promises).then(function (values) {
+                            if (manager_1.many) {
+                                resolve(values);
+                            } else if (values.length === 1) {
+                                resolve(values[0]);
+                            } else {
+                                resolve(values);
+                            }
+                        });
+                    });
+                } else {
+                    reject(e);
+                }
+            }
+        });
+    };
+    /**
+     * Setter -- Translate new value into an internal value onto this._attributes[key]
+     * Usually this is just setting a key/value but we want to be able to accept
+     * anything -- another Resource instance for example. If a Resource instance is
+     * provided, set the this.managers[key] as the new manager instance, then set the
+     * this.attributes[key] field as just the primary key of the related Resource instance
+     * @param key
+     * @param value
+     */
+    Resource.prototype.toInternalValue = function (key, value) {
+        var currentValue = this.attributes[key];
+        var newValue = value;
+        var Ctor = this.getConstructor();
+        if (!_.isEqual(currentValue, newValue)) {
+            // Also resolve any related Resources back into foreign keys
+            if (newValue && newValue['getConstructor']) {
+                // newValue is a Resource instance
+                // Don't accept any resources that aren't saved
+                if (!newValue.id) {
+                    throw new exceptions.AttributeError("Can't append Related Resource on field \"" + key + "\": Related Resource " + newValue.getConstructor().name + " must be saved first");
+                }
+                // Create a RelatedManager
+                var RelatedCtor = newValue.getConstructor();
+                var RelatedManagerClass = Ctor.RelatedManagerClass;
+                var manager = new RelatedManagerClass(RelatedCtor, newValue);
+                newValue = manager.toJSON();
+                this.managers[key] = manager;
+            } else if (newValue && this.managers[key]) {
+                // newValue has an old manager -- needs a new one
+                // Create a RelatedManager
+                var RelatedCtor = newValue.to;
+                var RelatedManagerClass = Ctor.RelatedManagerClass;
+                var manager = new RelatedManagerClass(RelatedCtor, newValue);
+                newValue = manager.toJSON();
+                this.managers[key] = manager;
+            }
+            this.changes[key] = newValue;
+        }
+        if ('undefined' !== typeof Ctor.normalization[key]) {
+            var normalizer = Ctor.normalization[key];
+            if ('function' === typeof normalizer.normalize) {
+                newValue = normalizer.normalize(newValue);
+            } else if ('function' === typeof normalizer) {
+                newValue = normalizer(newValue);
+            }
+        }
+        return newValue;
+    };
+    /**
+     * Like calling instance.constructor but safer:
+     * changing objects down the line won't creep up the prototype chain and end up on native global objects like Function or Object
+     */
+    Resource.prototype.getConstructor = function () {
+        if (this.constructor === Function) {
+            // Safe guard in case something goes wrong in subclasses, we don't want to change native Function
+            return Resource;
+        }
+        return this.constructor;
+    };
+    /**
+     * Match all related values in `attributes[key]` where key is primary key of related instance defined in `Resource.related[key]`
+     * @param options GetRelatedDict
+     */
+    Resource.prototype.getRelated = function (_a) {
+        var _b = _a === void 0 ? {} : _a,
+            _c = _b.deep,
+            deep = _c === void 0 ? false : _c,
+            _d = _b.managers,
+            managers = _d === void 0 ? [] : _d;
+        var promises = [];
+        for (var resourceKey in this.managers) {
+            if (Array.isArray(managers) && managers.length > 0 && !~managers.indexOf(resourceKey)) {
+                continue;
+            }
+            var manager = this.managers[resourceKey];
+            var promise = manager.resolve().then(function (objects) {
+                if (deep) {
+                    var otherPromises = objects.map(function (resource) {
+                        return resource.getRelated({ deep: deep, managers: managers });
+                    });
+                    return Promise.all(otherPromises).then(function () {
+                        return void {};
+                    });
+                } else {
+                    return void {};
+                }
+            });
+            promises.push(promise);
+        }
+        return Promise.all(promises).then(function () {
+            return void {};
+        });
+    };
+    /**
+     * Same as `Resource.prototype.getRelated` except `options.deep` defaults to `true`
+     * @param options
+     */
+    Resource.prototype.getRelatedDeep = function (options) {
+        var opts = Object.assign({ deep: true }, options || {});
+        return this.getRelated(opts);
+    };
+    /**
+     * Get related class by key
+     * @param key
+     */
+    Resource.prototype.rel = function (key) {
+        return this.managers[key];
+    };
+    /**
+     * Saves the instance -- sends changes as a PATCH or sends whole object as a POST if it's new
+     */
+    Resource.prototype.save = function (options) {
+        var _this = this;
+        if (options === void 0) {
+            options = {};
+        }
+        var promise;
+        var Ctor = this.getConstructor();
+        var errors = this.validate();
+        var fields = options.fields || Ctor.fields;
+        if (errors.length > 0 && !options.force) {
+            throw new exceptions.ValidationError(errors);
+        }
+        if (this.isNew()) {
+            var attrs = fields.length ? _.pick(this.attributes, fields) : this.attributes;
+            promise = Ctor.client.post(Ctor.getListRoutePath(), attrs);
+        } else if (options.partial === false) {
+            var attrs = fields.length ? _.pick(this.attributes, fields) : this.attributes;
+            promise = Ctor.client.put(Ctor.getDetailRoutePath(this.id), attrs);
+        } else {
+            var attrs = fields.length ? _.pick(this.changes, fields) : this.changes;
+            promise = Ctor.client.patch(Ctor.getDetailRoutePath(this.id), attrs);
+        }
+        return promise.then(function (response) {
+            for (var resKey in response.data) {
+                _this.set(resKey, response.data[resKey]);
+            }
+            for (var _i = 0, fields_1 = fields; _i < fields_1.length; _i++) {
+                var fieldKey = fields_1[_i];
+                delete _this.changes[fieldKey];
+            }
+            if (_this.id) {
+                // Replace cache
+                _this.cache(options.replaceCache === false ? false : true);
+            }
+            return {
+                response: response,
+                resources: [_this]
+            };
+        });
+    };
+    /**
+     * Validate attributes -- returns empty if no errors exist -- you should throw new errors here
+     * @returns `Error[]` Array of Exceptions
+     */
+    Resource.prototype.validate = function () {
+        var _this = this;
+        var errs = [];
+        var validators = this.getConstructor().validation;
+        var tryFn = function tryFn(func, key) {
+            try {
+                // Declare call of validator with params:
+                //    attribute, resource, ValidationError class
+                func.call(null, _this.attributes[key], _this, exceptions.ValidationError);
+            } catch (e) {
+                errs.push(e);
+            }
+        };
+        for (var key in validators) {
+            if ('function' === typeof validators[key]) {
+                tryFn(validators[key], key);
+            } else if (Array.isArray(validators[key])) {
+                var validatorArray = validators[key];
+                for (var vKey in validatorArray) {
+                    tryFn(validatorArray[vKey], key);
+                }
+            }
+        }
+        return errs;
+    };
+    Resource.prototype.update = function () {
+        return this.getConstructor().detail(this.id);
+    };
+    Resource.prototype.delete = function (options) {
+        return this.getConstructor().client.delete(this.getConstructor().getDetailRoutePath(this.id), options);
+    };
+    Resource.prototype.cache = function (replace) {
+        if (replace === void 0) {
+            replace = false;
+        }
+        this.getConstructor().cacheResource(this, !!replace);
+        return this;
+    };
+    Resource.prototype.getCached = function () {
+        return this.getConstructor().getCached(this.id);
+    };
+    Resource.prototype.isNew = function () {
+        return !this.id;
+    };
+    Object.defineProperty(Resource.prototype, "id", {
+        get: function get() {
+            var uniqueKey = this.getConstructor().uniqueKey;
+            return this.attributes[uniqueKey];
+        },
+        set: function set(value) {
+            throw new exceptions.AttributeError('Cannot set ID manually. Set ID by using attributes[id] = value');
+        },
+        enumerable: true,
+        configurable: true
+    });
+    Resource.prototype.toString = function () {
+        return this.toResourceName() + " " + (this.id || '(New)');
+    };
+    Resource.prototype.toResourceName = function () {
+        return this.getConstructor().toResourceName();
+    };
+    Resource.prototype.toJSON = function () {
+        return this.get();
+    };
+    Resource.endpoint = '';
+    Resource.cacheMaxAge = 60;
+    Resource._cache = {};
+    Resource._client = new client_1.DefaultClient('/');
+    Resource.queued = {};
+    Resource.uniqueKey = 'id';
+    Resource.perPage = null;
+    Resource.defaults = {};
+    Resource.RelatedManagerClass = related_1.default;
+    Resource.validation = {};
+    Resource.normalization = {};
+    Resource.fields = [];
+    Resource.related = {};
+    return Resource;
+}();
+exports.default = Resource;
+//# sourceMappingURL=index.js.map
+/* WEBPACK VAR INJECTION */}.call(exports, __webpack_require__(6).Buffer))
+
+/***/ }),
+/* 3 */
+/***/ (function(module, exports, __webpack_require__) {
+
+"use strict";
 
 
 var _typeof = typeof Symbol === "function" && typeof Symbol.iterator === "symbol" ? function (obj) { return typeof obj; } : function (obj) { return obj && typeof Symbol === "function" && obj.constructor === Symbol && obj !== Symbol.prototype ? "symbol" : typeof obj; };
@@ -747,14 +1430,14 @@ try {
 module.exports = g;
 
 /***/ }),
-/* 3 */
+/* 4 */
 /***/ (function(module, exports, __webpack_require__) {
 
 "use strict";
 /* WEBPACK VAR INJECTION */(function(process) {
 
 var utils = __webpack_require__(0);
-var normalizeHeaderName = __webpack_require__(27);
+var normalizeHeaderName = __webpack_require__(28);
 
 var DEFAULT_CONTENT_TYPE = {
   'Content-Type': 'application/x-www-form-urlencoded'
@@ -841,10 +1524,10 @@ utils.forEach(['post', 'put', 'patch'], function forEachMethodWithData(method) {
 });
 
 module.exports = defaults;
-/* WEBPACK VAR INJECTION */}.call(exports, __webpack_require__(4)))
+/* WEBPACK VAR INJECTION */}.call(exports, __webpack_require__(5)))
 
 /***/ }),
-/* 4 */
+/* 5 */
 /***/ (function(module, exports, __webpack_require__) {
 
 "use strict";
@@ -1037,626 +1720,6 @@ process.umask = function () {
 };
 
 /***/ }),
-/* 5 */
-/***/ (function(module, exports, __webpack_require__) {
-
-"use strict";
-/* WEBPACK VAR INJECTION */(function(Buffer) {
-
-var _typeof = typeof Symbol === "function" && typeof Symbol.iterator === "symbol" ? function (obj) { return typeof obj; } : function (obj) { return obj && typeof Symbol === "function" && obj.constructor === Symbol && obj !== Symbol.prototype ? "symbol" : typeof obj; };
-
-Object.defineProperty(exports, "__esModule", { value: true });
-var tslib_1 = __webpack_require__(1);
-var querystring_1 = __webpack_require__(20);
-var client_1 = __webpack_require__(23);
-var util_1 = __webpack_require__(42);
-var related_1 = tslib_1.__importDefault(__webpack_require__(43));
-var exceptions = __webpack_require__(16);
-var assert = __webpack_require__(15);
-var isEqual = __webpack_require__(13).isEqual;
-var Resource = /** @class */function () {
-    function Resource(attributes, options) {
-        var _this = this;
-        if (attributes === void 0) {
-            attributes = {};
-        }
-        if (options === void 0) {
-            options = {};
-        }
-        this._attributes = {};
-        this.attributes = {};
-        this.managers = {};
-        this.changes = {};
-        var Ctor = this.getConstructor();
-        var RelatedManagerCtor = Ctor.relatedManager;
-        if (_typeof(Ctor.client) !== 'object') {
-            throw new exceptions.ImproperlyConfiguredError("Resource can't be used without Client class instance");
-        }
-        // Set up attributes and defaults
-        this._attributes = Object.assign({}, Ctor.makeDefaultsObject(), attributes);
-        // Set up Proxy to this._attributes
-        this.attributes = new Proxy(this._attributes, {
-            set: function set(receiver, key, value) {
-                receiver[key] = _this.toInternalValue(key, value);
-                return true;
-            },
-            get: function get(receiver, key) {
-                return receiver[key];
-            },
-            defineProperty: function defineProperty(target, prop, descriptor) {
-                return Reflect.defineProperty(target, prop, descriptor);
-            }
-        });
-        // Create related managers
-        // Because we're using Object.assign above, we shouldn't have to iterate here again -- @todo improve it
-        for (var attrKey in Ctor.related) {
-            this.managers[attrKey] = new RelatedManagerCtor(Ctor.related[attrKey], this._attributes[attrKey]);
-        }
-        if (this.id) {
-            Ctor.cacheResource(this);
-        }
-    }
-    Object.defineProperty(Resource, "cache", {
-        /**
-         * Cache getter
-         */
-        get: function get() {
-            if (!this._cache || this._cache === Resource._cache) {
-                this._cache = {};
-                return this._cache;
-            }
-            return this._cache;
-        },
-        enumerable: true,
-        configurable: true
-    });
-    Object.defineProperty(Resource, "uuid", {
-        get: function get() {
-            if (!this._uuid) {
-                this._uuid = util_1.uuidWeak();
-                return this._uuid;
-            }
-            return this._uuid;
-        },
-        enumerable: true,
-        configurable: true
-    });
-    /**
-     * Cache a resource onto this class' cache for cacheMaxAge seconds
-     * @param resource
-     * @param replace
-     */
-    Resource.cacheResource = function (resource, replace) {
-        if (replace === void 0) {
-            replace = false;
-        }
-        if (!resource.id) {
-            throw new exceptions.CacheError("Can't cache " + resource.toResourceName() + " resource without " + resource.getConstructor().uniqueKey + " field");
-        } else if (replace) {
-            try {
-                return this.replaceCache(resource);
-            } catch (e) {}
-        }
-        this.cache[resource.id] = {
-            resource: resource,
-            expires: this.cacheDeltaSeconds()
-        };
-    };
-    /**
-     * Replace attributes on a cached resource onto this class' cache for cacheMaxAge seconds (useful for bubbling up changes to states that may be already rendered)
-     * @param resource
-     */
-    Resource.replaceCache = function (resource) {
-        if (!this.cache[resource.id]) {
-            throw new exceptions.CacheError("Can't replace cache: resource doesn't exist");
-        }
-        Object.assign(this.cache[resource.id].resource.attributes, resource.attributes);
-        this.cache[resource.id].expires = this.cacheDeltaSeconds();
-    };
-    Resource.clearCache = function () {
-        this._cache = {};
-    };
-    /**
-     * Get time delta in seconds of cache expiry
-     */
-    Resource.cacheDeltaSeconds = function () {
-        return Date.now() + this.cacheMaxAge * 1000;
-    };
-    /**
-     * Get a cached resource by ID
-     * @param id
-     */
-    Resource.getCached = function (id) {
-        var cached = this.cache[id];
-        if (cached && cached.expires > Date.now()) {
-            return cached;
-        }
-        return undefined;
-    };
-    Resource.getCachedAll = function () {
-        var _this = this;
-        return Object.keys(this.cache).map(function (cacheKey) {
-            return _this.getCached(cacheKey);
-        }).filter(function (valid) {
-            return !!valid;
-        });
-    };
-    Object.defineProperty(Resource, "client", {
-        /**
-         * Get HTTP client for a resource Class
-         * This is meant to be overridden if we want to define a client at any time
-         */
-        get: function get() {
-            if (!this._client) {
-                throw new exceptions.ImproperlyConfiguredError('Resource client class not defined. Did you try Resource.setClient or overriding Resource.getClient?');
-            }
-            return this._client;
-        },
-        /**
-         * Set HTTP client
-         * @param client instanceof Client
-         */
-        set: function set(client) {
-            this._client = client;
-        },
-        enumerable: true,
-        configurable: true
-    });
-    /**
-     * Get list route path (eg. /users) to be used with HTTP requests and allow a querystring object
-     * @param query Querystring
-     */
-    Resource.getListRoutePath = function (query) {
-        if (query && Object.keys(query).length) {
-            var qs = querystring_1.stringify(query);
-            return this.endpoint + "?" + qs;
-        }
-        return this.endpoint;
-    };
-    /**
-     * Get detail route path (eg. /users/123) to be used with HTTP requests
-     * @param id
-     * @param query Querystring
-     */
-    Resource.getDetailRoutePath = function (id, query) {
-        var qs = querystring_1.stringify(query);
-        return this.endpoint + "/" + id + (query && Object.keys(query).length ? '?' : '') + qs;
-    };
-    /**
-     * HTTP Get of resource's list route--returns a promise
-     * @param options Options object
-     * @returns Promise
-     */
-    Resource.list = function (options) {
-        if (options === void 0) {
-            options = {};
-        }
-        return this.client.list(this, options).then(function (result) {
-            if (options.getRelated) {
-                var promises_1 = [];
-                result.resources.forEach(function (resource) {
-                    promises_1.push(resource.getRelated({ deep: true }));
-                });
-                return Promise.all(promises_1).then(function () {
-                    return result;
-                });
-            }
-            return result;
-        });
-    };
-    Resource.detail = function (id, options) {
-        var _this = this;
-        if (options === void 0) {
-            options = {};
-        }
-        // Check cache first
-        var cached = this.getCached(String(id));
-        return new Promise(function (resolve, reject) {
-            // Do we want to use cache?
-            if (!cached || options.useCache === false) {
-                // Set a hash key for the queue (keeps it organized by type+id)
-                var queueHashKey_1 = _this.getResourceHashKey(id);
-                // If we want to use cache and cache wasn't found...
-                if (!cached && !_this.queued[queueHashKey_1]) {
-                    // We want to use cached and a resource with this ID hasn't been requested yet
-                    _this.queued[queueHashKey_1] = [];
-                    _this.client.detail(_this, id, options).then(function (result) {
-                        return tslib_1.__awaiter(_this, void 0, void 0, function () {
-                            var correctResource;
-                            return tslib_1.__generator(this, function (_a) {
-                                switch (_a.label) {
-                                    case 0:
-                                        correctResource = result.resources.pop();
-                                        if (!options.getRelated) return [3 /*break*/, 2];
-                                        return [4 /*yield*/, correctResource.getRelated({ deep: true })];
-                                    case 1:
-                                        _a.sent();
-                                        _a.label = 2;
-                                    case 2:
-                                        // Resolve first-sent request
-                                        setTimeout(function () {
-                                            return resolve(correctResource);
-                                        }, 0);
-                                        // Then resolve any deferred requests if there are any
-                                        this.queued[queueHashKey_1].forEach(function (deferred) {
-                                            deferred(correctResource);
-                                        });
-                                        return [2 /*return*/];
-                                }
-                            });
-                        });
-                    }).catch(function (e) {
-                        reject(e);
-                    }).finally(function () {
-                        // Finally, remove the fact that we've queued any requests with this ID
-                        delete _this.queued[queueHashKey_1];
-                    });
-                } else {
-                    // We want to use cache, but a resource with this ID has already been queued--defer promise and resolve when queued resource actually completes
-                    var deferredPromise = new Promise(function (resolveDeferred) {
-                        _this.queued[queueHashKey_1].push(resolveDeferred);
-                    });
-                    // Resolve related call to detail() but deferredPromise doesn't run until the first queued resource is completed
-                    resolve(deferredPromise);
-                }
-            } else {
-                // We want to use cache, and we found it!
-                var cachedResource_1 = cached.resource;
-                // Get related resources?
-                if (options.getRelated) {
-                    cached.resource.getRelated({ deep: true }).then(function () {
-                        return resolve(cachedResource_1);
-                    });
-                } else {
-                    resolve(cachedResource_1);
-                }
-            }
-        });
-    };
-    Resource.toResourceName = function () {
-        return this.name;
-    };
-    Resource.makeDefaultsObject = function () {
-        var defaults = {};
-        for (var key in this.defaults) {
-            var thisDefault = this.defaults[key];
-            if ('function' === typeof thisDefault) {
-                defaults[key] = thisDefault.call(null);
-            } else {
-                defaults[key] = thisDefault;
-            }
-        }
-        return defaults;
-    };
-    /**
-     * Unique resource hash key used for caching and organizing requests
-     * @param resourceId
-     */
-    Resource.getResourceHashKey = function (resourceId) {
-        assert(Boolean(resourceId), "Can't generate resource hash key with an empty Resource ID. Please ensure Resource is saved first.");
-        return Buffer.from(this.uuid + ":" + resourceId).toString('base64');
-    };
-    Resource.extend = function (classProps) {
-        // @todo Figure out typings here -- this works perfectly but typings are not happy
-        // @ts-ignore
-        return Object.assign( /** @class */function (_super) {
-            tslib_1.__extends(class_1, _super);
-            function class_1() {
-                return _super !== null && _super.apply(this, arguments) || this;
-            }
-            return class_1;
-        }(this), classProps);
-    };
-    /**
-     * Set an attribute of Resource instance and apply getters/setters
-     * Do not use Dot Notation here
-     * @param key
-     * @param value
-     */
-    Resource.prototype.set = function (key, value) {
-        this.attributes[key] = value;
-        return this;
-    };
-    /**
-     * Get an attribute of Resource instance
-     * You can use dot notation here -- eg. `resource.get('user.username')`
-     * You can also get all properties by not providing any arguments
-     * @param? key
-     */
-    Resource.prototype.get = function (key) {
-        if (typeof key !== 'undefined') {
-            // Get a value
-            var pieces_1 = key.split('.');
-            var thisKey = String(pieces_1.shift());
-            var thisValue = this.attributes[thisKey];
-            var relatedManager = this.managers[thisKey];
-            if (pieces_1.length > 0) {
-                // We need to go deeper...
-                if (!relatedManager) {
-                    throw new exceptions.ImproperlyConfiguredError("No relation found on " + this.toResourceName() + "[" + thisKey + "]. Did you define it on " + this.toResourceName() + ".related?");
-                }
-                if (relatedManager.many) {
-                    return relatedManager.objects.map(function (thisResource) {
-                        return thisResource.get(pieces_1.join('.'));
-                    });
-                }
-                return relatedManager.objects[0].get(pieces_1.join('.'));
-            } else if (Boolean(thisValue) && relatedManager) {
-                // If the related manager is a single object and is inflated, auto resolve the resource.get(key) to that object
-                // @todo Maybe we should always return the manager? Or maybe we should always return the resolved object(s)? I am skeptical about this part
-                return !relatedManager.many && relatedManager.resolved ? relatedManager.objects[0] : relatedManager;
-            } else {
-                return thisValue;
-            }
-        } else {
-            // We're getting all attributes -- any related resources also get converted to an object
-            var managers = Object.keys(this.managers);
-            var obj = Object.assign({}, this.attributes);
-            while (managers.length) {
-                var key_1 = String(managers.shift());
-                var manager = this.managers[key_1];
-                if (manager.many) {
-                    obj[key_1] = manager.objects.map(function (subResource) {
-                        return subResource.get();
-                    });
-                } else if (!manager.many && manager.objects[0]) {
-                    obj[key_1] = manager.objects[0].get();
-                }
-            }
-            return obj;
-        }
-    };
-    /**
-     * Persist getting an attribute and get related keys until a key can be found (or not found)
-     * TypeError in get() will be thrown, we're just doing the getRelated() work for you...
-     * @param key
-     */
-    Resource.prototype.getAsync = function (key) {
-        var _this = this;
-        return new Promise(function (resolve, reject) {
-            try {
-                resolve(_this.get(key));
-            } catch (e) {
-                if (exceptions.AttributeError.isInstance(e)) {
-                    var pieces_2 = key.split('.');
-                    var thisKey = String(pieces_2.shift());
-                    var manager_1 = _this.managers[thisKey];
-                    manager_1.resolve().then(function () {
-                        var relatedKey = pieces_2.join('.');
-                        var promises = manager_1.objects.map(function (resource) {
-                            return resource.getAsync(relatedKey);
-                        });
-                        Promise.all(promises).then(function (values) {
-                            if (manager_1.many) {
-                                resolve(values);
-                            } else if (values.length === 1) {
-                                resolve(values[0]);
-                            } else {
-                                resolve(values);
-                            }
-                        });
-                    });
-                } else {
-                    reject(e);
-                }
-            }
-        });
-    };
-    /**
-     * Setter -- Translate new value into an internal value onto this._attributes[key]
-     * Usually this is just setting a key/value but we want to be able to accept
-     * anything -- another Resource instance for example. If a Resource instance is
-     * provided, set the this.managers[key] as the new manager instance, then set the
-     * this.attributes[key] field as just the primary key of the related Resource instance
-     * @param key
-     * @param value
-     */
-    Resource.prototype.toInternalValue = function (key, value) {
-        var currentValue = this.attributes[key];
-        var newValue = value;
-        if (!isEqual(currentValue, newValue)) {
-            // Also resolve any related Resources back into foreign keys
-            if (newValue && newValue['getConstructor']) {
-                // newValue is a Resource instance
-                // Don't accept any resources that aren't saved
-                if (!newValue.id) {
-                    throw new exceptions.AttributeError("Can't append Related Resource on field \"" + key + "\": Related Resource " + newValue.getConstructor().name + " must be saved first");
-                }
-                // Create a RelatedManager
-                var RelatedCtor = newValue.getConstructor();
-                var RelatedManager_1 = this.getConstructor().relatedManager;
-                var manager = new RelatedManager_1(RelatedCtor, newValue);
-                newValue = manager.toJSON();
-                this.managers[key] = manager;
-            } else if (newValue && this.managers[key]) {
-                // newValue has an old manager -- needs a new one
-                // Create a RelatedManager
-                var RelatedCtor = newValue.to;
-                var RelatedManager_2 = this.getConstructor().relatedManager;
-                var manager = new RelatedManager_2(RelatedCtor, newValue);
-                newValue = manager.toJSON();
-                this.managers[key] = manager;
-            }
-            this.changes[key] = newValue;
-        }
-        return newValue;
-    };
-    /**
-     * Like calling instance.constructor but safer:
-     * changing objects down the line won't creep up the prototype chain and end up on native global objects like Function or Object
-     */
-    Resource.prototype.getConstructor = function () {
-        if (this.constructor === Function) {
-            // Safe guard in case something goes wrong in subclasses, we don't want to change native Function
-            return Resource;
-        }
-        return this.constructor;
-    };
-    /**
-     * Match all related values in `attributes[key]` where key is primary key of related instance defined in `Resource.related[key]`
-     * @param options GetRelatedDict
-     */
-    Resource.prototype.getRelated = function (_a) {
-        var _b = _a === void 0 ? {} : _a,
-            _c = _b.deep,
-            deep = _c === void 0 ? false : _c,
-            _d = _b.managers,
-            managers = _d === void 0 ? [] : _d;
-        var promises = [];
-        for (var resourceKey in this.managers) {
-            if (Array.isArray(managers) && managers.length > 0 && !~managers.indexOf(resourceKey)) {
-                continue;
-            }
-            var manager = this.managers[resourceKey];
-            var promise = manager.resolve().then(function (objects) {
-                if (deep) {
-                    var otherPromises = objects.map(function (resource) {
-                        return resource.getRelated({ deep: deep, managers: managers });
-                    });
-                    return Promise.all(otherPromises).then(function () {
-                        return void {};
-                    });
-                } else {
-                    return void {};
-                }
-            });
-            promises.push(promise);
-        }
-        return Promise.all(promises).then(function () {
-            return void {};
-        });
-    };
-    /**
-     * Same as `Resource.prototype.getRelated` except `options.deep` defaults to `true`
-     * @param options
-     */
-    Resource.prototype.getRelatedDeep = function (options) {
-        var opts = Object.assign({ deep: true }, options || {});
-        return this.getRelated(opts);
-    };
-    /**
-     * Get related class by key
-     * @param key
-     */
-    Resource.prototype.rel = function (key) {
-        return this.managers[key];
-    };
-    /**
-     * Saves the instance -- sends changes as a PATCH or sends whole object as a POST if it's new
-     */
-    Resource.prototype.save = function (options) {
-        var _this = this;
-        if (options === void 0) {
-            options = {};
-        }
-        var promise;
-        var Ctor = this.getConstructor();
-        var errors = this.validate();
-        if (errors.length > 0 && !options.force) {
-            throw new exceptions.ValidationError(errors);
-        }
-        if (this.isNew()) {
-            promise = Ctor.client.post(Ctor.getListRoutePath(), this.attributes);
-        } else if (options.partial === false) {
-            promise = Ctor.client.put(Ctor.getDetailRoutePath(this.id), this.attributes);
-        } else {
-            promise = Ctor.client.patch(Ctor.getDetailRoutePath(this.id), this.changes);
-        }
-        return promise.then(function (response) {
-            _this.changes = {};
-            for (var resKey in response.data) {
-                _this.set(resKey, response.data[resKey]);
-            }
-            // Replace cache
-            _this.cache(options.replaceCache === false ? false : true);
-            return {
-                response: response,
-                resources: [_this]
-            };
-        });
-    };
-    /**
-     * Validate attributes -- returns empty if no errors exist -- you should throw new errors here
-     * @returns `Error[]` Array of Exceptions
-     */
-    Resource.prototype.validate = function () {
-        var errs = [];
-        var validators = this.getConstructor().validators;
-        for (var key in validators) {
-            try {
-                if ('function' === typeof validators[key]) {
-                    validators[key].call(null, this.attributes[key], this);
-                }
-            } catch (e) {
-                // One of the downsides of using Webpack is that you can't strict compare from
-                //  another module because the exported member will be transpiled and therefore will not
-                //  be the same address in memory. So we have a handy function to detect ValidationError
-                if (exceptions.ValidationError.isInstance(e)) {
-                    errs.push(e);
-                } else {
-                    throw e;
-                }
-            }
-        }
-        return errs;
-    };
-    Resource.prototype.update = function () {
-        return this.getConstructor().detail(this.id);
-    };
-    Resource.prototype.delete = function (options) {
-        return this.getConstructor().client.delete(this.getConstructor().getDetailRoutePath(this.id), options);
-    };
-    Resource.prototype.cache = function (replace) {
-        if (replace === void 0) {
-            replace = false;
-        }
-        this.getConstructor().cacheResource(this, !!replace);
-        return this;
-    };
-    Resource.prototype.getCached = function () {
-        return this.getConstructor().getCached(this.id);
-    };
-    Resource.prototype.isNew = function () {
-        return !this.id;
-    };
-    Object.defineProperty(Resource.prototype, "id", {
-        get: function get() {
-            var uniqueKey = this.getConstructor().uniqueKey;
-            return this.attributes[uniqueKey];
-        },
-        set: function set(value) {
-            throw new exceptions.AttributeError('Cannot set ID manually. Set ID by using attributes[id] = value');
-        },
-        enumerable: true,
-        configurable: true
-    });
-    Resource.prototype.toString = function () {
-        return this.toResourceName() + " " + (this.id || '(New)');
-    };
-    Resource.prototype.toResourceName = function () {
-        return this.getConstructor().toResourceName();
-    };
-    Resource.prototype.toJSON = function () {
-        return this.get();
-    };
-    Resource.endpoint = '';
-    Resource.cacheMaxAge = 60;
-    Resource._cache = {};
-    Resource._client = new client_1.DefaultClient('/');
-    Resource.queued = {};
-    Resource.uniqueKey = 'id';
-    Resource.perPage = null;
-    Resource.defaults = {};
-    Resource.relatedManager = related_1.default;
-    Resource.validators = {};
-    Resource.related = {};
-    return Resource;
-}();
-exports.default = Resource;
-//# sourceMappingURL=index.js.map
-/* WEBPACK VAR INJECTION */}.call(exports, __webpack_require__(6).Buffer))
-
-/***/ }),
 /* 6 */
 /***/ (function(module, exports, __webpack_require__) {
 
@@ -1671,9 +1734,9 @@ exports.default = Resource;
 
 
 
-var base64 = __webpack_require__(17);
-var ieee754 = __webpack_require__(18);
-var isArray = __webpack_require__(19);
+var base64 = __webpack_require__(18);
+var ieee754 = __webpack_require__(19);
+var isArray = __webpack_require__(20);
 
 exports.Buffer = Buffer;
 exports.SlowBuffer = SlowBuffer;
@@ -3398,7 +3461,7 @@ function blitBuffer(src, dst, offset, length) {
 function isnan(val) {
   return val !== val; // eslint-disable-line no-self-compare
 }
-/* WEBPACK VAR INJECTION */}.call(exports, __webpack_require__(2)))
+/* WEBPACK VAR INJECTION */}.call(exports, __webpack_require__(3)))
 
 /***/ }),
 /* 7 */
@@ -3407,7 +3470,7 @@ function isnan(val) {
 "use strict";
 
 
-module.exports = __webpack_require__(24);
+module.exports = __webpack_require__(25);
 
 /***/ }),
 /* 8 */
@@ -3434,12 +3497,12 @@ module.exports = function bind(fn, thisArg) {
 /* WEBPACK VAR INJECTION */(function(process) {
 
 var utils = __webpack_require__(0);
-var settle = __webpack_require__(28);
-var buildURL = __webpack_require__(30);
-var parseHeaders = __webpack_require__(31);
-var isURLSameOrigin = __webpack_require__(32);
+var settle = __webpack_require__(29);
+var buildURL = __webpack_require__(31);
+var parseHeaders = __webpack_require__(32);
+var isURLSameOrigin = __webpack_require__(33);
 var createError = __webpack_require__(10);
-var btoa = typeof window !== 'undefined' && window.btoa && window.btoa.bind(window) || __webpack_require__(33);
+var btoa = typeof window !== 'undefined' && window.btoa && window.btoa.bind(window) || __webpack_require__(34);
 
 module.exports = function xhrAdapter(config) {
   return new Promise(function dispatchXhrRequest(resolve, reject) {
@@ -3532,7 +3595,7 @@ module.exports = function xhrAdapter(config) {
     // This is only done if running in a standard browser environment.
     // Specifically not if we're in a web worker, or react-native.
     if (utils.isStandardBrowserEnv()) {
-      var cookies = __webpack_require__(34);
+      var cookies = __webpack_require__(35);
 
       // Add xsrf header
       var xsrfValue = (config.withCredentials || isURLSameOrigin(config.url)) && config.xsrfCookieName ? cookies.read(config.xsrfCookieName) : undefined;
@@ -3605,7 +3668,7 @@ module.exports = function xhrAdapter(config) {
     request.send(requestData);
   });
 };
-/* WEBPACK VAR INJECTION */}.call(exports, __webpack_require__(4)))
+/* WEBPACK VAR INJECTION */}.call(exports, __webpack_require__(5)))
 
 /***/ }),
 /* 10 */
@@ -3614,7 +3677,7 @@ module.exports = function xhrAdapter(config) {
 "use strict";
 
 
-var enhanceError = __webpack_require__(29);
+var enhanceError = __webpack_require__(30);
 
 /**
  * Create an Error with the specified message, config, error code, request and response.
@@ -3670,6 +3733,53 @@ module.exports = Cancel;
 
 /***/ }),
 /* 13 */
+/***/ (function(module, exports, __webpack_require__) {
+
+"use strict";
+
+
+Object.defineProperty(exports, "__esModule", { value: true });
+var tslib_1 = __webpack_require__(1);
+var index_1 = tslib_1.__importDefault(__webpack_require__(2));
+var lodash_1 = __webpack_require__(14);
+/**
+ * Takes an input and camelizes it
+ * @param str
+ */
+function camelize(str) {
+    return str.replace(/(?:^\w|[A-Z]|\b\w|\s+)/g, function (match, index) {
+        if (+match === 0) return '';
+        return index == 0 ? match.toLowerCase() : match.toUpperCase();
+    });
+}
+exports.camelize = camelize;
+/**
+ * This is a very quick and primitive implementation of RFC 4122 UUID
+ * Creates a basic variant UUID
+ * Warning: Shouldn't be used of N >> 1e9
+ */
+function uuidWeak() {
+    return 'xxxxxxxx-xxxx-4xxx-yxxx-xxxxxxxxxxxx'.replace(/[xy]/g, function (character) {
+        var rand = Math.random() * 16 | 0;
+        var value = character === 'x' ? rand : rand & 0x3 | 0x8;
+        return value.toString(16);
+    });
+}
+exports.uuidWeak = uuidWeak;
+function getContentTypeWeak(value) {
+    var node = lodash_1.first([].concat(value));
+    var Ctor = node.constructor;
+    if (Ctor.prototype instanceof index_1.default) {
+        return index_1.default;
+    } else {
+        return Ctor;
+    }
+}
+exports.getContentTypeWeak = getContentTypeWeak;
+//# sourceMappingURL=util.js.map
+
+/***/ }),
+/* 14 */
 /***/ (function(module, exports, __webpack_require__) {
 
 "use strict";
@@ -13088,7 +13198,7 @@ LazyWrapper.prototype.clone=lazyClone;LazyWrapper.prototype.reverse=lazyReverse;
 lodash.prototype.at=wrapperAt;lodash.prototype.chain=wrapperChain;lodash.prototype.commit=wrapperCommit;lodash.prototype.next=wrapperNext;lodash.prototype.plant=wrapperPlant;lodash.prototype.reverse=wrapperReverse;lodash.prototype.toJSON=lodash.prototype.valueOf=lodash.prototype.value=wrapperValue;// Add lazy aliases.
 lodash.prototype.first=lodash.prototype.head;if(symIterator){lodash.prototype[symIterator]=wrapperToIterator;}return lodash;};/*--------------------------------------------------------------------------*/// Export lodash.
 var _=runInContext();// Some AMD build optimizers, like r.js, check for condition patterns like:
-if("function"=='function'&&_typeof(__webpack_require__(14))=='object'&&__webpack_require__(14)){// Expose Lodash on the global object to prevent errors when Lodash is
+if("function"=='function'&&_typeof(__webpack_require__(15))=='object'&&__webpack_require__(15)){// Expose Lodash on the global object to prevent errors when Lodash is
 // loaded by a script tag in the presence of an AMD loader.
 // See http://requirejs.org/docs/errors.html#mismatch for more details.
 // Use `_.noConflict` to remove Lodash from the global object.
@@ -13100,10 +13210,10 @@ else if(freeModule){// Export for Node.js.
 (freeModule.exports=_)._=_;// Export for CommonJS support.
 freeExports._=_;}else{// Export to the global object.
 root._=_;}}).call(undefined);
-/* WEBPACK VAR INJECTION */}.call(exports, __webpack_require__(2), __webpack_require__(44)(module)))
+/* WEBPACK VAR INJECTION */}.call(exports, __webpack_require__(3), __webpack_require__(43)(module)))
 
 /***/ }),
-/* 14 */
+/* 15 */
 /***/ (function(module, exports) {
 
 /* WEBPACK VAR INJECTION */(function(__webpack_amd_options__) {/* globals __webpack_amd_options__ */
@@ -13112,7 +13222,7 @@ module.exports = __webpack_amd_options__;
 /* WEBPACK VAR INJECTION */}.call(exports, {}))
 
 /***/ }),
-/* 15 */
+/* 16 */
 /***/ (function(module, exports, __webpack_require__) {
 
 "use strict";
@@ -13602,10 +13712,10 @@ var objectKeys = Object.keys || function (obj) {
   }
   return keys;
 };
-/* WEBPACK VAR INJECTION */}.call(exports, __webpack_require__(2)))
+/* WEBPACK VAR INJECTION */}.call(exports, __webpack_require__(3)))
 
 /***/ }),
-/* 16 */
+/* 17 */
 /***/ (function(module, exports, __webpack_require__) {
 
 "use strict";
@@ -13686,7 +13796,7 @@ exports.ValidationError = ValidationError;
 //# sourceMappingURL=exceptions.js.map
 
 /***/ }),
-/* 17 */
+/* 18 */
 /***/ (function(module, exports, __webpack_require__) {
 
 "use strict";
@@ -13814,7 +13924,7 @@ function fromByteArray(uint8) {
 }
 
 /***/ }),
-/* 18 */
+/* 19 */
 /***/ (function(module, exports, __webpack_require__) {
 
 "use strict";
@@ -13906,7 +14016,7 @@ exports.write = function (buffer, value, offset, isLE, mLen, nBytes) {
 };
 
 /***/ }),
-/* 19 */
+/* 20 */
 /***/ (function(module, exports, __webpack_require__) {
 
 "use strict";
@@ -13919,17 +14029,17 @@ module.exports = Array.isArray || function (arr) {
 };
 
 /***/ }),
-/* 20 */
+/* 21 */
 /***/ (function(module, exports, __webpack_require__) {
 
 "use strict";
 
 
-exports.decode = exports.parse = __webpack_require__(21);
-exports.encode = exports.stringify = __webpack_require__(22);
+exports.decode = exports.parse = __webpack_require__(22);
+exports.encode = exports.stringify = __webpack_require__(23);
 
 /***/ }),
-/* 21 */
+/* 22 */
 /***/ (function(module, exports, __webpack_require__) {
 
 "use strict";
@@ -14023,7 +14133,7 @@ var isArray = Array.isArray || function (xs) {
 };
 
 /***/ }),
-/* 22 */
+/* 23 */
 /***/ (function(module, exports, __webpack_require__) {
 
 "use strict";
@@ -14114,7 +14224,7 @@ var objectKeys = Object.keys || function (obj) {
 };
 
 /***/ }),
-/* 23 */
+/* 24 */
 /***/ (function(module, exports, __webpack_require__) {
 
 "use strict";
@@ -14295,7 +14405,7 @@ var JWTBearerClient = /** @class */function (_super) {
         try {
             var jwtPieces = this.token.split('.');
             var payloadBase64 = jwtPieces[1];
-            var payloadBuffer = new Buffer(payloadBase64, 'base64');
+            var payloadBuffer = Buffer.from(payloadBase64, 'base64').toString();
             return JSON.parse(payloadBuffer.toString());
         } catch (e) {
             return undefined;
@@ -14320,7 +14430,7 @@ exports.JWTBearerClient = JWTBearerClient;
 /* WEBPACK VAR INJECTION */}.call(exports, __webpack_require__(6).Buffer))
 
 /***/ }),
-/* 24 */
+/* 25 */
 /***/ (function(module, exports, __webpack_require__) {
 
 "use strict";
@@ -14328,8 +14438,8 @@ exports.JWTBearerClient = JWTBearerClient;
 
 var utils = __webpack_require__(0);
 var bind = __webpack_require__(8);
-var Axios = __webpack_require__(26);
-var defaults = __webpack_require__(3);
+var Axios = __webpack_require__(27);
+var defaults = __webpack_require__(4);
 
 /**
  * Create an instance of Axios
@@ -14363,14 +14473,14 @@ axios.create = function create(instanceConfig) {
 
 // Expose Cancel & CancelToken
 axios.Cancel = __webpack_require__(12);
-axios.CancelToken = __webpack_require__(40);
+axios.CancelToken = __webpack_require__(41);
 axios.isCancel = __webpack_require__(11);
 
 // Expose all/spread
 axios.all = function all(promises) {
   return Promise.all(promises);
 };
-axios.spread = __webpack_require__(41);
+axios.spread = __webpack_require__(42);
 
 module.exports = axios;
 
@@ -14378,7 +14488,7 @@ module.exports = axios;
 module.exports.default = axios;
 
 /***/ }),
-/* 25 */
+/* 26 */
 /***/ (function(module, exports, __webpack_require__) {
 
 "use strict";
@@ -14407,16 +14517,16 @@ function isSlowBuffer(obj) {
 }
 
 /***/ }),
-/* 26 */
+/* 27 */
 /***/ (function(module, exports, __webpack_require__) {
 
 "use strict";
 
 
-var defaults = __webpack_require__(3);
+var defaults = __webpack_require__(4);
 var utils = __webpack_require__(0);
-var InterceptorManager = __webpack_require__(35);
-var dispatchRequest = __webpack_require__(36);
+var InterceptorManager = __webpack_require__(36);
+var dispatchRequest = __webpack_require__(37);
 
 /**
  * Create a new instance of Axios
@@ -14492,7 +14602,7 @@ utils.forEach(['post', 'put', 'patch'], function forEachMethodWithData(method) {
 module.exports = Axios;
 
 /***/ }),
-/* 27 */
+/* 28 */
 /***/ (function(module, exports, __webpack_require__) {
 
 "use strict";
@@ -14510,7 +14620,7 @@ module.exports = function normalizeHeaderName(headers, normalizedName) {
 };
 
 /***/ }),
-/* 28 */
+/* 29 */
 /***/ (function(module, exports, __webpack_require__) {
 
 "use strict";
@@ -14536,7 +14646,7 @@ module.exports = function settle(resolve, reject, response) {
 };
 
 /***/ }),
-/* 29 */
+/* 30 */
 /***/ (function(module, exports, __webpack_require__) {
 
 "use strict";
@@ -14564,7 +14674,7 @@ module.exports = function enhanceError(error, config, code, request, response) {
 };
 
 /***/ }),
-/* 30 */
+/* 31 */
 /***/ (function(module, exports, __webpack_require__) {
 
 "use strict";
@@ -14629,7 +14739,7 @@ module.exports = function buildURL(url, params, paramsSerializer) {
 };
 
 /***/ }),
-/* 31 */
+/* 32 */
 /***/ (function(module, exports, __webpack_require__) {
 
 "use strict";
@@ -14685,7 +14795,7 @@ module.exports = function parseHeaders(headers) {
 };
 
 /***/ }),
-/* 32 */
+/* 33 */
 /***/ (function(module, exports, __webpack_require__) {
 
 "use strict";
@@ -14754,7 +14864,7 @@ function nonStandardBrowserEnv() {
 }();
 
 /***/ }),
-/* 33 */
+/* 34 */
 /***/ (function(module, exports, __webpack_require__) {
 
 "use strict";
@@ -14795,7 +14905,7 @@ function btoa(input) {
 module.exports = btoa;
 
 /***/ }),
-/* 34 */
+/* 35 */
 /***/ (function(module, exports, __webpack_require__) {
 
 "use strict";
@@ -14854,7 +14964,7 @@ function nonStandardBrowserEnv() {
 }();
 
 /***/ }),
-/* 35 */
+/* 36 */
 /***/ (function(module, exports, __webpack_require__) {
 
 "use strict";
@@ -14912,18 +15022,18 @@ InterceptorManager.prototype.forEach = function forEach(fn) {
 module.exports = InterceptorManager;
 
 /***/ }),
-/* 36 */
+/* 37 */
 /***/ (function(module, exports, __webpack_require__) {
 
 "use strict";
 
 
 var utils = __webpack_require__(0);
-var transformData = __webpack_require__(37);
+var transformData = __webpack_require__(38);
 var isCancel = __webpack_require__(11);
-var defaults = __webpack_require__(3);
-var isAbsoluteURL = __webpack_require__(38);
-var combineURLs = __webpack_require__(39);
+var defaults = __webpack_require__(4);
+var isAbsoluteURL = __webpack_require__(39);
+var combineURLs = __webpack_require__(40);
 
 /**
  * Throws a `Cancel` if cancellation has been requested.
@@ -14985,7 +15095,7 @@ module.exports = function dispatchRequest(config) {
 };
 
 /***/ }),
-/* 37 */
+/* 38 */
 /***/ (function(module, exports, __webpack_require__) {
 
 "use strict";
@@ -15011,7 +15121,7 @@ module.exports = function transformData(data, headers, fns) {
 };
 
 /***/ }),
-/* 38 */
+/* 39 */
 /***/ (function(module, exports, __webpack_require__) {
 
 "use strict";
@@ -15033,7 +15143,7 @@ module.exports = function isAbsoluteURL(url) {
 };
 
 /***/ }),
-/* 39 */
+/* 40 */
 /***/ (function(module, exports, __webpack_require__) {
 
 "use strict";
@@ -15052,7 +15162,7 @@ module.exports = function combineURLs(baseURL, relativeURL) {
 };
 
 /***/ }),
-/* 40 */
+/* 41 */
 /***/ (function(module, exports, __webpack_require__) {
 
 "use strict";
@@ -15115,7 +15225,7 @@ CancelToken.source = function source() {
 module.exports = CancelToken;
 
 /***/ }),
-/* 41 */
+/* 42 */
 /***/ (function(module, exports, __webpack_require__) {
 
 "use strict";
@@ -15149,41 +15259,37 @@ module.exports = function spread(callback) {
 };
 
 /***/ }),
-/* 42 */
+/* 43 */
 /***/ (function(module, exports, __webpack_require__) {
 
 "use strict";
 
 
-Object.defineProperty(exports, "__esModule", { value: true });
-/**
- * Takes an input and camelizes it
- * @param str
- */
-function camelize(str) {
-    return str.replace(/(?:^\w|[A-Z]|\b\w|\s+)/g, function (match, index) {
-        if (+match === 0) return '';
-        return index == 0 ? match.toLowerCase() : match.toUpperCase();
-    });
-}
-exports.camelize = camelize;
-/**
- * This is a very quick and primitive implementation of RFC 4122 UUID
- * Creates a basic variant UUID
- * Warning: Shouldn't be used of N >> 1e9
- */
-function uuidWeak() {
-    return 'xxxxxxxx-xxxx-4xxx-yxxx-xxxxxxxxxxxx'.replace(/[xy]/g, function (character) {
-        var rand = Math.random() * 16 | 0;
-        var value = character === 'x' ? rand : rand & 0x3 | 0x8;
-        return value.toString(16);
-    });
-}
-exports.uuidWeak = uuidWeak;
-//# sourceMappingURL=util.js.map
+module.exports = function (module) {
+	if (!module.webpackPolyfill) {
+		module.deprecate = function () {};
+		module.paths = [];
+		// module.parent = undefined by default
+		if (!module.children) module.children = [];
+		Object.defineProperty(module, "loaded", {
+			enumerable: true,
+			get: function get() {
+				return module.l;
+			}
+		});
+		Object.defineProperty(module, "id", {
+			enumerable: true,
+			get: function get() {
+				return module.i;
+			}
+		});
+		module.webpackPolyfill = 1;
+	}
+	return module;
+};
 
 /***/ }),
-/* 43 */
+/* 44 */
 /***/ (function(module, exports, __webpack_require__) {
 
 "use strict";
@@ -15191,10 +15297,10 @@ exports.uuidWeak = uuidWeak;
 
 Object.defineProperty(exports, "__esModule", { value: true });
 var tslib_1 = __webpack_require__(1);
-var index_1 = tslib_1.__importDefault(__webpack_require__(5));
-var lodash_1 = __webpack_require__(13);
-var assert_1 = tslib_1.__importDefault(__webpack_require__(15));
-var exceptions_1 = __webpack_require__(16);
+var index_1 = tslib_1.__importDefault(__webpack_require__(2));
+var assert_1 = tslib_1.__importDefault(__webpack_require__(16));
+var exceptions_1 = __webpack_require__(17);
+var util_1 = __webpack_require__(13);
 var RelatedManager = /** @class */function () {
     function RelatedManager(to, value) {
         this.many = false;
@@ -15212,6 +15318,7 @@ var RelatedManager = /** @class */function () {
          */
         this.batchSize = Infinity;
         this._objects = {};
+        assert_1.default(typeof to === 'function', "RelatedManager expected first parameter to be Resource class, received \"" + to + "\". Please double check related definitions on class.");
         this.to = to;
         this.value = value;
         this.many = Array.isArray(value);
@@ -15229,13 +15336,7 @@ var RelatedManager = /** @class */function () {
      * @returns Function
      */
     RelatedManager.prototype.getValueContentType = function () {
-        var node = lodash_1.first([].concat(this.value));
-        var Ctor = node.constructor;
-        if (Ctor.prototype instanceof index_1.default) {
-            return index_1.default;
-        } else {
-            return Ctor;
-        }
+        return util_1.getContentTypeWeak(this.value);
     };
     /**
      * Get the current value and the content type and turn it into a list of primary keys
@@ -15381,7 +15482,7 @@ var RelatedManager = /** @class */function () {
     RelatedManager.prototype.add = function (resource) {
         assert_1.default(this.many, "Related Manager \"many\" must be true to add()");
         assert_1.default(resource.id, "Resource must be saved before adding to Related Manager");
-        assert_1.default(resource.getConstructor() === this.to, "Related Manager add() expected " + this.to.toResourceName() + ", recieved " + resource.getConstructor().toResourceName());
+        assert_1.default(resource.getConstructor() === this.to, "Related Manager add() expected " + this.to.toResourceName() + ", received " + resource.getConstructor().toResourceName());
         var ContentCtor = this.getValueContentType();
         var value;
         if (ContentCtor === Object) {
@@ -15422,36 +15523,6 @@ var RelatedManager = /** @class */function () {
 }();
 exports.default = RelatedManager;
 //# sourceMappingURL=related.js.map
-
-/***/ }),
-/* 44 */
-/***/ (function(module, exports, __webpack_require__) {
-
-"use strict";
-
-
-module.exports = function (module) {
-	if (!module.webpackPolyfill) {
-		module.deprecate = function () {};
-		module.paths = [];
-		// module.parent = undefined by default
-		if (!module.children) module.children = [];
-		Object.defineProperty(module, "loaded", {
-			enumerable: true,
-			get: function get() {
-				return module.l;
-			}
-		});
-		Object.defineProperty(module, "id", {
-			enumerable: true,
-			get: function get() {
-				return module.i;
-			}
-		});
-		module.webpackPolyfill = 1;
-	}
-	return module;
-};
 
 /***/ }),
 /* 45 */
@@ -16215,7 +16286,7 @@ function callbackify(original) {
   return callbackified;
 }
 exports.callbackify = callbackify;
-/* WEBPACK VAR INJECTION */}.call(exports, __webpack_require__(4)))
+/* WEBPACK VAR INJECTION */}.call(exports, __webpack_require__(5)))
 
 /***/ }),
 /* 47 */
