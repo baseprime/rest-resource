@@ -18,7 +18,6 @@ var Resource = /** @class */ (function () {
         this.managers = {};
         this.changes = {};
         var Ctor = this.getConstructor();
-        var RelatedManagerCtor = Ctor.RelatedManagerClass;
         if (typeof Ctor.client !== 'object') {
             throw new exceptions.ImproperlyConfiguredError("Resource can't be used without Client class instance");
         }
@@ -53,15 +52,25 @@ var Resource = /** @class */ (function () {
         // Create related managers
         for (var relAttrKey in Ctor.related) {
             var to = Ctor.related[relAttrKey];
-            if ('object' === typeof to) {
-                var relatedLiteral = to;
-                to = relatedLiteral.to;
-            }
+            var sourceKey = relAttrKey;
+            var attrAlias = undefined;
             try {
-                this.managers[relAttrKey] = new RelatedManagerCtor(to, this._attributes[relAttrKey]);
+                if ('object' === typeof to) {
+                    var relatedLiteral = to;
+                    to = relatedLiteral.to;
+                }
+                var RelatedManagerCtor = to.RelatedManagerClass;
+                var relatedManager = new RelatedManagerCtor(to, this._attributes[relAttrKey]);
+                this.managers[sourceKey] = relatedManager;
+                if (attrAlias) {
+                    this.managers[attrAlias] = relatedManager;
+                }
             }
             catch (e) {
-                throw new Error(e + " -- Relation: " + this.toResourceName() + ".related[" + relAttrKey + "]");
+                if (e instanceof assert.AssertionError) {
+                    e.message = e.message + " -- Relation: " + this.toResourceName() + ".related[" + relAttrKey + "]";
+                }
+                throw e;
             }
         }
         if (this.id) {
@@ -139,7 +148,7 @@ var Resource = /** @class */ (function () {
      * @param id
      */
     Resource.getCached = function (id) {
-        var cached = this.cache[id];
+        var cached = this.cache[String(id)];
         if (cached && cached.expires > Date.now()) {
             return cached;
         }
@@ -208,7 +217,7 @@ var Resource = /** @class */ (function () {
      */
     Resource.getDetailRoutePath = function (id, query) {
         var qs = querystring_1.stringify(query);
-        return this.endpoint + "/" + id + (query && Object.keys(query).length ? '?' : '') + qs;
+        return this.endpoint + "/" + String(id) + (query && Object.keys(query).length ? '?' : '') + qs;
     };
     /**
      * HTTP Get of resource's list route--returns a promise
@@ -218,10 +227,11 @@ var Resource = /** @class */ (function () {
     Resource.list = function (options) {
         if (options === void 0) { options = {}; }
         return this.client.list(this, options).then(function (result) {
-            if (options.getRelated) {
+            if (options.resolveRelated || options.resolveRelatedDeep) {
+                var deep_1 = !!options.resolveRelatedDeep;
                 var promises_1 = [];
                 result.resources.forEach(function (resource) {
-                    promises_1.push(resource.getRelated({ deep: true }));
+                    promises_1.push(resource.resolveRelated({ deep: deep_1 }));
                 });
                 return Promise.all(promises_1).then(function () { return result; });
             }
@@ -237,21 +247,22 @@ var Resource = /** @class */ (function () {
             // Do we want to use cache?
             if (!cached || options.useCache === false) {
                 // Set a hash key for the queue (keeps it organized by type+id)
-                var queueHashKey_1 = _this.getResourceHashKey(id);
+                var queueHashKey_1 = _this.getResourceHashKey(String(id));
                 // If we want to use cache and cache wasn't found...
                 if (!cached && !_this.queued[queueHashKey_1]) {
                     // We want to use cached and a resource with this ID hasn't been requested yet
                     _this.queued[queueHashKey_1] = [];
                     _this.client
-                        .detail(_this, id, options)
+                        .detail(_this, String(id), options)
                         .then(function (result) { return tslib_1.__awaiter(_this, void 0, void 0, function () {
-                        var correctResource;
+                        var correctResource, deep;
                         return tslib_1.__generator(this, function (_a) {
                             switch (_a.label) {
                                 case 0:
                                     correctResource = result.resources.pop();
-                                    if (!options.getRelated) return [3 /*break*/, 2];
-                                    return [4 /*yield*/, correctResource.getRelated({ deep: true })];
+                                    if (!(options.resolveRelated || options.resolveRelatedDeep)) return [3 /*break*/, 2];
+                                    deep = !!options.resolveRelatedDeep;
+                                    return [4 /*yield*/, correctResource.resolveRelated({ deep: deep })];
                                 case 1:
                                     _a.sent();
                                     _a.label = 2;
@@ -287,8 +298,9 @@ var Resource = /** @class */ (function () {
                 // We want to use cache, and we found it!
                 var cachedResource_1 = cached.resource;
                 // Get related resources?
-                if (options.getRelated) {
-                    cached.resource.getRelated({ deep: true }).then(function () { return resolve(cachedResource_1); });
+                if (options.resolveRelated || options.resolveRelatedDeep) {
+                    var deep = !!options.resolveRelatedDeep;
+                    cached.resource.resolveRelated({ deep: deep }).then(function () { return resolve(cachedResource_1); });
                 }
                 else {
                     resolve(cachedResource_1);
@@ -318,7 +330,7 @@ var Resource = /** @class */ (function () {
      */
     Resource.getResourceHashKey = function (resourceId) {
         assert(Boolean(resourceId), "Can't generate resource hash key with an empty Resource ID. Please ensure Resource is saved first.");
-        return Buffer.from(this.uuid + ":" + resourceId).toString('base64');
+        return Buffer.from(this.uuid + ":" + String(resourceId)).toString('base64');
     };
     Resource.extend = function (classProps) {
         // @todo Figure out typings here -- this works perfectly but typings are not happy
@@ -353,23 +365,23 @@ var Resource = /** @class */ (function () {
             var pieces_1 = key.split('.');
             var thisKey = String(pieces_1.shift());
             var thisValue = this.attributes[thisKey];
-            var RelatedManagerClass = this.managers[thisKey];
+            var manager = this.managers[thisKey];
             if (pieces_1.length > 0) {
                 // We need to go deeper...
-                if (!RelatedManagerClass) {
+                if (!manager) {
                     throw new exceptions.ImproperlyConfiguredError("No relation found on " + this.toResourceName() + "[" + thisKey + "]. Did you define it on " + this.toResourceName() + ".related?");
                 }
-                if (RelatedManagerClass.many) {
-                    return RelatedManagerClass.objects.map(function (thisResource) {
+                if (manager.many) {
+                    return manager.objects.map(function (thisResource) {
                         return thisResource.get(pieces_1.join('.'));
                     });
                 }
-                return RelatedManagerClass.objects[0].get(pieces_1.join('.'));
+                return manager.objects[0].get(pieces_1.join('.'));
             }
-            else if (Boolean(thisValue) && RelatedManagerClass) {
+            else if (Boolean(thisValue) && manager) {
                 // If the related manager is a single object and is inflated, auto resolve the resource.get(key) to that object
                 // @todo Maybe we should always return the manager? Or maybe we should always return the resolved object(s)? I am skeptical about this part
-                return !RelatedManagerClass.many && RelatedManagerClass.resolved ? RelatedManagerClass.objects[0] : RelatedManagerClass;
+                return !manager.many && manager.resolved ? manager.objects[0] : manager;
             }
             else {
                 return thisValue;
@@ -394,7 +406,7 @@ var Resource = /** @class */ (function () {
     };
     /**
      * Persist getting an attribute and get related keys until a key can be found (or not found)
-     * TypeError in get() will be thrown, we're just doing the getRelated() work for you...
+     * TypeError in get() will be thrown, we're just doing the resolveRelated() work for you...
      * @param key
      */
     Resource.prototype.getAsync = function (key) {
@@ -447,25 +459,10 @@ var Resource = /** @class */ (function () {
         var Ctor = this.getConstructor();
         if (!_.isEqual(currentValue, newValue)) {
             // Also resolve any related Resources back into foreign keys
-            if (newValue && newValue['getConstructor']) {
-                // newValue is a Resource instance
-                // Don't accept any resources that aren't saved
-                if (!newValue.id) {
-                    throw new exceptions.AttributeError("Can't append Related Resource on field \"" + key + "\": Related Resource " + newValue.getConstructor().name + " must be saved first");
-                }
-                // Create a RelatedManager
-                var RelatedCtor = newValue.getConstructor();
-                var RelatedManagerClass = Ctor.RelatedManagerClass;
-                var manager = new RelatedManagerClass(RelatedCtor, newValue);
-                newValue = manager.toJSON();
-                this.managers[key] = manager;
-            }
-            else if (newValue && this.managers[key]) {
+            if (newValue && this.managers[key] instanceof related_1.default) {
                 // newValue has an old manager -- needs a new one
-                // Create a RelatedManager
-                var RelatedCtor = newValue.to;
-                var RelatedManagerClass = Ctor.RelatedManagerClass;
-                var manager = new RelatedManagerClass(RelatedCtor, newValue);
+                // Create a new RelatedManager
+                var manager = this.managers[key].fromValue(newValue);
                 newValue = manager.toJSON();
                 this.managers[key] = manager;
             }
@@ -495,9 +492,9 @@ var Resource = /** @class */ (function () {
     };
     /**
      * Match all related values in `attributes[key]` where key is primary key of related instance defined in `Resource.related[key]`
-     * @param options GetRelatedDict
+     * @param options resolveRelatedDict
      */
-    Resource.prototype.getRelated = function (_a) {
+    Resource.prototype.resolveRelated = function (_a) {
         var _b = _a === void 0 ? {} : _a, _c = _b.deep, deep = _c === void 0 ? false : _c, _d = _b.managers, managers = _d === void 0 ? [] : _d;
         var promises = [];
         for (var resourceKey in this.managers) {
@@ -507,7 +504,7 @@ var Resource = /** @class */ (function () {
             var manager = this.managers[resourceKey];
             var promise = manager.resolve().then(function (objects) {
                 if (deep) {
-                    var otherPromises = objects.map(function (resource) { return resource.getRelated({ deep: deep, managers: managers }); });
+                    var otherPromises = objects.map(function (resource) { return resource.resolveRelated({ deep: deep, managers: managers }); });
                     return Promise.all(otherPromises).then(function () {
                         return void {};
                     });
@@ -521,12 +518,12 @@ var Resource = /** @class */ (function () {
         return Promise.all(promises).then(function () { return void {}; });
     };
     /**
-     * Same as `Resource.prototype.getRelated` except `options.deep` defaults to `true`
+     * Same as `Resource.prototype.resolveRelated` except `options.deep` defaults to `true`
      * @param options
      */
-    Resource.prototype.getRelatedDeep = function (options) {
+    Resource.prototype.resolveRelatedDeep = function (options) {
         var opts = Object.assign({ deep: true }, options || {});
-        return this.getRelated(opts);
+        return this.resolveRelated(opts);
     };
     /**
      * Get related class by key
@@ -647,7 +644,7 @@ var Resource = /** @class */ (function () {
         return this.get();
     };
     Resource.endpoint = '';
-    Resource.cacheMaxAge = 60;
+    Resource.cacheMaxAge = 10;
     Resource._cache = {};
     Resource._client = new client_1.DefaultClient('/');
     Resource.queued = {};
@@ -657,6 +654,7 @@ var Resource = /** @class */ (function () {
     Resource.RelatedManagerClass = related_1.default;
     Resource.validation = {};
     Resource.normalization = {};
+    Resource.aliases = {};
     Resource.fields = [];
     Resource.related = {};
     return Resource;
