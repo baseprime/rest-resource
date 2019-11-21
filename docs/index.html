@@ -68,7 +68,7 @@
 				<a href="#simplified-interface-for-consuming-rest-apis" id="simplified-interface-for-consuming-rest-apis" style="color: inherit; text-decoration: none;">
 					<h3>Simplified Interface for consuming REST APIs</h3>
 				</a>
-				<p>REST Resource is a library to make your life simpler when working with REST API Endpoints. It takes RESTful Resource/Service URIs and simplifies them into a Class that can be called with simple methods. <strong><a href="#acts-like-a-model">Think of it like a Model for REST API Endpoints.</a></strong></p>
+				<p>REST Resource is a library that makes your life simpler when working with REST API endpoints. It takes RESTful Resource/Service URIs and simplifies them into a Class that can be called with various built-in methods. <strong><a href="#acts-like-a-model">Think of it like a Model for REST API Endpoints.</a></strong></p>
 				<a href="#features" id="features" style="color: inherit; text-decoration: none;">
 					<h3>Features:</h3>
 				</a>
@@ -78,7 +78,7 @@
 						</ul>
 					</li>
 					<li><strong><a href="#related-resources">Related Resources</a></strong><ul>
-							<li>Quickly wire up your Resources and which ones they&#39;re related to, REST Resource takes care of the rest</li>
+							<li>Quickly wire up your Resources and which ones they&#39;re related to</li>
 						</ul>
 					</li>
 					<li><strong><a href="#related-attribute-lookups-with-getasync">Attribute resolution on Related Resources</a></strong><ul>
@@ -90,7 +90,9 @@
 							</li>
 						</ul>
 					</li>
-					<li><strong>Class-Based/Custom clients</strong><ul>
+					<li><strong><a href="#validation">Validation</a></strong></li>
+					<li><strong><a href="#attribute-normalization">Attribute Normalization</a></strong></li>
+					<li><strong>Class-Based/Complete Customization</strong><ul>
 							<li>Completely customize the way REST Resource works with your API<ul>
 									<li><a href="#the-client-class">The Client Class</a></li>
 									<li><a href="#customizing-relatedmanager">Customizing Related Manager</a></li>
@@ -98,6 +100,7 @@
 							</li>
 						</ul>
 					</li>
+					<li><strong>TypeScript Support</strong></li>
 				</ul>
 				<a href="#what-is-a-rest-resource" id="what-is-a-rest-resource" style="color: inherit; text-decoration: none;">
 					<h2>What is a REST Resource?</h2>
@@ -157,20 +160,15 @@ robin.save()
 				<a href="#cached-resource-resolution" id="cached-resource-resolution" style="color: inherit; text-decoration: none;">
 					<h1>Cached Resource Resolution</h1>
 				</a>
-				<p>REST Resource has a caching mechanism that sorts out which resources your app needs and resolves both requirements once that resource has been obtained. In the example below, only one request is made:</p>
+				<p>REST Resource has a caching mechanism that sorts out which resources your app needs and satisfies both requirements once that resource has been obtained, provided they&#39;re made within <code>n</code> seconds where <code>n</code> is a Resource&#39;s <code>cacheMaxAge</code>. Resource retrieval can be defined synchronously or asynchronously and REST Resource will still only need to make the initial request.</p>
+				<p>In the example below, only one request is made to <code>/users/123</code>, even though the data from that endpoint is required twice:</p>
 				<pre><code class="language-javascript"><span class="hljs-keyword">let</span> user = <span class="hljs-keyword">await</span> UserResource.detail(<span class="hljs-number">123</span>)
 <span class="hljs-comment">// GET /users/123</span>
 
 user.greet()
 <span class="hljs-comment">// =&gt; I am Arthur, King of the Britons!</span>
 
-<span class="hljs-keyword">let</span> sameuser = <span class="hljs-keyword">await</span> UserResource.detail(<span class="hljs-number">123</span>)
-<span class="hljs-comment">// Cache is still good, did not send GET to /users/123</span>
-
-sameuser.greet()
-<span class="hljs-comment">// =&gt; I am Arthur, King of the Britons!</span>
-
-<span class="hljs-built_in">console</span>.log(user === sameuser)
+<span class="hljs-built_in">console</span>.log(user === <span class="hljs-keyword">await</span> UserResource.detail(<span class="hljs-number">123</span>))
 <span class="hljs-comment">// =&gt; true</span></code></pre>
 				<p>If an object has been retrieved and is called upon from other related models, REST Resource will resolve cross-referenced lookups, provided they&#39;re made within <code>n</code> seconds where <code>n</code> is a Resource&#39;s <code>cacheMaxAge</code>. In the example below, notice the <code>groups</code> attribute contains an already-retrieved Group Resource:</p>
 				<pre><code class="language-javascript"><span class="hljs-keyword">let</span> arthur = <span class="hljs-keyword">await</span> UserResource.detail(<span class="hljs-number">123</span>)
@@ -203,6 +201,16 @@ sameuser.greet()
 <span class="hljs-comment">// GET /roles/2</span>
 <span class="hljs-comment">// GET /groups/2</span>
 <span class="hljs-comment">// Does not need to GET /groups/1</span></code></pre>
+				<p>Changing cache lifespan:</p>
+				<pre><code class="language-javascript"><span class="hljs-class"><span class="hljs-keyword">class</span> <span class="hljs-title">CustomResource</span> <span class="hljs-keyword">extends</span> <span class="hljs-title">Resource</span> </span>{
+    <span class="hljs-keyword">static</span> cacheMaxAge = <span class="hljs-number">60</span> <span class="hljs-comment">// Defaults to 10 seconds</span>
+    <span class="hljs-comment">// ...</span>
+}</code></pre>
+				<p>Turning cache off:</p>
+				<pre><code class="language-javascript"><span class="hljs-class"><span class="hljs-keyword">class</span> <span class="hljs-title">NoCacheResource</span> <span class="hljs-keyword">extends</span> <span class="hljs-title">Resource</span> </span>{
+    <span class="hljs-keyword">static</span> cacheMaxAge = <span class="hljs-number">-1</span>
+    <span class="hljs-comment">// ...</span>
+}</code></pre>
 				<a href="#related-resources" id="related-resources" style="color: inherit; text-decoration: none;">
 					<h1>Related Resources</h1>
 				</a>
@@ -258,7 +266,7 @@ sameuser.greet()
 <span class="hljs-comment">//        groups: [1, 2]</span>
 <span class="hljs-comment">//    }</span>
 
-<span class="hljs-keyword">let</span> manager = user.get(<span class="hljs-string">'groups'</span>) <span class="hljs-comment">// Many to many relationship</span>
+<span class="hljs-keyword">let</span> manager = user.rel(<span class="hljs-string">'groups'</span>) <span class="hljs-comment">// Many to many relationship</span>
 
 <span class="hljs-built_in">console</span>.log(manager.resolved)
 <span class="hljs-comment">// =&gt; false</span>
@@ -370,14 +378,13 @@ robin.delete()
 <span class="hljs-keyword">let</span> unknown = <span class="hljs-keyword">new</span> UserResource({ <span class="hljs-attr">groups</span>: [<span class="hljs-number">2</span>] })
 <span class="hljs-built_in">console</span>.log(unknown.get(<span class="hljs-string">'name'</span>))
 <span class="hljs-comment">// =&gt; Unknown User</span></code></pre>
-				<a href="#working-with-older-versions-of-node" id="working-with-older-versions-of-node" style="color: inherit; text-decoration: none;">
-					<h1>Working with older versions of Node</h1>
+				<a href="#working-with-older-versions-of-javascript-lt-es5" id="working-with-older-versions-of-javascript-lt-es5" style="color: inherit; text-decoration: none;">
+					<h1>Working with older versions of JavaScript &lt;= ES5</h1>
 				</a>
-				<p>If you aren&#39;t using a newer version of Node or TypeScript, you can use <code>Resource.extend</code> to define static members. For example:</p>
+				<p>You can use <code>Resource.extend</code> to define static members. For example:</p>
 				<pre><code class="language-javascript"><span class="hljs-keyword">const</span> UserResource = Resource.extend({
     <span class="hljs-attr">endpoint</span>: <span class="hljs-string">'/users'</span>,
-    <span class="hljs-attr">defaults</span>: {
-        <span class="hljs-attr">name</span>: <span class="hljs-string">'Unknown User'</span>
+    <span class="hljs-attr">related</span>: {
         <span class="hljs-comment">// ...etc</span>
     }
 })</code></pre>
@@ -442,7 +449,6 @@ CustomResource.client = <span class="hljs-keyword">new</span> CustomClient(<span
 
 <span class="hljs-class"><span class="hljs-keyword">class</span> <span class="hljs-title">CustomRelatedManager</span> <span class="hljs-keyword">extends</span> <span class="hljs-title">RelatedManager</span> </span>{
     batchSize: <span class="hljs-number">50</span> <span class="hljs-comment">// Only GET 50 related objects at a time (default: Infinity)</span>
-
     <span class="hljs-comment">/**
      * @param options Object (resolveRelated, etc.)
      * @returns Resource[] List of Resource instances
@@ -457,6 +463,150 @@ CustomResource.client = <span class="hljs-keyword">new</span> CustomClient(<span
     <span class="hljs-comment">// Define custom related manager here</span>
     <span class="hljs-keyword">static</span> RelatedManagerClass = CustomRelatedManager
 }</code></pre>
+				<a href="#validation" id="validation" style="color: inherit; text-decoration: none;">
+					<h1>Validation</h1>
+				</a>
+				<p>You can specify a validation object literal as a static member of any Resource class and run validations against any attribute. Validations are ran automatically when using <code>resource.save()</code>. Note: validation functions should throw <code>exceptions.ValidationError(field, message)</code></p>
+				<pre><code class="language-javascript"><span class="hljs-keyword">import</span> Resource <span class="hljs-keyword">from</span> <span class="hljs-string">'rest-resource'</span>
+
+<span class="hljs-function"><span class="hljs-keyword">function</span> <span class="hljs-title">phoneIsValid</span>(<span class="hljs-params">value, instance, ValidationError</span>) </span>{
+    <span class="hljs-keyword">let</span> regExp = <span class="hljs-regexp">/^[\+]?[(]?[0-9]{3}[)]?[-\s\.]?[0-9]{3}[-\s\.]?[0-9]{4,6}$/im</span>
+    <span class="hljs-keyword">if</span>(!regExp.test(value)) {
+        <span class="hljs-keyword">throw</span> <span class="hljs-keyword">new</span> ValidationError(<span class="hljs-string">'phone'</span>)
+    }
+}
+
+<span class="hljs-function"><span class="hljs-keyword">function</span> <span class="hljs-title">isFiveChars</span>(<span class="hljs-params">value, instance, ValidationError</span>) </span>{
+    <span class="hljs-keyword">return</span> <span class="hljs-built_in">String</span>(value).length &gt;= <span class="hljs-number">5</span>
+}
+
+<span class="hljs-function"><span class="hljs-keyword">function</span> <span class="hljs-title">isAlphaNumeric</span>(<span class="hljs-params">value, instance, ValidationError</span>) </span>{
+    <span class="hljs-keyword">return</span> <span class="hljs-regexp">/^[a-z0-9]+$/i</span>.test(value)
+}
+
+<span class="hljs-class"><span class="hljs-keyword">class</span> <span class="hljs-title">UserResource</span> <span class="hljs-keyword">extends</span> <span class="hljs-title">Resource</span> </span>{
+    <span class="hljs-keyword">static</span> endpoint = <span class="hljs-string">'/users'</span>
+    <span class="hljs-keyword">static</span> validation = {
+        <span class="hljs-attr">phone</span>: phoneIsValid,
+        <span class="hljs-attr">username</span>: [
+            isFiveChars,
+            isAlphaNumeric
+        ]
+    }
+}
+
+<span class="hljs-keyword">let</span> user = <span class="hljs-keyword">await</span> UserResource.detail(<span class="hljs-number">1</span>)
+
+user.set(<span class="hljs-string">'phone'</span>, <span class="hljs-string">'415-555-1234'</span>)
+user.validate()
+<span class="hljs-comment">// =&gt; []</span>
+user.set(<span class="hljs-string">'phone'</span>, <span class="hljs-string">'555555x1234'</span>)
+user.validate()
+<span class="hljs-comment">// =&gt; [{ ValidationError: phone: This field is not valid }]</span></code></pre>
+				<a href="#attribute-normalization" id="attribute-normalization" style="color: inherit; text-decoration: none;">
+					<h1>Attribute Normalization</h1>
+				</a>
+				<p>Whenever an attribute is defined, you can normalize its value into a desired output (think of it as a unidirectional serializer). The built-in normalizers are:</p>
+				<ul>
+					<li><code>StringNormalizer</code></li>
+					<li><code>NumberNormalizer</code></li>
+					<li><code>BooleanNormalizer</code></li>
+					<li><code>CurrencyNormalizer</code></li>
+				</ul>
+				<p>Attribute Normalizers can ensure that the values assigned to <code>resource.attributes[key]</code> (and subsequently the data being sent to the API) is consistent.</p>
+				<a href="#normalizing-inconsistent-properties" id="normalizing-inconsistent-properties" style="color: inherit; text-decoration: none;">
+					<h2>Normalizing Inconsistent Properties</h2>
+				</a>
+				<p>Attribute Normalization is particularly useful when trying to normalize inconsistent data <em>from</em> the API. The example below represents two responses from the API, one representing a <code>comment</code> object and a <code>post</code> object. Both objects are referencing a <code>user</code>. However, the value of <code>user</code> on each <code>comment</code> and <code>post</code> objects are inconsistent (one is a primary key, and one is an nested <code>user</code> object):</p>
+				<pre><code class="language-javascript"><span class="hljs-comment">// GET /comments/1</span>
+{
+    <span class="hljs-string">"content"</span>: <span class="hljs-string">"Nullam vel ultrices eros. Nullam at metus venenatis, bibendum lectus sed"</span>,
+    <span class="hljs-string">"post"</span>: <span class="hljs-number">1</span>,
+    <span class="hljs-string">"user"</span>: <span class="hljs-number">123</span>
+}
+
+<span class="hljs-comment">// GET /posts/1</span>
+{
+    <span class="hljs-string">"title"</span>: <span class="hljs-string">"Nullam nibh enim, ultrices quis"</span>,
+    <span class="hljs-string">"body"</span>: <span class="hljs-string">"Pellentesque ultrices augue eleifend augue posuere pretium. Nulla sodales turpis eget pretium efficitur."</span>,
+    <span class="hljs-string">"user"</span>: {
+        <span class="hljs-string">"id"</span>: <span class="hljs-number">123</span>,
+        <span class="hljs-string">"name"</span>: <span class="hljs-string">"King Arthur"</span>,
+        <span class="hljs-string">"weapon"</span>: <span class="hljs-string">"Sword"</span>,
+        <span class="hljs-string">"role"</span>: <span class="hljs-number">1</span>,
+        <span class="hljs-string">"groups"</span>: [<span class="hljs-number">1</span>]
+    }
+}</code></pre>
+				<p>You can use attribute normalization to solve this issue</p>
+				<pre><code class="language-javascript"><span class="hljs-keyword">import</span> Resource <span class="hljs-keyword">from</span> <span class="hljs-string">'rest-resource'</span>
+<span class="hljs-keyword">import</span> { NumberNormalizer } <span class="hljs-keyword">from</span> <span class="hljs-string">'rest-resource/dist/helpers/normalization'</span>
+
+<span class="hljs-class"><span class="hljs-keyword">class</span> <span class="hljs-title">PostResource</span> <span class="hljs-keyword">extends</span> <span class="hljs-title">Resource</span> </span>{
+    <span class="hljs-keyword">static</span> endpoint = <span class="hljs-string">'/posts'</span>
+
+    <span class="hljs-keyword">static</span> related = {
+        <span class="hljs-attr">user</span>: UserResource
+    }
+
+    <span class="hljs-keyword">static</span> normalization = {
+        <span class="hljs-attr">user</span>: <span class="hljs-keyword">new</span> NumberNormalizer()
+    }
+}
+
+<span class="hljs-class"><span class="hljs-keyword">class</span> <span class="hljs-title">CommentResource</span> <span class="hljs-keyword">extends</span> <span class="hljs-title">Resource</span> </span>{
+    <span class="hljs-keyword">static</span> endpoint = <span class="hljs-string">'/comments'</span>
+    <span class="hljs-keyword">static</span> related = {
+        <span class="hljs-attr">user</span>: UserResource,
+        <span class="hljs-attr">post</span>: PostResource
+    }
+
+    <span class="hljs-keyword">static</span> normalization = {
+        <span class="hljs-attr">user</span>: <span class="hljs-keyword">new</span> NumberNormalizer(),
+    }
+}
+
+<span class="hljs-keyword">let</span> post = <span class="hljs-keyword">await</span> PostResource.detail(<span class="hljs-number">1</span>)
+<span class="hljs-built_in">console</span>.log(post.attributes.user)
+<span class="hljs-comment">// =&gt; 123</span>
+
+<span class="hljs-keyword">let</span> comment = <span class="hljs-keyword">await</span> CommentResource.detail(<span class="hljs-number">1</span>)
+<span class="hljs-built_in">console</span>.log(comment.attributes.user)
+<span class="hljs-comment">// =&gt; 123</span></code></pre>
+				<p>You can also specify custom normalizer</p>
+				<pre><code class="language-javascript"><span class="hljs-class"><span class="hljs-keyword">class</span> <span class="hljs-title">PostResource</span> <span class="hljs-keyword">extends</span> <span class="hljs-title">Resource</span> </span>{
+    <span class="hljs-keyword">static</span> endpoint = <span class="hljs-string">'/posts'</span>
+
+    <span class="hljs-keyword">static</span> related = {
+        <span class="hljs-attr">user</span>: UserResource
+    }
+
+    <span class="hljs-keyword">static</span> normalization = {
+        <span class="hljs-attr">user</span>: {
+            <span class="hljs-attr">normalize</span>: <span class="hljs-function">(<span class="hljs-params">value</span>) =&gt;</span> {
+                <span class="hljs-comment">// Normalize and return new value</span>
+            }
+        }
+    }
+}</code></pre>
+				<p>You can also use the <code>normalizerFactory(normalizerClassName)</code> helper instead of importing all normalizer classes:</p>
+				<pre><code class="language-javascript"><span class="hljs-keyword">import</span> { normalizerFactory } <span class="hljs-keyword">from</span> <span class="hljs-string">'rest-resource/dist/helpers/normalization'</span>
+
+<span class="hljs-class"><span class="hljs-keyword">class</span> <span class="hljs-title">PostResource</span> <span class="hljs-keyword">extends</span> <span class="hljs-title">Resource</span> </span>{
+    <span class="hljs-keyword">static</span> endpoint = <span class="hljs-string">'/posts'</span>
+
+    <span class="hljs-keyword">static</span> related = {
+        <span class="hljs-attr">user</span>: UserResource
+    }
+
+    <span class="hljs-keyword">static</span> normalization = {
+        <span class="hljs-attr">user</span>: normalizerFactory(<span class="hljs-string">'NumberNormalizer'</span>)
+    }
+}</code></pre>
+				<a href="#further-reading" id="further-reading" style="color: inherit; text-decoration: none;">
+					<h1>Further Reading</h1>
+				</a>
+				<p>Please see <a href="https://htmlpreview.github.io/?https://raw.githubusercontent.com/baseprime/rest-resource/master/docs/classes/_index_.resource.html">Documentation</a></p>
+				<pre><code>npm <span class="hljs-keyword">run</span><span class="bash"> serve-docs</span></code></pre>
 			</div>
 		</div>
 		<div class="col-4 col-menu menu-sticky-wrap menu-highlight">

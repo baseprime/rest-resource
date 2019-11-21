@@ -49,7 +49,7 @@ export default class Resource {
      * Get a cached resource by ID
      * @param id
      */
-    static getCached<T extends typeof Resource>(this: T, id: string): CachedResource<InstanceType<T>> | undefined;
+    static getCached<T extends typeof Resource>(this: T, id: string | number): CachedResource<InstanceType<T>> | undefined;
     static getCachedAll<T extends typeof Resource>(this: T): CachedResource<InstanceType<T>>[];
     /**
      * Get HTTP client for a resource Class
@@ -79,21 +79,21 @@ export default class Resource {
      * @param id
      * @param query Querystring
      */
-    static getDetailRoutePath(id: string, query?: any): string;
+    static getDetailRoutePath(id: string | number, query?: any): string;
     /**
      * HTTP Get of resource's list route--returns a promise
      * @param options Options object
      * @returns Promise
      */
     static list<T extends typeof Resource>(this: T, options?: ListOpts): Promise<ResourceResponse<InstanceType<T>>>;
-    static detail<T extends typeof Resource>(this: T, id: string, options?: DetailOpts): Promise<InstanceType<T>>;
+    static detail<T extends typeof Resource>(this: T, id: string | number, options?: DetailOpts): Promise<InstanceType<T>>;
     static toResourceName(): string;
     static makeDefaultsObject(): any;
     /**
      * Unique resource hash key used for caching and organizing requests
      * @param resourceId
      */
-    static getResourceHashKey(resourceId: string): string;
+    static getResourceHashKey(resourceId: string | number): string;
     static extend<T, U>(this: U, classProps: T): U & T;
     /**
      * Set an attribute of Resource instance and apply getters/setters

@@ -148,7 +148,7 @@ var Resource = /** @class */ (function () {
      * @param id
      */
     Resource.getCached = function (id) {
-        var cached = this.cache[id];
+        var cached = this.cache[String(id)];
         if (cached && cached.expires > Date.now()) {
             return cached;
         }
@@ -217,7 +217,7 @@ var Resource = /** @class */ (function () {
      */
     Resource.getDetailRoutePath = function (id, query) {
         var qs = querystring_1.stringify(query);
-        return this.endpoint + "/" + id + (query && Object.keys(query).length ? '?' : '') + qs;
+        return this.endpoint + "/" + String(id) + (query && Object.keys(query).length ? '?' : '') + qs;
     };
     /**
      * HTTP Get of resource's list route--returns a promise
@@ -247,13 +247,13 @@ var Resource = /** @class */ (function () {
             // Do we want to use cache?
             if (!cached || options.useCache === false) {
                 // Set a hash key for the queue (keeps it organized by type+id)
-                var queueHashKey_1 = _this.getResourceHashKey(id);
+                var queueHashKey_1 = _this.getResourceHashKey(String(id));
                 // If we want to use cache and cache wasn't found...
                 if (!cached && !_this.queued[queueHashKey_1]) {
                     // We want to use cached and a resource with this ID hasn't been requested yet
                     _this.queued[queueHashKey_1] = [];
                     _this.client
-                        .detail(_this, id, options)
+                        .detail(_this, String(id), options)
                         .then(function (result) { return tslib_1.__awaiter(_this, void 0, void 0, function () {
                         var correctResource, deep;
                         return tslib_1.__generator(this, function (_a) {
@@ -330,7 +330,7 @@ var Resource = /** @class */ (function () {
      */
     Resource.getResourceHashKey = function (resourceId) {
         assert(Boolean(resourceId), "Can't generate resource hash key with an empty Resource ID. Please ensure Resource is saved first.");
-        return Buffer.from(this.uuid + ":" + resourceId).toString('base64');
+        return Buffer.from(this.uuid + ":" + String(resourceId)).toString('base64');
     };
     Resource.extend = function (classProps) {
         // @todo Figure out typings here -- this works perfectly but typings are not happy
@@ -644,7 +644,7 @@ var Resource = /** @class */ (function () {
         return this.get();
     };
     Resource.endpoint = '';
-    Resource.cacheMaxAge = 60;
+    Resource.cacheMaxAge = 10;
     Resource._cache = {};
     Resource._client = new client_1.DefaultClient('/');
     Resource.queued = {};
