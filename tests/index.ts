@@ -19,3 +19,37 @@ export class TestingClient extends DefaultClient {
 export const BaseTestingResource = Resource.extend({
     client: new TestingClient(`http://localhost:${TEST_PORT}`)
 })
+
+export const UserResource = BaseTestingResource.extend({
+    endpoint: '/users'
+})
+
+export const TodoResource = BaseTestingResource.extend({
+    endpoint: '/todos',
+    related: {
+        user: UserResource
+    }
+})
+
+export const PostResource = BaseTestingResource.extend({
+    endpoint: '/posts',
+    related: {
+        user: UserResource
+    }
+})
+
+export const GroupResource = BaseTestingResource.extend({
+    endpoint: '/groups',
+    related: {
+        owner: UserResource,
+        users: UserResource,
+        todos: TodoResource
+    }
+})
+
+export const CommentResource = BaseTestingResource.extend({
+    endpoint: '/comments',
+    related: {
+        post: PostResource
+    }
+})

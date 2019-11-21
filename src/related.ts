@@ -187,6 +187,11 @@ export default class RelatedManager<T extends typeof Resource = typeof Resource>
         this._objects[resource.id] = resource
     }
 
+    fromValue<T extends typeof RelatedManager>(this: InstanceType<T>, value: any): InstanceType<T> {
+        let Ctor = <T>this.constructor
+        return new Ctor(this.to, value) as InstanceType<T>
+    }
+
     /**
      * Getter -- get `this._objects` but make sure we've actually retrieved the objects first
      * Throws AttributeError if `this.resolve()` hasn't finished
@@ -206,6 +211,6 @@ export default class RelatedManager<T extends typeof Resource = typeof Resource>
     }
 
     toJSON() {
-        return this.value
+        return JSON.parse(JSON.stringify(this.value))
     }
 }

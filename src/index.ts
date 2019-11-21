@@ -11,7 +11,7 @@ const _ = require('lodash')
 
 export default class Resource {
     static endpoint: string = ''
-    static cacheMaxAge: number = 60
+    static cacheMaxAge: number = 10
     static _cache: any = {}
     static _client: DefaultClient = new DefaultClient('/')
     static _uuid: string
@@ -22,6 +22,7 @@ export default class Resource {
     static RelatedManagerClass: typeof RelatedManager = RelatedManager
     static validation: ValidatorDict = {}
     static normalization: NormalizerDict = {}
+    static aliases: Record<string, string> = {}
     static fields: string[] = []
     static related: RelatedDict = {}
     _attributes: Record<string, any> = {}
@@ -32,7 +33,6 @@ export default class Resource {
 
     constructor(attributes: any = {}, options: any = {}) {
         const Ctor = this.getConstructor()
-        const RelatedManagerCtor = Ctor.RelatedManagerClass
         if (typeof Ctor.client !== 'object') {
             throw new exceptions.ImproperlyConfiguredError("Resource can't be used without Client class instance")
         }
@@ -68,16 +68,28 @@ export default class Resource {
         // Create related managers
         for (let relAttrKey in Ctor.related) {
             let to = Ctor.related[relAttrKey]
-
-            if ('object' === typeof to) {
-                let relatedLiteral = to as RelatedLiteral
-                to = relatedLiteral.to
-            }
+            let sourceKey = relAttrKey
+            let attrAlias = undefined
 
             try {
-                this.managers[relAttrKey] = new RelatedManagerCtor(to, this._attributes[relAttrKey])
+                if ('object' === typeof to) {
+                    let relatedLiteral = to as RelatedLiteral
+                    to = relatedLiteral.to
+                }
+
+                let RelatedManagerCtor = to.RelatedManagerClass
+                let relatedManager = new RelatedManagerCtor(to, this._attributes[relAttrKey])
+                this.managers[sourceKey] = relatedManager
+
+                if (attrAlias) {
+                    this.managers[attrAlias] = relatedManager
+                }
             } catch (e) {
-                throw new Error(`${e} -- Relation: ${this.toResourceName()}.related[${relAttrKey}]`)
+                if (e instanceof assert.AssertionError) {
+                    e.message = `${e.message} -- Relation: ${this.toResourceName()}.related[${relAttrKey}]`
+                }
+
+                throw e
             }
         }
 
@@ -153,8 +165,8 @@ export default class Resource {
      * Get a cached resource by ID
      * @param id
      */
-    static getCached<T extends typeof Resource>(this: T, id: string): CachedResource<InstanceType<T>> | undefined {
-        const cached = this.cache[id]
+    static getCached<T extends typeof Resource>(this: T, id: string | number): CachedResource<InstanceType<T>> | undefined {
+        const cached = this.cache[String(id)]
         if (cached && cached.expires > Date.now()) {
             return cached as CachedResource<InstanceType<T>>
         }
@@ -219,9 +231,9 @@ export default class Resource {
      * @param id
      * @param query Querystring
      */
-    static getDetailRoutePath(id: string, query?: any): string {
+    static getDetailRoutePath(id: string | number, query?: any): string {
         let qs = stringify(query)
-        return `${this.endpoint}/${id}${query && Object.keys(query).length ? '?' : ''}${qs}`
+        return `${this.endpoint}/${String(id)}${query && Object.keys(query).length ? '?' : ''}${qs}`
     }
 
     /**
@@ -231,10 +243,11 @@ export default class Resource {
      */
     static list<T extends typeof Resource>(this: T, options: ListOpts = {}): Promise<ResourceResponse<InstanceType<T>>> {
         return this.client.list<T>(this as T, options).then((result) => {
-            if (options.getRelated) {
+            if (options.resolveRelated || options.resolveRelatedDeep) {
+                let deep = !!options.resolveRelatedDeep
                 const promises: Promise<void>[] = []
                 result.resources.forEach((resource) => {
-                    promises.push(resource.getRelated({ deep: true }))
+                    promises.push(resource.resolveRelated({ deep }))
                 })
                 return Promise.all(promises).then(() => result)
             }
@@ -242,26 +255,27 @@ export default class Resource {
         })
     }
 
-    static detail<T extends typeof Resource>(this: T, id: string, options: DetailOpts = {}): Promise<InstanceType<T>> {
+    static detail<T extends typeof Resource>(this: T, id: string | number, options: DetailOpts = {}): Promise<InstanceType<T>> {
         // Check cache first
         const cached: CachedResource<InstanceType<T>> = this.getCached(String(id))
         return new Promise((resolve, reject) => {
             // Do we want to use cache?
             if (!cached || options.useCache === false) {
                 // Set a hash key for the queue (keeps it organized by type+id)
-                const queueHashKey = this.getResourceHashKey(id)
+                const queueHashKey = this.getResourceHashKey(String(id))
                 // If we want to use cache and cache wasn't found...
                 if (!cached && !this.queued[queueHashKey]) {
                     // We want to use cached and a resource with this ID hasn't been requested yet
                     this.queued[queueHashKey] = []
                     this.client
-                        .detail(this, id, options)
+                        .detail(this, String(id), options)
                         .then(async (result) => {
                             // Get detail route and get resource from response
                             const correctResource = <InstanceType<T>>result.resources.pop()
                             // Get related resources?
-                            if (options.getRelated) {
-                                await correctResource.getRelated({ deep: true })
+                            if (options.resolveRelated || options.resolveRelatedDeep) {
+                                let deep = !!options.resolveRelatedDeep
+                                await correctResource.resolveRelated({ deep })
                             }
                             // Resolve first-sent request
                             setTimeout(() => resolve(correctResource), 0)
@@ -289,8 +303,9 @@ export default class Resource {
                 // We want to use cache, and we found it!
                 const cachedResource = cached.resource
                 // Get related resources?
-                if (options.getRelated) {
-                    cached.resource.getRelated({ deep: true }).then(() => resolve(cachedResource))
+                if (options.resolveRelated || options.resolveRelatedDeep) {
+                    let deep = !!options.resolveRelatedDeep
+                    cached.resource.resolveRelated({ deep }).then(() => resolve(cachedResource))
                 } else {
                     resolve(cachedResource)
                 }
@@ -319,9 +334,9 @@ export default class Resource {
      * Unique resource hash key used for caching and organizing requests
      * @param resourceId
      */
-    static getResourceHashKey(resourceId: string) {
+    static getResourceHashKey(resourceId: string | number) {
         assert(Boolean(resourceId), "Can't generate resource hash key with an empty Resource ID. Please ensure Resource is saved first.")
-        return Buffer.from(`${this.uuid}:${resourceId}`).toString('base64')
+        return Buffer.from(`${this.uuid}:${String(resourceId)}`).toString('base64')
     }
 
     static extend<T, U>(this: U, classProps: T): U & T {
@@ -353,25 +368,25 @@ export default class Resource {
             const pieces = key.split('.')
             const thisKey = String(pieces.shift())
             const thisValue = this.attributes[thisKey]
-            const RelatedManagerClass: RelatedManager = this.managers[thisKey]
+            const manager: RelatedManager = this.managers[thisKey]
 
             if (pieces.length > 0) {
                 // We need to go deeper...
-                if (!RelatedManagerClass) {
+                if (!manager) {
                     throw new exceptions.ImproperlyConfiguredError(`No relation found on ${this.toResourceName()}[${thisKey}]. Did you define it on ${this.toResourceName()}.related?`)
                 }
 
-                if (RelatedManagerClass.many) {
-                    return RelatedManagerClass.objects.map((thisResource) => {
+                if (manager.many) {
+                    return manager.objects.map((thisResource) => {
                         return thisResource.get(pieces.join('.'))
                     })
                 }
 
-                return RelatedManagerClass.objects[0].get(pieces.join('.'))
-            } else if (Boolean(thisValue) && RelatedManagerClass) {
+                return manager.objects[0].get(pieces.join('.'))
+            } else if (Boolean(thisValue) && manager) {
                 // If the related manager is a single object and is inflated, auto resolve the resource.get(key) to that object
                 // @todo Maybe we should always return the manager? Or maybe we should always return the resolved object(s)? I am skeptical about this part
-                return !RelatedManagerClass.many && RelatedManagerClass.resolved ? RelatedManagerClass.objects[0] : RelatedManagerClass
+                return !manager.many && manager.resolved ? manager.objects[0] : manager
             } else {
                 return thisValue
             }
@@ -394,7 +409,7 @@ export default class Resource {
 
     /**
      * Persist getting an attribute and get related keys until a key can be found (or not found)
-     * TypeError in get() will be thrown, we're just doing the getRelated() work for you...
+     * TypeError in get() will be thrown, we're just doing the resolveRelated() work for you...
      * @param key
      */
     getAsync(key: string): Promise<any> {
@@ -446,24 +461,10 @@ export default class Resource {
 
         if (!_.isEqual(currentValue, newValue)) {
             // Also resolve any related Resources back into foreign keys
-            if (newValue && newValue['getConstructor']) {
-                // newValue is a Resource instance
-                // Don't accept any resources that aren't saved
-                if (!newValue.id) {
-                    throw new exceptions.AttributeError(`Can't append Related Resource on field "${key}": Related Resource ${newValue.getConstructor().name} must be saved first`)
-                }
-                // Create a RelatedManager
-                let RelatedCtor = newValue.getConstructor()
-                let RelatedManagerClass = Ctor.RelatedManagerClass
-                let manager = new RelatedManagerClass(RelatedCtor, newValue)
-                newValue = manager.toJSON()
-                this.managers[key] = manager
-            } else if (newValue && this.managers[key]) {
+            if (newValue && this.managers[key] instanceof RelatedManager) {
                 // newValue has an old manager -- needs a new one
-                // Create a RelatedManager
-                let RelatedCtor = newValue.to
-                let RelatedManagerClass = Ctor.RelatedManagerClass
-                let manager = new RelatedManagerClass(RelatedCtor, newValue)
+                // Create a new RelatedManager
+                let manager = this.managers[key].fromValue(newValue)
                 newValue = manager.toJSON()
                 this.managers[key] = manager
             }
@@ -497,9 +498,9 @@ export default class Resource {
 
     /**
      * Match all related values in `attributes[key]` where key is primary key of related instance defined in `Resource.related[key]`
-     * @param options GetRelatedDict
+     * @param options resolveRelatedDict
      */
-    getRelated({ deep = false, managers = [] }: GetRelatedOpts = {}): Promise<void> {
+    resolveRelated({ deep = false, managers = [] }: resolveRelatedOpts = {}): Promise<void> {
         const promises: Promise<void>[] = []
         for (const resourceKey in this.managers) {
             if (Array.isArray(managers) && managers.length > 0 && !~managers.indexOf(resourceKey)) {
@@ -509,7 +510,7 @@ export default class Resource {
             const manager = this.managers[resourceKey]
             const promise = manager.resolve().then((objects) => {
                 if (deep) {
-                    let otherPromises = objects.map((resource) => resource.getRelated({ deep, managers }))
+                    let otherPromises = objects.map((resource) => resource.resolveRelated({ deep, managers }))
                     return Promise.all(otherPromises).then(() => {
                         return void {}
                     })
@@ -525,12 +526,12 @@ export default class Resource {
     }
 
     /**
-     * Same as `Resource.prototype.getRelated` except `options.deep` defaults to `true`
+     * Same as `Resource.prototype.resolveRelated` except `options.deep` defaults to `true`
      * @param options
      */
-    getRelatedDeep(options?: GetRelatedOpts): Promise<void> {
+    resolveRelatedDeep(options?: resolveRelatedOpts): Promise<void> {
         const opts = Object.assign({ deep: true }, options || {})
-        return this.getRelated(opts)
+        return this.resolveRelated(opts)
     }
 
     /**
@@ -666,8 +667,7 @@ export type RelatedDict = Record<string, typeof Resource | RelatedLiteral>
 
 export interface RelatedLiteral {
     to: typeof Resource
-    normalization?: ValidNormalizer
-    validation?: ValidatorDict
+    // To add later... Eg. "alias?: string"
 }
 
 export type ValidatorFunc = (value?: any, resource?: Resource, validationExceptionClass?: typeof exceptions.ValidationError) => void
@@ -686,15 +686,17 @@ export interface SaveOptions {
     fields?: any
 }
 
-export interface GetRelatedOpts {
+export interface resolveRelatedOpts {
     managers?: string[]
     deep?: boolean
 }
 
 export type ListOpts = RequestConfig & {
-    getRelated?: boolean
+    resolveRelated?: boolean
+    resolveRelatedDeep?: boolean
 }
 
 export type DetailOpts = RequestConfig & {
-    getRelated?: boolean
+    resolveRelated?: boolean
+    resolveRelatedDeep?: boolean
 }

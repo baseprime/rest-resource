@@ -72,11 +72,12 @@ export default class RelatedManager<T extends typeof Resource = typeof Resource>
      * @param resource Resource instance
      */
     add(resource: InstanceType<T>): void;
+    fromValue<T extends typeof RelatedManager>(this: InstanceType<T>, value: any): InstanceType<T>;
     /**
      * Getter -- get `this._objects` but make sure we've actually retrieved the objects first
      * Throws AttributeError if `this.resolve()` hasn't finished
      */
     readonly objects: InstanceType<T>[];
     readonly length: number;
-    toJSON(): RelatedObjectValue;
+    toJSON(): any;
 }
