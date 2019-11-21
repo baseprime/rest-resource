@@ -166,7 +166,7 @@ class UserResource extends Resource {
     }
 }
 
-let user = await UserResource.detail(321, { getRelated: true }) // Add getRelated: true here and it'll automatically resolve related resources
+let user = await UserResource.detail(321, { resolveRelated: true }) // Add resolveRelated: true here and it'll automatically resolve related resources
 // GET /users/321
 // GET /roles/<id>
 
@@ -208,7 +208,7 @@ let manager = user.get('groups') // Many to many relationship
 console.log(manager.resolved)
 // => false
 
-// REST Resource doesn't automatically resolve related lookups unless instructed by using getRelated
+// REST Resource doesn't automatically resolve related lookups unless instructed by using resolveRelated
 await manager.resolve()
 // GET /groups/1
 // GET /groups/2
@@ -220,12 +220,12 @@ console.log(manager.objects)
 // => [GroupResource, GroupResource]
 ```
 
-## Using `getRelated()` and `{ getRelated: true }`
-When using `ResourceClass.detail()` and `ResourceClass.list()`, one of the available options is `{ getRelated: true }`, which will automatically resolve related resources.
+## Using `resolveRelated()` and `{ resolveRelated: true }`
+When using `ResourceClass.detail()` and `ResourceClass.list()`, one of the available options is `{ resolveRelated: true }`, which will automatically resolve related resources.
 
-#### Using `{ getRelated: true }` with `ResourceClass.detail()`:
+#### Using `{ resolveRelated: true }` with `ResourceClass.detail()`:
 ```javascript
-let user = await UserResource.detail(654, { getRelated: true })
+let user = await UserResource.detail(654, { resolveRelated: true })
 // GET /users/654
 // GET /roles/2
 // GET /groups/1
@@ -234,9 +234,9 @@ console.log('groups.name')
 // => ["Some Group", "Another Group"]
 ```
 
-#### Using `{ getRelated: true }` with `ResourceClass.list()`:
+#### Using `{ resolveRelated: true }` with `ResourceClass.list()`:
 ```javascript
-let users = await UserResource.list({ getRelated: true })
+let users = await UserResource.list({ resolveRelated: true })
 // GET /users
 // GET /roles/1
 // GET /roles/2
@@ -244,12 +244,12 @@ let users = await UserResource.list({ getRelated: true })
 // GET /groups/2
 ```
 
-#### Using `resourceInstance.getRelated()`:
+#### Using `resourceInstance.resolveRelated()`:
 
 ```javascript
 let user = await UserResource.detail(654)
 // GET /users/654
-await user.getRelated()
+await user.resolveRelated()
 // GET /roles/2
 // GET /groups/1
 // GET /groups/2
@@ -259,12 +259,15 @@ Additionally, you can also provide a list of managers that you want to resolve:
 ```javascript
 let user = await UserResource.detail(654)
 // GET /users/654
-await user.getRelated(['role']) // Will ignore all but "role" field (notice the "groups" were not resolved)
+await user.resolveRelated(['role']) // Will ignore all but "role" field (notice the "groups" were not resolved)
 // GET /roles/2
 ```
 
+## Recursive resolving with `{ resolveRelatedDeep: true }`
+To resolve all attributes recursively, you can provide `{ resolveRelatedDeep: true }` instead. This will retrieve all related resources, and any other related resources attached to those resources. Be careful when using this option as it may cause performance issues.
+
 ## Related Attribute Lookups with `getAsync()`
-REST Resource automatically resolves properties from related lookups, then decides what fields it needs to call `resource.getRelated()`
+REST Resource automatically resolves properties from related lookups, then decides what fields it needs to call `resource.resolveRelated()`
 
 ```javascript
 let roger = await UserResource.detail(543)
@@ -404,7 +407,7 @@ class CustomRelatedManager extends RelatedManager {
     batchSize: 50 // Only GET 50 related objects at a time (default: Infinity)
 
     /**
-     * @param options Object (getRelated, etc.)
+     * @param options Object (resolveRelated, etc.)
      * @returns Resource[] List of Resource instances
      */
     resolve(options) {

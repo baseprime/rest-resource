@@ -1,42 +1,7 @@
 import { expect } from 'chai'
-import { BaseTestingResource } from '.'
+import { BaseTestingResource, PostResource, UserResource, GroupResource, TodoResource, CommentResource } from '..'
 
-const UserResource = BaseTestingResource.extend({
-    endpoint: '/users'
-})
-
-const TodoResource = BaseTestingResource.extend({
-    endpoint: '/todos',
-    related: {
-        user: UserResource
-    }
-})
-
-const PostResource = BaseTestingResource.extend({
-    endpoint: '/posts',
-    related: {
-        user: UserResource
-    }
-})
-
-const GroupResource = BaseTestingResource.extend({
-    endpoint: '/groups',
-    related: {
-        owner: UserResource,
-        users: UserResource,
-        todos: TodoResource
-    }
-})
-
-const CommentResource = BaseTestingResource.extend({
-    endpoint: '/comments',
-    related: {
-        post: PostResource
-    }
-})
-
-describe('', () => {
-
+describe('Resources', () => {
     it('correctly gets remote resource', async () => {
         let post = await PostResource.detail('1')
         expect(post.get('user')).to.exist
@@ -48,9 +13,9 @@ describe('', () => {
         let user = new UserResource({
             name: 'Test User',
             username: 'testing123321',
-            email: 'testuser@dsf.com'
+            email: 'testuser@dsf.com',
         })
-        
+
         await user.save()
         expect(user).to.have.property('id')
         expect(user.id).to.exist
@@ -58,13 +23,13 @@ describe('', () => {
 
         // Make sure save() only sends requested fields
         const CustomUserResource = UserResource.extend({
-            fields: ['username', 'email']
+            fields: ['username', 'email'],
         })
 
         let user2 = new CustomUserResource({
             name: 'Another Test User',
             username: 'testing54321',
-            email: 'anothertest@dsf.com'
+            email: 'anothertest@dsf.com',
         })
 
         let result = await user2.save()
@@ -79,7 +44,7 @@ describe('', () => {
             name: 'Another Another Test User',
             username: 'testing3212',
             email: 'anothertest2@dsf.com',
-            address: '123 Fake St'
+            address: '123 Fake St',
         })
 
         let result2 = await user3.save({ fields: ['address'] })
@@ -87,7 +52,7 @@ describe('', () => {
         expect(result2.response.data.email).to.be.undefined
         expect(result2.response.data.username).to.be.undefined
         expect(result2.response.data.name).to.be.undefined
-        
+
         // Make sure changes are unset after they're sent
         user3.set('city', 'San Francisco')
         expect(user3.changes).to.have.property('city')
@@ -99,7 +64,7 @@ describe('', () => {
         let changingUser = new UserResource({
             name: 'Test User',
             username: 'testing123321',
-            email: 'testuser@dsf.com'
+            email: 'testuser@dsf.com',
         })
 
         expect(changingUser.get('name')).to.equal('Test User')
@@ -110,49 +75,13 @@ describe('', () => {
         expect(changingUser.attributes.name).to.equal('Test User (Changed)')
         expect(typeof changingUser.get()).to.equal('object')
     })
-    
-    it('related object lookup has correct progression', async () => {
-        let post = await PostResource.detail('40')
-        expect(post.get('user')).to.be.string
-        let samePost = await PostResource.detail('40', { getRelated: true })
-        expect(samePost.get('user')).to.be.instanceOf(UserResource)
-    })
-
-    it('correctly gets related objects and managers', async () => {
-        let post = await PostResource.detail('1')
-        let group = await GroupResource.detail('1')
-        expect(post.get('user')).to.be.instanceOf(PostResource.RelatedManagerClass)
-        await post.getRelated()
-        await group.getRelated()
-        expect(post.get('user')).to.be.instanceOf(UserResource)
-        expect(post.managers.user).to.be.instanceOf(PostResource.RelatedManagerClass)
-        expect(group.managers.users).to.be.instanceOf(GroupResource.RelatedManagerClass)
-        expect(group.get('users')).to.be.instanceOf(GroupResource.RelatedManagerClass)
-        expect(group.managers.users.many).to.be.true
-        expect(group.managers.users.resolved).to.be.true
-        expect(group.managers.users.primaryKeys.length).to.equal(3)
-        expect(group.get('name')).to.equal('Test group')
-        expect(group.get('users.name')).to.be.instanceOf(Array)
-        expect(group.get('users').objects[0]).to.be.instanceOf(UserResource)
-    })
-
-    it('can get related objects recursively', async () => {
-        const requestTracker = CommentResource.client.requestTracker
-        // No requests to /comments yet -- so let's ensure request count is undefined
-        expect(requestTracker[CommentResource.getDetailRoutePath('250')]).to.be.undefined
-        // GET comment, but recursively get related objects too -- Comment #250 should be post #50 which should be user #5 (all of which shouldn't have been retrieved yet)
-        let comment = await CommentResource.detail('250', { getRelated: true })
-        let post = comment.get('post')
-        let user = post.get('user')
-        expect(post).to.be.instanceOf(PostResource)
-        expect(user).to.be.instanceOf(UserResource)
-    })
 
     it('correctly gets a cached related item', async () => {
-        let post = await PostResource.detail('1')
-        let cachedUser = UserResource.getCached(post.get('user.id'))
-        expect(cachedUser).to.be.string
-        expect(cachedUser.resource).to.be.instanceOf(UserResource)
+        let post = await PostResource.detail('1', { resolveRelated: true })
+        let cached = UserResource.getCached(post.get('user.id'))
+        expect(cached).to.be.string
+        expect(cached.resource).to.be.instanceOf(UserResource)
+        expect(await PostResource.detail('1') === post).to.be.true
         // Repeatedly GET /posts/1 ...
         await PostResource.detail('1')
         await PostResource.detail('1')
@@ -169,7 +98,7 @@ describe('', () => {
         expect(await post.getAsync('user.propDoesNotExist')).to.be.undefined
         try {
             await post.getAsync('user.nested.propDoesNotExist')
-        } catch(e) {
+        } catch (e) {
             expect(e.name).to.equal('ImproperlyConfiguredError')
         }
     })
@@ -194,22 +123,22 @@ describe('', () => {
     })
 
     it('cross-relating resources reference single resource by cache key', async () => {
-        let group = await GroupResource.detail('1', { getRelated: true })
+        let group = await GroupResource.detail('1', { resolveRelatedDeep: true })
         // ...At this point, group has a cached user (ID 1)
-        let user = await UserResource.detail('1', { getRelated: true })
+        let user = await UserResource.detail('1', { resolveRelatedDeep: true })
         // And getting the user again will yield the same exact user in memory stored at cache[cacheKey] address
         expect(group.managers.users.objects[0] === user).to.be.true
     })
 
-    it('handles empty values correctly', async() => {
+    it('handles empty values correctly', async () => {
         // Custom group resource
         const CustomGroupResource = BaseTestingResource.extend({
             endpoint: '/groups',
             related: {
                 todos: TodoResource,
                 users: UserResource,
-                owner: UserResource
-            }
+                owner: UserResource,
+            },
         })
         // ...that is created with empty lists and some emptyish values on related field
         const someGroup = new CustomGroupResource({
@@ -217,39 +146,21 @@ describe('', () => {
             // This is what we're testing
             users: [], // empty list
             owner: null, // null
-            todos: undefined
+            todos: undefined,
         })
-        
+
         expect(someGroup.get('owner')).to.be.null
         expect(someGroup.get('users')).to.be.instanceOf(CustomGroupResource.RelatedManagerClass)
         expect(someGroup.get('users').objects).to.be.empty
         expect(someGroup.get('todos')).to.be.undefined
     })
 
-    it('managers next() all() and resolve() work correctly', async () => {
-        const group = await GroupResource.detail('2')
-        const todosManager = group.managers.todos
-        const originalBatchSize = todosManager.batchSize
-        const thisBatchSize = 20
-        const expectedTodosInGroup = 90
-        const compareIDOfTodoOnFirstPage = String(thisBatchSize + 1)
-        const compareIDOfTodoOnLastPage = String(expectedTodosInGroup)
-        todosManager.batchSize = thisBatchSize
-        expect(todosManager.length).to.equal(expectedTodosInGroup) // If this returns false, make sure the group ID 2 listed in fixtures.json has exactly 90 IDs in it!
-        expect(GroupResource.client.requestTracker[TodoResource.getDetailRoutePath(compareIDOfTodoOnFirstPage)]).to.be.undefined
-        // Calling resolve() should only get the first page
-        await todosManager.resolve()
-        expect(GroupResource.client.requestTracker[TodoResource.getDetailRoutePath(compareIDOfTodoOnFirstPage)]).to.equal(1)
-        expect(GroupResource.client.requestTracker[TodoResource.getDetailRoutePath(compareIDOfTodoOnLastPage)]).to.be.undefined
-        await todosManager.next()
-        expect(GroupResource.client.requestTracker[TodoResource.getDetailRoutePath(compareIDOfTodoOnLastPage)]).to.be.undefined
-        await todosManager.next()
-        expect(GroupResource.client.requestTracker[TodoResource.getDetailRoutePath(compareIDOfTodoOnLastPage)]).to.be.undefined
-        // Now that we've retrieved a few pages, compareIDOfTodoOnLastPage should still not've been retrieved. Now we'll use all() to get the rest
-        await todosManager.all()
-        // ...and assert that compareIDOfTodoOnLastPage is now loaded
-        expect(GroupResource.client.requestTracker[TodoResource.getDetailRoutePath(compareIDOfTodoOnLastPage)]).to.equal(1)
-        // Reset batch size for later tests
-        todosManager.batchSize = originalBatchSize
+    it('correctly lists remote resources', async () => {
+        const PostResourceDupe = PostResource.extend({})
+        let result = await PostResourceDupe.list()
+        result.resources.forEach((post) => {
+            expect(post instanceof PostResourceDupe).to.be.true
+            expect(post.id).to.exist
+        })
     })
 })

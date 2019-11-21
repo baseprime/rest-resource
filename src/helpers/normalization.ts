@@ -15,6 +15,7 @@ export function normalizerFactory<T extends string>(name: T, options: BaseNormal
 export class BaseNormalizer {
     normalizeTo: Function = String
     uniqueKey: string = 'id'
+    nullable: boolean = true
 
     constructor({ uniqueKey = 'id' }: BaseNormalizerOptions = {}) {
         this.uniqueKey = uniqueKey
@@ -31,7 +32,9 @@ export class BaseNormalizer {
     normalize(value: any): any {
         let Ctor = this.getType(value)
 
-        if (!Ctor) {
+        if (!Ctor && !this.nullable) {
+            return this.normalizeTo()
+        } else if (!Ctor) {
             return value
         }
 
@@ -44,7 +47,7 @@ export class BaseNormalizer {
         } else if (Ctor === Array) {
             return value.map((item: any) => this.normalize(item))
         } else if (Ctor === Boolean) {
-            return Boolean(value) ? 'True' : ''
+            return Boolean(value) ? 'true' : ''
         } else {
             return this.normalizeTo(value)
         }
@@ -54,16 +57,20 @@ export class BaseNormalizer {
 export class StringNormalizer extends BaseNormalizer {}
 
 export class NumberNormalizer extends BaseNormalizer {
+    nullable = false
     normalizeTo = Number
 }
 
 export class BooleanNormalizer extends StringNormalizer {
+    nullable = false
     normalizeTo = Boolean
 }
 
 export class CurrencyNormalizer extends NumberNormalizer {
     normalize(value: any): string | string[] {
-        return super.normalize(value).toFixed(2)
+        let superVal = super.normalize(value)
+        let intermediateVal = [].concat(superVal).map((val) => Number(val).toFixed(2))
+        return Array.isArray(superVal) ? intermediateVal : intermediateVal.shift()
     }
 }
 
