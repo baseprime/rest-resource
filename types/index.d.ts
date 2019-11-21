@@ -1,6 +1,6 @@
 import { DefaultClient, RequestConfig, ResourceResponse } from './client';
 import RelatedManager from './related';
-import { NormalizerDict, ValidNormalizer } from './helpers/normalization';
+import { NormalizerDict } from './helpers/normalization';
 import * as exceptions from './exceptions';
 export default class Resource {
     static endpoint: string;
@@ -15,6 +15,7 @@ export default class Resource {
     static RelatedManagerClass: typeof RelatedManager;
     static validation: ValidatorDict;
     static normalization: NormalizerDict;
+    static aliases: Record<string, string>;
     static fields: string[];
     static related: RelatedDict;
     _attributes: Record<string, any>;
@@ -110,7 +111,7 @@ export default class Resource {
     get(key?: string): any;
     /**
      * Persist getting an attribute and get related keys until a key can be found (or not found)
-     * TypeError in get() will be thrown, we're just doing the getRelated() work for you...
+     * TypeError in get() will be thrown, we're just doing the resolveRelated() work for you...
      * @param key
      */
     getAsync(key: string): Promise<any>;
@@ -131,14 +132,14 @@ export default class Resource {
     getConstructor<T extends typeof Resource>(): T;
     /**
      * Match all related values in `attributes[key]` where key is primary key of related instance defined in `Resource.related[key]`
-     * @param options GetRelatedDict
+     * @param options resolveRelatedDict
      */
-    getRelated({ deep, managers }?: GetRelatedOpts): Promise<void>;
+    resolveRelated({ deep, managers }?: resolveRelatedOpts): Promise<void>;
     /**
-     * Same as `Resource.prototype.getRelated` except `options.deep` defaults to `true`
+     * Same as `Resource.prototype.resolveRelated` except `options.deep` defaults to `true`
      * @param options
      */
-    getRelatedDeep(options?: GetRelatedOpts): Promise<void>;
+    resolveRelatedDeep(options?: resolveRelatedOpts): Promise<void>;
     /**
      * Get related class by key
      * @param key
@@ -166,8 +167,6 @@ export default class Resource {
 export declare type RelatedDict = Record<string, typeof Resource | RelatedLiteral>;
 export interface RelatedLiteral {
     to: typeof Resource;
-    normalization?: ValidNormalizer;
-    validation?: ValidatorDict;
 }
 export declare type ValidatorFunc = (value?: any, resource?: Resource, validationExceptionClass?: typeof exceptions.ValidationError) => void;
 export declare type ValidatorDict = Record<string, ValidatorFunc | ValidatorFunc[]>;
@@ -181,13 +180,15 @@ export interface SaveOptions {
     force?: boolean;
     fields?: any;
 }
-export interface GetRelatedOpts {
+export interface resolveRelatedOpts {
     managers?: string[];
     deep?: boolean;
 }
 export declare type ListOpts = RequestConfig & {
-    getRelated?: boolean;
+    resolveRelated?: boolean;
+    resolveRelatedDeep?: boolean;
 };
 export declare type DetailOpts = RequestConfig & {
-    getRelated?: boolean;
+    resolveRelated?: boolean;
+    resolveRelatedDeep?: boolean;
 };

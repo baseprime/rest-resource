@@ -197,6 +197,10 @@ var RelatedManager = /** @class */ (function () {
         this.value.push(value);
         this._objects[resource.id] = resource;
     };
+    RelatedManager.prototype.fromValue = function (value) {
+        var Ctor = this.constructor;
+        return new Ctor(this.to, value);
+    };
     Object.defineProperty(RelatedManager.prototype, "objects", {
         /**
          * Getter -- get `this._objects` but make sure we've actually retrieved the objects first
@@ -220,7 +224,7 @@ var RelatedManager = /** @class */ (function () {
         configurable: true
     });
     RelatedManager.prototype.toJSON = function () {
-        return this.value;
+        return JSON.parse(JSON.stringify(this.value));
     };
     return RelatedManager;
 }());

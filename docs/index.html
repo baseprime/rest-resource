@@ -82,7 +82,7 @@
 						</ul>
 					</li>
 					<li><strong><a href="#related-attribute-lookups-with-getasync">Attribute resolution on Related Resources</a></strong><ul>
-							<li>Get attributes on related resources as easily as:<pre><code class="language-javascript"><span class="hljs-keyword">await</span> resource.attr(<span class="hljs-string">'user.address.city.name'</span>)
+							<li>Get attributes on related resources as easily as:<pre><code class="language-javascript"><span class="hljs-keyword">await</span> resource.getAsync(<span class="hljs-string">'user.address.city.name'</span>)
 <span class="hljs-comment">// GET /users/1</span>
 <span class="hljs-comment">// GET /addresses/1</span>
 <span class="hljs-comment">// GET /cities/1</span>
@@ -223,7 +223,7 @@ sameuser.greet()
     }
 }
 
-<span class="hljs-keyword">let</span> user = <span class="hljs-keyword">await</span> UserResource.detail(<span class="hljs-number">321</span>, { <span class="hljs-attr">getRelated</span>: <span class="hljs-literal">true</span> }) <span class="hljs-comment">// Add getRelated: true here and it'll automatically resolve related resources</span>
+<span class="hljs-keyword">let</span> user = <span class="hljs-keyword">await</span> UserResource.detail(<span class="hljs-number">321</span>, { <span class="hljs-attr">resolveRelated</span>: <span class="hljs-literal">true</span> }) <span class="hljs-comment">// Add resolveRelated: true here and it'll automatically resolve related resources</span>
 <span class="hljs-comment">// GET /users/321</span>
 <span class="hljs-comment">// GET /roles/&lt;id&gt;</span>
 
@@ -263,7 +263,7 @@ sameuser.greet()
 <span class="hljs-built_in">console</span>.log(manager.resolved)
 <span class="hljs-comment">// =&gt; false</span>
 
-<span class="hljs-comment">// REST Resource doesn't automatically resolve related lookups unless instructed by using getRelated</span>
+<span class="hljs-comment">// REST Resource doesn't automatically resolve related lookups unless instructed by using resolveRelated</span>
 <span class="hljs-keyword">await</span> manager.resolve()
 <span class="hljs-comment">// GET /groups/1</span>
 <span class="hljs-comment">// GET /groups/2</span>
@@ -273,47 +273,51 @@ sameuser.greet()
 
 <span class="hljs-built_in">console</span>.log(manager.objects)
 <span class="hljs-comment">// =&gt; [GroupResource, GroupResource]</span></code></pre>
-				<a href="#using-codegetrelatedcode-and-code-getrelated-true-code" id="using-codegetrelatedcode-and-code-getrelated-true-code" style="color: inherit; text-decoration: none;">
-					<h2>Using <code>getRelated()</code> and <code>{ getRelated: true }</code></h2>
+				<a href="#using-coderesolverelatedcode-and-code-resolverelated-true-code" id="using-coderesolverelatedcode-and-code-resolverelated-true-code" style="color: inherit; text-decoration: none;">
+					<h2>Using <code>resolveRelated()</code> and <code>{ resolveRelated: true }</code></h2>
 				</a>
-				<p>When using <code>ResourceClass.detail()</code> and <code>ResourceClass.list()</code>, one of the available options is <code>{ getRelated: true }</code>, which will automatically resolve related resources.</p>
-				<a href="#using-code-getrelated-true-code-with-coderesourceclassdetailcode" id="using-code-getrelated-true-code-with-coderesourceclassdetailcode" style="color: inherit; text-decoration: none;">
-					<h4>Using <code>{ getRelated: true }</code> with <code>ResourceClass.detail()</code>:</h4>
+				<p>When using <code>ResourceClass.detail()</code> and <code>ResourceClass.list()</code>, one of the available options is <code>{ resolveRelated: true }</code>, which will automatically resolve related resources.</p>
+				<a href="#using-code-resolverelated-true-code-with-coderesourceclassdetailcode" id="using-code-resolverelated-true-code-with-coderesourceclassdetailcode" style="color: inherit; text-decoration: none;">
+					<h4>Using <code>{ resolveRelated: true }</code> with <code>ResourceClass.detail()</code>:</h4>
 				</a>
-				<pre><code class="language-javascript"><span class="hljs-keyword">let</span> user = <span class="hljs-keyword">await</span> UserResource.detail(<span class="hljs-number">654</span>, { <span class="hljs-attr">getRelated</span>: <span class="hljs-literal">true</span> })
+				<pre><code class="language-javascript"><span class="hljs-keyword">let</span> user = <span class="hljs-keyword">await</span> UserResource.detail(<span class="hljs-number">654</span>, { <span class="hljs-attr">resolveRelated</span>: <span class="hljs-literal">true</span> })
 <span class="hljs-comment">// GET /users/654</span>
 <span class="hljs-comment">// GET /roles/2</span>
 <span class="hljs-comment">// GET /groups/1</span>
 <span class="hljs-comment">// GET /groups/2</span>
 <span class="hljs-built_in">console</span>.log(<span class="hljs-string">'groups.name'</span>)
 <span class="hljs-comment">// =&gt; ["Some Group", "Another Group"]</span></code></pre>
-				<a href="#using-code-getrelated-true-code-with-coderesourceclasslistcode" id="using-code-getrelated-true-code-with-coderesourceclasslistcode" style="color: inherit; text-decoration: none;">
-					<h4>Using <code>{ getRelated: true }</code> with <code>ResourceClass.list()</code>:</h4>
+				<a href="#using-code-resolverelated-true-code-with-coderesourceclasslistcode" id="using-code-resolverelated-true-code-with-coderesourceclasslistcode" style="color: inherit; text-decoration: none;">
+					<h4>Using <code>{ resolveRelated: true }</code> with <code>ResourceClass.list()</code>:</h4>
 				</a>
-				<pre><code class="language-javascript"><span class="hljs-keyword">let</span> users = <span class="hljs-keyword">await</span> UserResource.list({ <span class="hljs-attr">getRelated</span>: <span class="hljs-literal">true</span> })
+				<pre><code class="language-javascript"><span class="hljs-keyword">let</span> users = <span class="hljs-keyword">await</span> UserResource.list({ <span class="hljs-attr">resolveRelated</span>: <span class="hljs-literal">true</span> })
 <span class="hljs-comment">// GET /users</span>
 <span class="hljs-comment">// GET /roles/1</span>
 <span class="hljs-comment">// GET /roles/2</span>
 <span class="hljs-comment">// GET /groups/1</span>
 <span class="hljs-comment">// GET /groups/2</span></code></pre>
-				<a href="#using-coderesourceinstancegetrelatedcode" id="using-coderesourceinstancegetrelatedcode" style="color: inherit; text-decoration: none;">
-					<h4>Using <code>resourceInstance.getRelated()</code>:</h4>
+				<a href="#using-coderesourceinstanceresolverelatedcode" id="using-coderesourceinstanceresolverelatedcode" style="color: inherit; text-decoration: none;">
+					<h4>Using <code>resourceInstance.resolveRelated()</code>:</h4>
 				</a>
 				<pre><code class="language-javascript"><span class="hljs-keyword">let</span> user = <span class="hljs-keyword">await</span> UserResource.detail(<span class="hljs-number">654</span>)
 <span class="hljs-comment">// GET /users/654</span>
-<span class="hljs-keyword">await</span> user.getRelated()
+<span class="hljs-keyword">await</span> user.resolveRelated()
 <span class="hljs-comment">// GET /roles/2</span>
 <span class="hljs-comment">// GET /groups/1</span>
 <span class="hljs-comment">// GET /groups/2</span></code></pre>
 				<p>Additionally, you can also provide a list of managers that you want to resolve:</p>
 				<pre><code class="language-javascript"><span class="hljs-keyword">let</span> user = <span class="hljs-keyword">await</span> UserResource.detail(<span class="hljs-number">654</span>)
 <span class="hljs-comment">// GET /users/654</span>
-<span class="hljs-keyword">await</span> user.getRelated([<span class="hljs-string">'role'</span>]) <span class="hljs-comment">// Will ignore all but "role" field (notice the "groups" were not resolved)</span>
+<span class="hljs-keyword">await</span> user.resolveRelated([<span class="hljs-string">'role'</span>]) <span class="hljs-comment">// Will ignore all but "role" field (notice the "groups" were not resolved)</span>
 <span class="hljs-comment">// GET /roles/2</span></code></pre>
+				<a href="#recursive-resolving-with-code-resolverelateddeep-true-code" id="recursive-resolving-with-code-resolverelateddeep-true-code" style="color: inherit; text-decoration: none;">
+					<h2>Recursive resolving with <code>{ resolveRelatedDeep: true }</code></h2>
+				</a>
+				<p>To resolve all attributes recursively, you can provide <code>{ resolveRelatedDeep: true }</code> instead. This will retrieve all related resources, and any other related resources attached to those resources. Be careful when using this option as it may cause performance issues.</p>
 				<a href="#related-attribute-lookups-with-codegetasynccode" id="related-attribute-lookups-with-codegetasynccode" style="color: inherit; text-decoration: none;">
 					<h2>Related Attribute Lookups with <code>getAsync()</code></h2>
 				</a>
-				<p>REST Resource automatically resolves properties from related lookups, then decides what fields it needs to call <code>resource.getRelated()</code></p>
+				<p>REST Resource automatically resolves properties from related lookups, then decides what fields it needs to call <code>resource.resolveRelated()</code></p>
 				<pre><code class="language-javascript"><span class="hljs-keyword">let</span> roger = <span class="hljs-keyword">await</span> UserResource.detail(<span class="hljs-number">543</span>)
 <span class="hljs-comment">// GET /users/543</span>
 
@@ -440,31 +444,7 @@ CustomResource.client = <span class="hljs-keyword">new</span> CustomClient(<span
     batchSize: <span class="hljs-number">50</span> <span class="hljs-comment">// Only GET 50 related objects at a time (default: Infinity)</span>
 
     <span class="hljs-comment">/**
-     * @param options Object (getRelated, etc.)
-     * @returns Resource[] List of Resource instances
-     */</span>
-    resolve(options) {
-        <span class="hljs-comment">// etc</span>
-    }
-}
-
-<span class="hljs-class"><span class="hljs-keyword">class</span> <span class="hljs-title">UserResource</span> <span class="hljs-keyword">extends</span> <span class="hljs-title">Resource</span> </span>{
-    <span class="hljs-keyword">static</span> endpoint = <span class="hljs-string">'/users'</span>
-    <span class="hljs-comment">// Define custom related manager here</span>
-    <span class="hljs-keyword">static</span> RelatedManagerClass = CustomRelatedManager
-}</code></pre>
-				<a href="#attribute-formatting" id="attribute-formatting" style="color: inherit; text-decoration: none;">
-					<h1>Attribute Formatting</h1>
-				</a>
-				<p>Whenever an attribute is set, you can specify a </p>
-				<pre><code class="language-javascript"><span class="hljs-keyword">import</span> Resource <span class="hljs-keyword">from</span> <span class="hljs-string">'rest-resource'</span>
-<span class="hljs-keyword">import</span> RelatedManager <span class="hljs-keyword">from</span> <span class="hljs-string">'rest-resource/dist/related'</span>
-
-<span class="hljs-class"><span class="hljs-keyword">class</span> <span class="hljs-title">CustomRelatedManager</span> <span class="hljs-keyword">extends</span> <span class="hljs-title">RelatedManager</span> </span>{
-    batchSize: <span class="hljs-number">50</span> <span class="hljs-comment">// Only GET 50 related objects at a time (default: Infinity)</span>
-
-    <span class="hljs-comment">/**
-     * @param options Object (getRelated, etc.)
+     * @param options Object (resolveRelated, etc.)
      * @returns Resource[] List of Resource instances
      */</span>
     resolve(options) {

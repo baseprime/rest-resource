@@ -22,6 +22,7 @@ var BaseNormalizer = /** @class */ (function () {
         var _b = (_a === void 0 ? {} : _a).uniqueKey, uniqueKey = _b === void 0 ? 'id' : _b;
         this.normalizeTo = String;
         this.uniqueKey = 'id';
+        this.nullable = true;
         this.uniqueKey = uniqueKey;
     }
     BaseNormalizer.prototype.getType = function (value) {
@@ -33,7 +34,10 @@ var BaseNormalizer = /** @class */ (function () {
     BaseNormalizer.prototype.normalize = function (value) {
         var _this = this;
         var Ctor = this.getType(value);
-        if (!Ctor) {
+        if (!Ctor && !this.nullable) {
+            return this.normalizeTo();
+        }
+        else if (!Ctor) {
             return value;
         }
         if (Ctor === this.normalizeTo) {
@@ -49,7 +53,7 @@ var BaseNormalizer = /** @class */ (function () {
             return value.map(function (item) { return _this.normalize(item); });
         }
         else if (Ctor === Boolean) {
-            return Boolean(value) ? 'True' : '';
+            return Boolean(value) ? 'true' : '';
         }
         else {
             return this.normalizeTo(value);
@@ -70,6 +74,7 @@ var NumberNormalizer = /** @class */ (function (_super) {
     tslib_1.__extends(NumberNormalizer, _super);
     function NumberNormalizer() {
         var _this = _super !== null && _super.apply(this, arguments) || this;
+        _this.nullable = false;
         _this.normalizeTo = Number;
         return _this;
     }
@@ -80,6 +85,7 @@ var BooleanNormalizer = /** @class */ (function (_super) {
     tslib_1.__extends(BooleanNormalizer, _super);
     function BooleanNormalizer() {
         var _this = _super !== null && _super.apply(this, arguments) || this;
+        _this.nullable = false;
         _this.normalizeTo = Boolean;
         return _this;
     }
@@ -92,7 +98,9 @@ var CurrencyNormalizer = /** @class */ (function (_super) {
         return _super !== null && _super.apply(this, arguments) || this;
     }
     CurrencyNormalizer.prototype.normalize = function (value) {
-        return _super.prototype.normalize.call(this, value).toFixed(2);
+        var superVal = _super.prototype.normalize.call(this, value);
+        var intermediateVal = [].concat(superVal).map(function (val) { return Number(val).toFixed(2); });
+        return Array.isArray(superVal) ? intermediateVal : intermediateVal.shift();
     };
     return CurrencyNormalizer;
 }(NumberNormalizer));
