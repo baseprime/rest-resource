@@ -11,7 +11,7 @@ const _ = require('lodash')
 
 export default class Resource {
     static endpoint: string = ''
-    static cacheMaxAge: number = 60
+    static cacheMaxAge: number = 10
     static _cache: any = {}
     static _client: DefaultClient = new DefaultClient('/')
     static _uuid: string
@@ -165,8 +165,8 @@ export default class Resource {
      * Get a cached resource by ID
      * @param id
      */
-    static getCached<T extends typeof Resource>(this: T, id: string): CachedResource<InstanceType<T>> | undefined {
-        const cached = this.cache[id]
+    static getCached<T extends typeof Resource>(this: T, id: string | number): CachedResource<InstanceType<T>> | undefined {
+        const cached = this.cache[String(id)]
         if (cached && cached.expires > Date.now()) {
             return cached as CachedResource<InstanceType<T>>
         }
@@ -231,9 +231,9 @@ export default class Resource {
      * @param id
      * @param query Querystring
      */
-    static getDetailRoutePath(id: string, query?: any): string {
+    static getDetailRoutePath(id: string | number, query?: any): string {
         let qs = stringify(query)
-        return `${this.endpoint}/${id}${query && Object.keys(query).length ? '?' : ''}${qs}`
+        return `${this.endpoint}/${String(id)}${query && Object.keys(query).length ? '?' : ''}${qs}`
     }
 
     /**
@@ -255,20 +255,20 @@ export default class Resource {
         })
     }
 
-    static detail<T extends typeof Resource>(this: T, id: string, options: DetailOpts = {}): Promise<InstanceType<T>> {
+    static detail<T extends typeof Resource>(this: T, id: string | number, options: DetailOpts = {}): Promise<InstanceType<T>> {
         // Check cache first
         const cached: CachedResource<InstanceType<T>> = this.getCached(String(id))
         return new Promise((resolve, reject) => {
             // Do we want to use cache?
             if (!cached || options.useCache === false) {
                 // Set a hash key for the queue (keeps it organized by type+id)
-                const queueHashKey = this.getResourceHashKey(id)
+                const queueHashKey = this.getResourceHashKey(String(id))
                 // If we want to use cache and cache wasn't found...
                 if (!cached && !this.queued[queueHashKey]) {
                     // We want to use cached and a resource with this ID hasn't been requested yet
                     this.queued[queueHashKey] = []
                     this.client
-                        .detail(this, id, options)
+                        .detail(this, String(id), options)
                         .then(async (result) => {
                             // Get detail route and get resource from response
                             const correctResource = <InstanceType<T>>result.resources.pop()
@@ -334,9 +334,9 @@ export default class Resource {
      * Unique resource hash key used for caching and organizing requests
      * @param resourceId
      */
-    static getResourceHashKey(resourceId: string) {
+    static getResourceHashKey(resourceId: string | number) {
         assert(Boolean(resourceId), "Can't generate resource hash key with an empty Resource ID. Please ensure Resource is saved first.")
-        return Buffer.from(`${this.uuid}:${resourceId}`).toString('base64')
+        return Buffer.from(`${this.uuid}:${String(resourceId)}`).toString('base64')
     }
 
     static extend<T, U>(this: U, classProps: T): U & T {
