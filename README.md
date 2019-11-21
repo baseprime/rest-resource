@@ -1,12 +1,12 @@
 # REST Resource
 ### Simplified Interface for consuming REST APIs
-REST Resource is a library to make your life simpler when working with REST API Endpoints. It takes RESTful Resource/Service URIs and simplifies them into a Class that can be called with simple methods. **[Think of it like a Model for REST API Endpoints.](#acts-like-a-model)**
+REST Resource is a library that makes your life simpler when working with REST API endpoints. It takes RESTful Resource/Service URIs and simplifies them into a Class that can be called with various built-in methods. **[Think of it like a Model for REST API Endpoints.](#acts-like-a-model)**
 
 ### Features:
 - **[Cached Resource Resolution](#cached-resource-resolution)**
   - Call to your resources as if they're already loaded, REST Resource sorts out which ones to GET
 - **[Related Resources](#related-resources)**
-  - Quickly wire up your Resources and which ones they're related to, REST Resource takes care of the rest
+  - Quickly wire up your Resources and which ones they're related to
 - **[Attribute resolution on Related Resources](#related-attribute-lookups-with-getasync)**
   - Get attributes on related resources as easily as:
     ```javascript
@@ -16,10 +16,13 @@ REST Resource is a library to make your life simpler when working with REST API 
     // GET /cities/1
     // => San Francisco, CA
     ```
-- **Class-Based/Custom clients**
+- **[Validation](#validation)**
+- **[Attribute Normalization](#attribute-normalization)**
+- **Class-Based/Complete Customization**
   - Completely customize the way REST Resource works with your API
     - [The Client Class](#the-client-class)
     - [Customizing Related Manager](#customizing-relatedmanager)
+- **TypeScript Support**
 
 ## What is a REST Resource?
 REST is acronym for REpresentational State Transfer. It is architectural style for distributed hypermedia systems and was first presented by Roy Fielding in 2000 in his famous [dissertation](https://www.ics.uci.edu/~fielding/pubs/dissertation/rest_arch_style.htm).
@@ -93,7 +96,9 @@ robin.save()
 ```
 
 # Cached Resource Resolution
-REST Resource has a caching mechanism that sorts out which resources your app needs and resolves both requirements once that resource has been obtained. In the example below, only one request is made:
+REST Resource has a caching mechanism that sorts out which resources your app needs and satisfies both requirements once that resource has been obtained, provided they're made within `n` seconds where `n` is a Resource's `cacheMaxAge`. Resource retrieval can be defined synchronously or asynchronously and REST Resource will still only need to make the initial request.
+
+In the example below, only one request is made to `/users/123`, even though the data from that endpoint is required twice:
 
 ```javascript
 let user = await UserResource.detail(123)
@@ -102,13 +107,7 @@ let user = await UserResource.detail(123)
 user.greet()
 // => I am Arthur, King of the Britons!
 
-let sameuser = await UserResource.detail(123)
-// Cache is still good, did not send GET to /users/123
-
-sameuser.greet()
-// => I am Arthur, King of the Britons!
-
-console.log(user === sameuser)
+console.log(user === await UserResource.detail(123))
 // => true
 ```
 
@@ -145,6 +144,24 @@ let patsyGroup = patsy.getAsync('groups.name')
 // GET /roles/2
 // GET /groups/2
 // Does not need to GET /groups/1
+```
+
+Changing cache lifespan:
+
+```javascript
+class CustomResource extends Resource {
+    static cacheMaxAge = 60 // Defaults to 10 seconds
+    // ...
+}
+```
+
+Turning cache off:
+
+```javascript
+class NoCacheResource extends Resource {
+    static cacheMaxAge = -1
+    // ...
+}
 ```
 
 # Related Resources
@@ -203,7 +220,7 @@ console.log(user.attributes)
 //        groups: [1, 2]
 //    }
 
-let manager = user.get('groups') // Many to many relationship
+let manager = user.rel('groups') // Many to many relationship
 
 console.log(manager.resolved)
 // => false
@@ -327,13 +344,12 @@ console.log(unknown.get('name'))
 // => Unknown User
 ```
 
-# Working with older versions of Node
-If you aren't using a newer version of Node or TypeScript, you can use `Resource.extend` to define static members. For example:
+# Working with older versions of JavaScript <= ES5
+You can use `Resource.extend` to define static members. For example:
 ```javascript
 const UserResource = Resource.extend({
     endpoint: '/users',
-    defaults: {
-        name: 'Unknown User'
+    related: {
         // ...etc
     }
 })
@@ -405,7 +421,6 @@ import RelatedManager from 'rest-resource/dist/related'
 
 class CustomRelatedManager extends RelatedManager {
     batchSize: 50 // Only GET 50 related objects at a time (default: Infinity)
-
     /**
      * @param options Object (resolveRelated, etc.)
      * @returns Resource[] List of Resource instances
@@ -420,4 +435,162 @@ class UserResource extends Resource {
     // Define custom related manager here
     static RelatedManagerClass = CustomRelatedManager
 }
+```
+
+# Validation
+You can specify a validation object literal as a static member of any Resource class and run validations against any attribute. Validations are ran automatically when using `resource.save()`. Note: validation functions should throw `exceptions.ValidationError(field, message)`
+```javascript
+import Resource from 'rest-resource'
+
+function phoneIsValid(value, instance, ValidationError) {
+    let regExp = /^[\+]?[(]?[0-9]{3}[)]?[-\s\.]?[0-9]{3}[-\s\.]?[0-9]{4,6}$/im
+    if(!regExp.test(value)) {
+        throw new ValidationError('phone')
+    }
+}
+
+function isFiveChars(value, instance, ValidationError) {
+    return String(value).length >= 5
+}
+
+function isAlphaNumeric(value, instance, ValidationError) {
+    return /^[a-z0-9]+$/i.test(value)
+}
+
+class UserResource extends Resource {
+    static endpoint = '/users'
+    static validation = {
+        phone: phoneIsValid,
+        username: [
+            isFiveChars,
+            isAlphaNumeric
+        ]
+    }
+}
+
+let user = await UserResource.detail(1)
+
+user.set('phone', '415-555-1234')
+user.validate()
+// => []
+user.set('phone', '555555x1234')
+user.validate()
+// => [{ ValidationError: phone: This field is not valid }]
+```
+
+# Attribute Normalization 
+Whenever an attribute is defined, you can normalize its value into a desired output (think of it as a unidirectional serializer). The built-in normalizers are:
+- `StringNormalizer`
+- `NumberNormalizer`
+- `BooleanNormalizer`
+- `CurrencyNormalizer`
+
+Attribute Normalizers can ensure that the values assigned to `resource.attributes[key]` (and subsequently the data being sent to the API) is consistent.
+
+## Normalizing Inconsistent Properties
+Attribute Normalization is particularly useful when trying to normalize inconsistent data _from_ the API. The example below represents two responses from the API, one representing a `comment` object and a `post` object. Both objects are referencing a `user`. However, the value of `user` on each `comment` and `post` objects are inconsistent (one is a primary key, and one is an nested `user` object):
+
+```javascript
+// GET /comments/1
+{
+    "content": "Nullam vel ultrices eros. Nullam at metus venenatis, bibendum lectus sed",
+    "post": 1,
+    "user": 123
+}
+
+// GET /posts/1
+{
+    "title": "Nullam nibh enim, ultrices quis",
+    "body": "Pellentesque ultrices augue eleifend augue posuere pretium. Nulla sodales turpis eget pretium efficitur.",
+    "user": {
+        "id": 123,
+        "name": "King Arthur",
+        "weapon": "Sword",
+        "role": 1,
+        "groups": [1]
+    }
+}
+```
+
+You can use attribute normalization to solve this issue
+
+```javascript
+import Resource from 'rest-resource'
+import { NumberNormalizer } from 'rest-resource/dist/helpers/normalization'
+
+class PostResource extends Resource {
+    static endpoint = '/posts'
+
+    static related = {
+        user: UserResource
+    }
+    
+    static normalization = {
+        user: new NumberNormalizer()
+    }
+}
+
+class CommentResource extends Resource {
+    static endpoint = '/comments'
+    static related = {
+        user: UserResource,
+        post: PostResource
+    }
+
+    static normalization = {
+        user: new NumberNormalizer(),
+    }
+}
+
+let post = await PostResource.detail(1)
+console.log(post.attributes.user)
+// => 123
+
+let comment = await CommentResource.detail(1)
+console.log(comment.attributes.user)
+// => 123
+```
+
+You can also specify custom normalizer
+
+```javascript
+class PostResource extends Resource {
+    static endpoint = '/posts'
+
+    static related = {
+        user: UserResource
+    }
+    
+    static normalization = {
+        user: {
+            normalize: (value) => {
+                // Normalize and return new value
+            }
+        }
+    }
+}
+```
+
+You can also use the `normalizerFactory(normalizerClassName)` helper instead of importing all normalizer classes:
+
+```javascript
+import { normalizerFactory } from 'rest-resource/dist/helpers/normalization'
+
+class PostResource extends Resource {
+    static endpoint = '/posts'
+
+    static related = {
+        user: UserResource
+    }
+    
+    static normalization = {
+        user: normalizerFactory('NumberNormalizer')
+    }
+}
+```
+
+# Further Reading
+Please see [Documentation](https://htmlpreview.github.io/?https://raw.githubusercontent.com/baseprime/rest-resource/master/docs/classes/_index_.resource.html)
+```
+npm run serve-docs
 ```
