@@ -450,11 +450,16 @@ function phoneIsValid(value, instance, ValidationError) {
 }
 
 function isFiveChars(value, instance, ValidationError) {
-    return String(value).length >= 5
+    if(String(value).length < 5) {
+        throw new ValidationError('', 'This field must be at least 5 characters')
+    }
 }
 
 function isAlphaNumeric(value, instance, ValidationError) {
-    return /^[a-z0-9]+$/i.test(value)
+    let regExp = /^[a-z0-9]+$/i
+    if(!regExp.test(value)) {
+        throw new ValidationError('', 'This field must be alphanumeric')
+    }
 }
 
 class UserResource extends Resource {
