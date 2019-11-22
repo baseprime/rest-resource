@@ -9,7 +9,7 @@
         "jsx": "preserve",
         "importHelpers": true,
         "declaration": true,
-        "declarationDir": "types",
+        "declarationDir": "./dist",
         "moduleResolution": "node",
         "experimentalDecorators": true,
         "esModuleInterop": true,
