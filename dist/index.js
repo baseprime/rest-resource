@@ -249,7 +249,7 @@ var Resource = /** @class */ (function () {
                 // Set a hash key for the queue (keeps it organized by type+id)
                 var queueHashKey_1 = _this.getResourceHashKey(String(id));
                 // If we want to use cache and cache wasn't found...
-                if (!cached && !_this.queued[queueHashKey_1]) {
+                if (!_this.queued[queueHashKey_1]) {
                     // We want to use cached and a resource with this ID hasn't been requested yet
                     _this.queued[queueHashKey_1] = [];
                     _this.client
@@ -607,7 +607,12 @@ var Resource = /** @class */ (function () {
         return errs;
     };
     Resource.prototype.update = function () {
-        return this.getConstructor().detail(this.id);
+        var _this = this;
+        return this.getConstructor().detail(this.id, { useCache: false }).then(function (resource) {
+            for (var key in resource.attributes) {
+                _this.attributes[key] = resource.attributes[key];
+            }
+        });
     };
     Resource.prototype.delete = function (options) {
         return this.getConstructor().client.delete(this.getConstructor().getDetailRoutePath(this.id), options);

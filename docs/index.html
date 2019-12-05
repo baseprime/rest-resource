@@ -82,8 +82,7 @@
 						</ul>
 					</li>
 					<li><strong><a href="#related-attribute-lookups-with-getasync">Attribute resolution on Related Resources</a></strong><ul>
-							<li>Get attributes on related resources as easily as:<pre><code class="language-javascript"><span class="hljs-keyword">await</span> resource.getAsync(<span class="hljs-string">'user.address.city.name'</span>)
-<span class="hljs-comment">// GET /users/1</span>
+							<li>Get related attributes as easily as:<pre><code class="language-javascript"><span class="hljs-keyword">await</span> user.getAsync(<span class="hljs-string">'address.city.name'</span>)
 <span class="hljs-comment">// GET /addresses/1</span>
 <span class="hljs-comment">// GET /cities/1</span>
 <span class="hljs-comment">// =&gt; San Francisco, CA</span></code></pre>
@@ -477,11 +476,16 @@ CustomResource.client = <span class="hljs-keyword">new</span> CustomClient(<span
 }
 
 <span class="hljs-function"><span class="hljs-keyword">function</span> <span class="hljs-title">isFiveChars</span>(<span class="hljs-params">value, instance, ValidationError</span>) </span>{
-    <span class="hljs-keyword">return</span> <span class="hljs-built_in">String</span>(value).length &gt;= <span class="hljs-number">5</span>
+    <span class="hljs-keyword">if</span>(<span class="hljs-built_in">String</span>(value).length &lt; <span class="hljs-number">5</span>) {
+        <span class="hljs-keyword">throw</span> <span class="hljs-keyword">new</span> ValidationError(<span class="hljs-string">''</span>, <span class="hljs-string">'This field must be at least 5 characters'</span>)
+    }
 }
 
 <span class="hljs-function"><span class="hljs-keyword">function</span> <span class="hljs-title">isAlphaNumeric</span>(<span class="hljs-params">value, instance, ValidationError</span>) </span>{
-    <span class="hljs-keyword">return</span> <span class="hljs-regexp">/^[a-z0-9]+$/i</span>.test(value)
+    <span class="hljs-keyword">let</span> regExp = <span class="hljs-regexp">/^[a-z0-9]+$/i</span>
+    <span class="hljs-keyword">if</span>(!regExp.test(value)) {
+        <span class="hljs-keyword">throw</span> <span class="hljs-keyword">new</span> ValidationError(<span class="hljs-string">''</span>, <span class="hljs-string">'This field must be alphanumeric'</span>)
+    }
 }
 
 <span class="hljs-class"><span class="hljs-keyword">class</span> <span class="hljs-title">UserResource</span> <span class="hljs-keyword">extends</span> <span class="hljs-title">Resource</span> </span>{
