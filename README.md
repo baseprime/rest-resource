@@ -8,10 +8,9 @@ REST Resource is a library that makes your life simpler when working with REST A
 - **[Related Resources](#related-resources)**
   - Quickly wire up your Resources and which ones they're related to
 - **[Attribute resolution on Related Resources](#related-attribute-lookups-with-getasync)**
-  - Get attributes on related resources as easily as:
+  - Get related attributes as easily as:
     ```javascript
-    await resource.getAsync('user.address.city.name')
-    // GET /users/1
+    await user.getAsync('address.city.name')
     // GET /addresses/1
     // GET /cities/1
     // => San Francisco, CA
