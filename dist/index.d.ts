@@ -85,7 +85,7 @@ export default class Resource {
      * @param options Options object
      * @returns Promise
      */
-    static list<T extends typeof Resource>(this: T, options?: ListOpts): Promise<ResourceResponse<InstanceType<T>>>;
+    static list<T extends typeof Resource>(this: T, options?: ListOpts): ListResponse<T>;
     static detail<T extends typeof Resource>(this: T, id: string | number, options?: DetailOpts): Promise<InstanceType<T>>;
     static toResourceName(): string;
     static makeDefaultsObject(): any;
@@ -188,6 +188,7 @@ export declare type ListOpts = RequestConfig & {
     resolveRelated?: boolean;
     resolveRelatedDeep?: boolean;
 };
+export declare type ListResponse<T extends typeof Resource> = Promise<ResourceResponse<InstanceType<T>, any>>;
 export declare type DetailOpts = RequestConfig & {
     resolveRelated?: boolean;
     resolveRelatedDeep?: boolean;

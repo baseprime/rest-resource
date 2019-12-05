@@ -1,19 +1,19 @@
-import Resource from './index';
+import Resource, { ListResponse } from './index';
 import { AxiosPromise, AxiosRequestConfig, AxiosResponse, AxiosError, AxiosInstance } from 'axios';
 export * from 'axios';
 export interface RequestConfig extends AxiosRequestConfig {
     useCache?: boolean;
     query?: any;
 }
-export interface ResourceResponse<T extends Resource, U extends any = any> {
+export interface ResourceResponse<T extends Resource, U extends any = any> extends Record<string, any> {
     response: AxiosResponse<U>;
     resources: T[];
     count?: () => number;
     pages?: () => number;
     currentPage?: () => number;
     perPage?: () => number;
-    next?: () => ResourceResponse<T>;
-    previous?: () => ResourceResponse<T>;
+    next?: () => Promise<ResourceResponse<T, U>>;
+    previous?: () => Promise<ResourceResponse<T, U>>;
 }
 export declare type ExtractorFunction<T extends Resource, U extends any = any> = (result: ResourceResponse<T, U>['response']) => ResourceResponse<T, U>;
 export declare class BaseClient {
@@ -22,7 +22,7 @@ export declare class BaseClient {
     constructor(baseURL: string, config?: AxiosRequestConfig);
     static extend<T, U>(this: U, classProps: T): U & T;
     negotiateContent<T extends typeof Resource>(ResourceClass: T): ExtractorFunction<InstanceType<T>>;
-    list<T extends typeof Resource>(ResourceClass: T, options?: RequestConfig): Promise<ResourceResponse<InstanceType<T>>>;
+    list<T extends typeof Resource>(ResourceClass: T, options?: RequestConfig): ListResponse<T>;
     detail<T extends typeof Resource>(ResourceClass: T, id: string, options?: RequestConfig): Promise<ResourceResponse<InstanceType<T>, any>>;
     get(path: string, options?: any): AxiosPromise<any>;
     put(path: string, body?: any, options?: AxiosRequestConfig): Promise<any>;
