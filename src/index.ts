@@ -241,7 +241,7 @@ export default class Resource {
      * @param options Options object
      * @returns Promise
      */
-    static list<T extends typeof Resource>(this: T, options: ListOpts = {}): Promise<ResourceResponse<InstanceType<T>>> {
+    static list<T extends typeof Resource>(this: T, options: ListOpts = {}): ListResponse<T> {
         return this.client.list<T>(this as T, options).then((result) => {
             if (options.resolveRelated || options.resolveRelatedDeep) {
                 let deep = !!options.resolveRelatedDeep
@@ -264,7 +264,7 @@ export default class Resource {
                 // Set a hash key for the queue (keeps it organized by type+id)
                 const queueHashKey = this.getResourceHashKey(String(id))
                 // If we want to use cache and cache wasn't found...
-                if (!cached && !this.queued[queueHashKey]) {
+                if (!this.queued[queueHashKey]) {
                     // We want to use cached and a resource with this ID hasn't been requested yet
                     this.queued[queueHashKey] = []
                     this.client
@@ -621,7 +621,11 @@ export default class Resource {
     }
 
     update<T extends Resource>(this: T): Promise<T> {
-        return this.getConstructor().detail(this.id) as Promise<T>
+        return this.getConstructor().detail(this.id, { useCache: false }).then((resource) => {
+            for(let key in resource.attributes) {
+                this.attributes[key] = resource.attributes[key]
+            }
+        }) as Promise<T>
     }
 
     delete(options?: RequestConfig) {
@@ -695,6 +699,8 @@ export type ListOpts = RequestConfig & {
     resolveRelated?: boolean
     resolveRelatedDeep?: boolean
 }
+
+export type ListResponse<T extends typeof Resource> = Promise<ResourceResponse<InstanceType<T>, any>>
 
 export type DetailOpts = RequestConfig & {
     resolveRelated?: boolean

@@ -1,4 +1,4 @@
-import Resource from './index'
+import Resource, { ListResponse } from './index'
 import axios, { AxiosPromise, AxiosRequestConfig, AxiosResponse, AxiosError, AxiosInstance } from 'axios'
 
 export * from 'axios'
@@ -8,15 +8,15 @@ export interface RequestConfig extends AxiosRequestConfig {
     query?: any
 }
 
-export interface ResourceResponse<T extends Resource, U extends any = any> {
+export interface ResourceResponse<T extends Resource, U extends any = any> extends Record<string, any> {
     response: AxiosResponse<U>
     resources: T[]
     count?: () => number
     pages?: () => number
     currentPage?: () => number
     perPage?: () => number
-    next?: () => ResourceResponse<T>
-    previous?: () => ResourceResponse<T>
+    next?: () => Promise<ResourceResponse<T, U>>
+    previous?: () => Promise<ResourceResponse<T, U>>
 }
 
 export type ExtractorFunction<T extends Resource, U extends any = any> = (result: ResourceResponse<T, U>['response']) => ResourceResponse<T, U>
@@ -58,7 +58,7 @@ export class BaseClient {
         }
     }
 
-    list<T extends typeof Resource>(ResourceClass: T, options: RequestConfig = {}): Promise<ResourceResponse<InstanceType<T>>> {
+    list<T extends typeof Resource>(ResourceClass: T, options: RequestConfig = {}): ListResponse<T> {
         return this.get(ResourceClass.getListRoutePath(options.query)).then(this.negotiateContent(ResourceClass))
     }
 
