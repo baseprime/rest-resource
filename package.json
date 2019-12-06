@@ -1,6 +1,6 @@
 {
   "name": "rest-resource",
-  "version": "0.7.2",
+  "version": "0.7.3",
   "description": "Simplify your REST API resources",
   "main": "./dist/index.js",
   "unpkg": "./dist/dom/rest-resource.js",
@@ -56,7 +56,7 @@
     "@types/lodash": "^4.14.137",
     "@types/node": "^10.12.19",
     "assert": "^1.4.1",
-    "axios": "^0.18.0",
+    "axios": "^0.18.1",
     "lodash": "^4.17.15",
     "tslib": "^1.9.3",
     "typescript": "^3.3.3"
