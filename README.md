@@ -50,7 +50,7 @@ npm run serve-docs
 ## Examples
 [Play around with a working example on JSFiddle](https://jsfiddle.net/ro6fj51n/)
 
-(assuming `Node >= v12.0.0`)
+(assuming `Node >= v12`)
 
 Given the URIs:
 
