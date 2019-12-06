@@ -7,7 +7,7 @@
   "types": "./dist/index.d.ts",
   "scripts": {
     "test": "mocha -r ts-node/register ./tests/**/*.spec.ts",
-    "test-standalone": "npm run serve:tests & (sleep 5 && npm run test:served)",
+    "test-standalone": "npm run serve-tests & (sleep 5 && npm test)",
     "build": "tsc && webpack && npm run generate-docs",
     "dev": "tsc --watch",
     "prettier": "./node_modules/prettier/bin-prettier.js --write ./src/**/*.ts ./src/*.ts",
