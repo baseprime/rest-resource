@@ -127,7 +127,7 @@ describe('Resources', () => {
         // ...At this point, group has a cached user (ID 1)
         let user = await UserResource.detail('1', { resolveRelatedDeep: true })
         // And getting the user again will yield the same exact user in memory stored at cache[cacheKey] address
-        expect(group.managers.users.objects[0] === user).to.be.true
+        expect(group.managers.users.resources[0] === user).to.be.true
     })
 
     it('handles empty values correctly', async () => {
@@ -151,7 +151,7 @@ describe('Resources', () => {
 
         expect(someGroup.get('owner')).to.be.null
         expect(someGroup.get('users')).to.be.instanceOf(CustomGroupResource.RelatedManagerClass)
-        expect(someGroup.get('users').objects).to.be.empty
+        expect(someGroup.get('users').resources).to.be.empty
         expect(someGroup.get('todos')).to.be.undefined
     })
 

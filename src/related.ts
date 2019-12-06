@@ -26,7 +26,7 @@ export default class RelatedManager<T extends typeof Resource = typeof Resource>
      * can call `this.all()` to recursively get all objects
      */
     batchSize: number = Infinity
-    _objects: Record<string, InstanceType<T>> = {}
+    _resources: Record<string, InstanceType<T>> = {}
 
     constructor(to: T, value: RelatedObjectValue) {
         assert(typeof to === 'function', `RelatedManager expected first parameter to be Resource class, received "${to}". Please double check related definitions on class.`)
@@ -101,14 +101,48 @@ export default class RelatedManager<T extends typeof Resource = typeof Resource>
 
     /**
      * Get a single resource from the endpoint given an ID
-     * @param id String
+     * @param id String | Number
      */
-    getOne(id: string, options?: DetailOpts): Promise<InstanceType<T>> {
+    getOne(id: string | number, options?: DetailOpts): Promise<InstanceType<T>> {
         return this.to.detail<T>(id, options).then((resource: InstanceType<T>) => {
             assert(resource.getConstructor().toResourceName() == this.to.toResourceName(), `Related class detail() returned invalid instance: ${resource.toResourceName()} (returned) !== ${this.to.toResourceName()} (expected)`)
-            this._objects[resource.id] = resource
+            this._resources[resource.id] = resource
             return resource
         })
+    }
+
+    /**
+     * Same as getOne but allow lookup by index
+     * @param index Number
+     */
+    getOneAtIndex(index: number) {
+        return this.getOne(this.primaryKeys[index])
+    }
+
+    /**
+     * Get all loaded resources relevant to this relation
+     * Like manager.resources getter except it won't throw an AttributeError and will return with any loaded resources if its ID is listed in `this.primaryKeys`
+     */
+    getAllLoaded(): InstanceType<T>[] {
+        try {
+            return this.resources
+        } catch (e) {
+            if (AttributeError.isInstance(e)) {
+                // Some resources aren't loaded -- just return any cached resources
+                let cachedObjects = []
+                for (let id of this.primaryKeys) {
+                    // Check relation cache
+                    let cached = this.to.getCached(id)
+                    // If cache is good, add it to the list of objects to respond wtih
+                    if (cached) {
+                        cachedObjects.push(cached.resource as InstanceType<T>)
+                    }
+                }
+                return cachedObjects
+            } else {
+                throw e
+            }
+        }
     }
 
     /**
@@ -134,7 +168,7 @@ export default class RelatedManager<T extends typeof Resource = typeof Resource>
 
         await Promise.all(promises)
         this.resolved = true
-        return Object.values(this.objects)
+        return Object.values(this.resources)
     }
 
     async next(options?: DetailOpts): Promise<InstanceType<T>[]> {
@@ -163,7 +197,7 @@ export default class RelatedManager<T extends typeof Resource = typeof Resource>
             // Still have some left
             return await this.all(options)
         } else {
-            return Object.values(this.objects)
+            return Object.values(this.resources)
         }
     }
 
@@ -184,24 +218,28 @@ export default class RelatedManager<T extends typeof Resource = typeof Resource>
         }
 
         ;(this.value as any[]).push(value)
-        this._objects[resource.id] = resource
+        this._resources[resource.id] = resource
     }
 
+    /**
+     * Create a copy of `this` except with new value(s)
+     * @param value
+     */
     fromValue<T extends typeof RelatedManager>(this: InstanceType<T>, value: any): InstanceType<T> {
         let Ctor = <T>this.constructor
         return new Ctor(this.to, value) as InstanceType<T>
     }
 
     /**
-     * Getter -- get `this._objects` but make sure we've actually retrieved the objects first
+     * Getter -- get `this._resources` but make sure we've actually retrieved the objects first
      * Throws AttributeError if `this.resolve()` hasn't finished
      */
-    get objects(): InstanceType<T>[] {
+    get resources(): InstanceType<T>[] {
         if (!this.resolved) {
-            throw new AttributeError(`Can't read results of ${this.constructor.name}[objects], ${this.to.toResourceName()} must resolve() first`)
+            throw new AttributeError(`Can't read results of ${this.constructor.name}[resources], ${this.to.toResourceName()} must resolve() first`)
         }
 
-        const allObjects = Object.values(this._objects)
+        const allObjects = Object.values(this._resources)
 
         return allObjects
     }

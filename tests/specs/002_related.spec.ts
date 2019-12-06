@@ -53,7 +53,7 @@ describe('Related', () => {
         expect(group.managers.users.primaryKeys.length).to.equal(3)
         expect(group.get('name')).to.equal('Test group')
         expect(group.get('users.name')).to.be.instanceOf(Array)
-        expect(group.get('users').objects[0]).to.be.instanceOf(UserResource)
+        expect(group.get('users').resources[0]).to.be.instanceOf(UserResource)
     })
 
     it('can get related objects recursively', async () => {
