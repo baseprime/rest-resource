@@ -7,13 +7,14 @@
   "types": "./dist/index.d.ts",
   "scripts": {
     "test": "mocha -r ts-node/register ./tests/**/*.spec.ts",
+    "test-standalone": "npm run serve:tests & (sleep 5 && npm run test:served)",
     "build": "tsc && webpack && npm run generate-docs",
     "dev": "tsc --watch",
     "prettier": "./node_modules/prettier/bin-prettier.js --write ./src/**/*.ts ./src/*.ts",
     "repl": "ts-node ./tests/repl.ts",
     "generate-docs": "./node_modules/typedoc/bin/typedoc --out ./docs ./src/index.ts --excludeNotExported --excludePrivate",
-    "reset:ts": "rm -r ./dist && ./node_modules/.bin/tsc",
-    "serve-tests": "cp ./tests/fixtures.json ./tests/fixtures-local.json && json-server -p ${TEST_PORT:-8099} ./tests/fixtures-local.json",
+    "reset-ts": "rm -r ./dist && ./node_modules/.bin/tsc",
+    "serve-tests": "cp ./tests/fixtures.json ./tests/fixtures-local.json && json-server -p ${TEST_PORT:-8099} --quiet ./tests/fixtures-local.json",
     "serve-docs": "./node_modules/serve/bin/serve.js ./docs/"
   },
   "repository": {
