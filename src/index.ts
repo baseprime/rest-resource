@@ -17,12 +17,10 @@ export default class Resource {
     static _uuid: string
     static queued: Record<string, any> = {}
     static uniqueKey: string = 'id'
-    static perPage: number | null = null
     static defaults: Record<string, any> = {}
     static RelatedManagerClass: typeof RelatedManager = RelatedManager
     static validation: ValidatorDict = {}
     static normalization: NormalizerDict = {}
-    static aliases: Record<string, string> = {}
     static fields: string[] = []
     static related: RelatedDict = {}
     _attributes: Record<string, any> = {}
