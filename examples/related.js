@@ -19,9 +19,9 @@ const TodoResource = BaseResource.extend({
 TodoResource.list()
     .then((response) => {
         response.resources.forEach(async (resource) => {
-            let title = await resource.getAsync('title')
-            let author = await resource.getAsync('userId.name')
-            let doneText = await resource.getAsync('completed') ? 'x' : '-'
+            let title = await resource.resolveAttribute('title')
+            let author = await resource.resolveAttribute('userId.name')
+            let doneText = await resource.resolveAttribute('completed') ? 'x' : '-'
             console.log(`${doneText}\t${title}\n\t${author}\n\n`)
         })
     })

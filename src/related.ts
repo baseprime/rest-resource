@@ -41,6 +41,16 @@ export default class RelatedManager<T extends typeof Resource = typeof Resource>
     }
 
     /**
+     * Check if values exist on manager
+     */
+    hasValues() {
+        if (this.many) {
+            return (this.value as any[]).length > 0
+        }
+        return Boolean(this.value)
+    }
+
+    /**
      * Return a constructor so we can guess the content type. For example, if an object literal
      * is passed, this function should return `Object`, and it's likely one single object literal representing attributes.
      * If the constructor is an `Array`, then all we know is that there are many of these sub items (in which case, we're
@@ -242,6 +252,13 @@ export default class RelatedManager<T extends typeof Resource = typeof Resource>
         const allObjects = Object.values(this._resources)
 
         return allObjects
+    }
+
+    /**
+     * Getter -- Same as manager.resources except returns first node
+     */
+    get resource(): InstanceType<T> {
+        return this.resources[0]
     }
 
     get length(): number {

@@ -32,6 +32,15 @@ var RelatedManager = /** @class */ (function () {
         }
     }
     /**
+     * Check if values exist on manager
+     */
+    RelatedManager.prototype.hasValues = function () {
+        if (this.many) {
+            return this.value.length > 0;
+        }
+        return Boolean(this.value);
+    };
+    /**
      * Return a constructor so we can guess the content type. For example, if an object literal
      * is passed, this function should return `Object`, and it's likely one single object literal representing attributes.
      * If the constructor is an `Array`, then all we know is that there are many of these sub items (in which case, we're
@@ -251,6 +260,16 @@ var RelatedManager = /** @class */ (function () {
             }
             var allObjects = Object.values(this._resources);
             return allObjects;
+        },
+        enumerable: true,
+        configurable: true
+    });
+    Object.defineProperty(RelatedManager.prototype, "resource", {
+        /**
+         * Getter -- Same as manager.resources except returns first node
+         */
+        get: function () {
+            return this.resources[0];
         },
         enumerable: true,
         configurable: true

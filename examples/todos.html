@@ -65,9 +65,9 @@
                 TodoResource.list()
                     .then((response) => {
                         response.resources.forEach(async (resource) => {
-                            let title = await resource.getAsync('title')
-                            let author = await resource.getAsync('userId.name')
-                            let done = await resource.getAsync('completed')
+                            let title = await resource.resolveAttribute('title')
+                            let author = await resource.resolveAttribute('userId.name')
+                            let done = await resource.resolveAttribute('completed')
                             this.$data.todos.push({
                                 id: resource.id,
                                 title,

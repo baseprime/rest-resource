@@ -4,7 +4,7 @@
  * 
  * @author Greg Sabia Tucker <greg@narrowlabs.com> (http://basepri.me)
  * @link undefined
- * @version 0.8.0
+ * @version 0.8.1
  * 
  * Released under MIT License. See LICENSE.txt or http://opensource.org/licenses/MIT
  */
@@ -1100,22 +1100,25 @@ var Resource = /** @class */function () {
             var pieces_1 = key.split('.');
             var thisKey = String(pieces_1.shift());
             var thisValue = this.attributes[thisKey];
-            var manager = this.managers[thisKey];
+            var manager = this.rel(thisKey);
             if (pieces_1.length > 0) {
                 // We need to go deeper...
                 if (!manager) {
                     throw new exceptions.ImproperlyConfiguredError("No relation found on " + this.toResourceName() + "[" + thisKey + "]. Did you define it on " + this.toResourceName() + ".related?");
+                }
+                if (!manager.hasValues()) {
+                    return undefined;
                 }
                 if (manager.many) {
                     return manager.resources.map(function (thisResource) {
                         return thisResource.get(pieces_1.join('.'));
                     });
                 }
-                return manager.resources[0].get(pieces_1.join('.'));
+                return manager.resource.get(pieces_1.join('.'));
             } else if (Boolean(thisValue) && manager) {
                 // If the related manager is a single object and is inflated, auto resolve the resource.get(key) to that object
                 // @todo Maybe we should always return the manager? Or maybe we should always return the resolved object(s)? I am skeptical about this part
-                return !manager.many && manager.resolved ? manager.resources[0] : manager;
+                return !manager.many && manager.resolved ? manager.resource : manager;
             } else {
                 return thisValue;
             }
@@ -1125,13 +1128,13 @@ var Resource = /** @class */function () {
             var obj = Object.assign({}, this.attributes);
             while (managers.length) {
                 var key_1 = String(managers.shift());
-                var manager = this.managers[key_1];
+                var manager = this.rel(key_1);
                 if (manager.many) {
                     obj[key_1] = manager.resources.map(function (subResource) {
                         return subResource.get();
                     });
-                } else if (!manager.many && manager.resources[0]) {
-                    obj[key_1] = manager.resources[0].get();
+                } else if (!manager.many && manager.resource) {
+                    obj[key_1] = manager.resource.get();
                 }
             }
             return obj;
@@ -1142,7 +1145,7 @@ var Resource = /** @class */function () {
      * TypeError in get() will be thrown, we're just doing the resolveRelated() work for you...
      * @param key
      */
-    Resource.prototype.getAsync = function (key) {
+    Resource.prototype.resolveAttribute = function (key) {
         var _this = this;
         return new Promise(function (resolve, reject) {
             try {
@@ -1151,11 +1154,11 @@ var Resource = /** @class */function () {
                 if (exceptions.AttributeError.isInstance(e)) {
                     var pieces_2 = key.split('.');
                     var thisKey = String(pieces_2.shift());
-                    var manager_1 = _this.managers[thisKey];
+                    var manager_1 = _this.rel(thisKey);
                     manager_1.resolve().then(function () {
                         var relatedKey = pieces_2.join('.');
                         var promises = manager_1.resources.map(function (resource) {
-                            return resource.getAsync(relatedKey);
+                            return resource.resolveAttribute(relatedKey);
                         });
                         Promise.all(promises).then(function (values) {
                             if (manager_1.many) {
@@ -1174,6 +1177,13 @@ var Resource = /** @class */function () {
         });
     };
     /**
+     * Alias of resource.resolveAttribute(key)
+     * @param key
+     */
+    Resource.prototype.getAsync = function (key) {
+        return this.resolveAttribute(key);
+    };
+    /**
      * Setter -- Translate new value into an internal value onto this._attributes[key]
      * Usually this is just setting a key/value but we want to be able to accept
      * anything -- another Resource instance for example. If a Resource instance is
@@ -1188,10 +1198,10 @@ var Resource = /** @class */function () {
         var Ctor = this.getConstructor();
         if (!_.isEqual(currentValue, newValue)) {
             // Also resolve any related Resources back into foreign keys
-            if (newValue && this.managers[key] instanceof related_1.default) {
+            if (newValue && this.rel(key) instanceof related_1.default) {
                 // newValue has an old manager -- needs a new one
                 // Create a new RelatedManager
-                var manager = this.managers[key].fromValue(newValue);
+                var manager = this.rel(key).fromValue(newValue);
                 newValue = manager.toJSON();
                 this.managers[key] = manager;
             }
@@ -1233,7 +1243,7 @@ var Resource = /** @class */function () {
             if (Array.isArray(managers) && managers.length > 0 && !~managers.indexOf(resourceKey)) {
                 continue;
             }
-            var manager = this.managers[resourceKey];
+            var manager = this.rel(resourceKey);
             var promise = manager.resolve().then(function (objects) {
                 if (deep) {
                     var otherPromises = objects.map(function (resource) {
@@ -15262,6 +15272,15 @@ var RelatedManager = /** @class */function () {
         }
     }
     /**
+     * Check if values exist on manager
+     */
+    RelatedManager.prototype.hasValues = function () {
+        if (this.many) {
+            return this.value.length > 0;
+        }
+        return Boolean(this.value);
+    };
+    /**
      * Return a constructor so we can guess the content type. For example, if an object literal
      * is passed, this function should return `Object`, and it's likely one single object literal representing attributes.
      * If the constructor is an `Array`, then all we know is that there are many of these sub items (in which case, we're
@@ -15480,6 +15499,16 @@ var RelatedManager = /** @class */function () {
             }
             var allObjects = Object.values(this._resources);
             return allObjects;
+        },
+        enumerable: true,
+        configurable: true
+    });
+    Object.defineProperty(RelatedManager.prototype, "resource", {
+        /**
+         * Getter -- Same as manager.resources except returns first node
+         */
+        get: function get() {
+            return this.resources[0];
         },
         enumerable: true,
         configurable: true
