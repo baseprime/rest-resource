@@ -10,10 +10,10 @@ REST Resource is a library that makes your life simpler when working with REST A
 - **[Attribute resolution on Related Resources](#related-attribute-lookups-with-resolveAttribute)**
   - Get related attributes as easily as:
     ```javascript
-    await comment.resolveAttribute('user.address.city.name')
+    await comment.resolveAttribute('post.author.city')
+    // GET /posts/1
     // GET /users/1
-    // GET /addresses/1
-    // GET /cities/1
+    // GET /companies/1
     // => San Francisco, CA
     ```
 - **[Validation](#validation)**
@@ -49,7 +49,7 @@ npm run serve-docs
 ```
 
 ## Examples
-[Play around with a working example on JSFiddle](https://jsfiddle.net/ro6fj51n/)
+[Play around with a working example on JSFiddle](https://jsfiddle.net/baseprime/drexLtwv/)
 
 (assuming `Node >= v12`)
 
