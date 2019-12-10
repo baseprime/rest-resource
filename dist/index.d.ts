@@ -10,12 +10,10 @@ export default class Resource {
     static _uuid: string;
     static queued: Record<string, any>;
     static uniqueKey: string;
-    static perPage: number | null;
     static defaults: Record<string, any>;
     static RelatedManagerClass: typeof RelatedManager;
     static validation: ValidatorDict;
     static normalization: NormalizerDict;
-    static aliases: Record<string, string>;
     static fields: string[];
     static related: RelatedDict;
     _attributes: Record<string, any>;
@@ -144,7 +142,7 @@ export default class Resource {
      * Get related class by key
      * @param key
      */
-    rel(key: string): RelatedManager<typeof Resource>;
+    rel<T extends typeof Resource>(key: string): RelatedManager<T>;
     /**
      * Saves the instance -- sends changes as a PATCH or sends whole object as a POST if it's new
      */

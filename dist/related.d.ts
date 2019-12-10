@@ -22,7 +22,7 @@ export default class RelatedManager<T extends typeof Resource = typeof Resource>
      * can call `this.all()` to recursively get all objects
      */
     batchSize: number;
-    _objects: Record<string, InstanceType<T>>;
+    _resources: Record<string, InstanceType<T>>;
     constructor(to: T, value: RelatedObjectValue);
     /**
      * Return a constructor so we can guess the content type. For example, if an object literal
@@ -50,9 +50,19 @@ export default class RelatedManager<T extends typeof Resource = typeof Resource>
     getIdFromResource(resource: InstanceType<T>): string;
     /**
      * Get a single resource from the endpoint given an ID
-     * @param id String
+     * @param id String | Number
      */
-    getOne(id: string, options?: DetailOpts): Promise<InstanceType<T>>;
+    getOne(id: string | number, options?: DetailOpts): Promise<InstanceType<T>>;
+    /**
+     * Same as getOne but allow lookup by index
+     * @param index Number
+     */
+    getOneAtIndex(index: number): Promise<InstanceType<T>>;
+    /**
+     * Get all loaded resources relevant to this relation
+     * Like manager.resources getter except it won't throw an AttributeError and will return with any loaded resources if its ID is listed in `this.primaryKeys`
+     */
+    getAllLoaded(): InstanceType<T>[];
     /**
      * Primary function of the RelatedManager -- get some objects (`this.primaryKeys`) related to some
      * other Resource (`this.to` instance). Load the first n objects (`this.batchSize`) and set `this.resolved = true`.
@@ -72,12 +82,16 @@ export default class RelatedManager<T extends typeof Resource = typeof Resource>
      * @param resource Resource instance
      */
     add(resource: InstanceType<T>): void;
+    /**
+     * Create a copy of `this` except with new value(s)
+     * @param value
+     */
     fromValue<T extends typeof RelatedManager>(this: InstanceType<T>, value: any): InstanceType<T>;
     /**
-     * Getter -- get `this._objects` but make sure we've actually retrieved the objects first
+     * Getter -- get `this._resources` but make sure we've actually retrieved the objects first
      * Throws AttributeError if `this.resolve()` hasn't finished
      */
-    readonly objects: InstanceType<T>[];
+    readonly resources: InstanceType<T>[];
     readonly length: number;
     toJSON(): any;
 }
