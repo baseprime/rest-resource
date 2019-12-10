@@ -13,7 +13,6 @@ REST Resource is a library that makes your life simpler when working with REST A
     await comment.resolveAttribute('post.author.city')
     // GET /posts/1
     // GET /users/1
-    // GET /companies/1
     // => San Francisco, CA
     ```
 - **[Validation](#validation)**
