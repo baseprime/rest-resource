@@ -232,7 +232,7 @@ await manager.resolve()
 console.log(manager.resolved)
 // => true
 
-console.log(manager.objects)
+console.log(manager.resources)
 // => [GroupResource, GroupResource]
 ```
 

@@ -17,12 +17,10 @@ export default class Resource {
     static _uuid: string
     static queued: Record<string, any> = {}
     static uniqueKey: string = 'id'
-    static perPage: number | null = null
     static defaults: Record<string, any> = {}
     static RelatedManagerClass: typeof RelatedManager = RelatedManager
     static validation: ValidatorDict = {}
     static normalization: NormalizerDict = {}
-    static aliases: Record<string, string> = {}
     static fields: string[] = []
     static related: RelatedDict = {}
     _attributes: Record<string, any> = {}
@@ -377,16 +375,16 @@ export default class Resource {
                 }
 
                 if (manager.many) {
-                    return manager.objects.map((thisResource) => {
+                    return manager.resources.map((thisResource) => {
                         return thisResource.get(pieces.join('.'))
                     })
                 }
 
-                return manager.objects[0].get(pieces.join('.'))
+                return manager.resources[0].get(pieces.join('.'))
             } else if (Boolean(thisValue) && manager) {
                 // If the related manager is a single object and is inflated, auto resolve the resource.get(key) to that object
                 // @todo Maybe we should always return the manager? Or maybe we should always return the resolved object(s)? I am skeptical about this part
-                return !manager.many && manager.resolved ? manager.objects[0] : manager
+                return !manager.many && manager.resolved ? manager.resources[0] : manager
             } else {
                 return thisValue
             }
@@ -398,9 +396,9 @@ export default class Resource {
                 const key = String(managers.shift())
                 const manager = this.managers[key]
                 if (manager.many) {
-                    obj[key] = manager.objects.map((subResource) => subResource.get())
-                } else if (!manager.many && manager.objects[0]) {
-                    obj[key] = manager.objects[0].get()
+                    obj[key] = manager.resources.map((subResource) => subResource.get())
+                } else if (!manager.many && manager.resources[0]) {
+                    obj[key] = manager.resources[0].get()
                 }
             }
             return obj
@@ -424,7 +422,7 @@ export default class Resource {
 
                     manager.resolve().then(() => {
                         let relatedKey = pieces.join('.')
-                        let promises = manager.objects.map((resource: Resource) => {
+                        let promises = manager.resources.map((resource: Resource) => {
                             return resource.getAsync(relatedKey)
                         })
 
@@ -538,8 +536,8 @@ export default class Resource {
      * Get related class by key
      * @param key
      */
-    rel(key: string) {
-        return this.managers[key]
+    rel<T extends typeof Resource>(key: string) {
+        return this.managers[key] as RelatedManager<T>
     }
 
     /**

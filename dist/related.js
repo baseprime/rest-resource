@@ -21,7 +21,7 @@ var RelatedManager = /** @class */ (function () {
          * can call `this.all()` to recursively get all objects
          */
         this.batchSize = Infinity;
-        this._objects = {};
+        this._resources = {};
         assert_1.default(typeof to === 'function', "RelatedManager expected first parameter to be Resource class, received \"" + to + "\". Please double check related definitions on class.");
         this.to = to;
         this.value = value;
@@ -92,15 +92,50 @@ var RelatedManager = /** @class */ (function () {
     };
     /**
      * Get a single resource from the endpoint given an ID
-     * @param id String
+     * @param id String | Number
      */
     RelatedManager.prototype.getOne = function (id, options) {
         var _this = this;
         return this.to.detail(id, options).then(function (resource) {
             assert_1.default(resource.getConstructor().toResourceName() == _this.to.toResourceName(), "Related class detail() returned invalid instance: " + resource.toResourceName() + " (returned) !== " + _this.to.toResourceName() + " (expected)");
-            _this._objects[resource.id] = resource;
+            _this._resources[resource.id] = resource;
             return resource;
         });
+    };
+    /**
+     * Same as getOne but allow lookup by index
+     * @param index Number
+     */
+    RelatedManager.prototype.getOneAtIndex = function (index) {
+        return this.getOne(this.primaryKeys[index]);
+    };
+    /**
+     * Get all loaded resources relevant to this relation
+     * Like manager.resources getter except it won't throw an AttributeError and will return with any loaded resources if its ID is listed in `this.primaryKeys`
+     */
+    RelatedManager.prototype.getAllLoaded = function () {
+        try {
+            return this.resources;
+        }
+        catch (e) {
+            if (exceptions_1.AttributeError.isInstance(e)) {
+                // Some resources aren't loaded -- just return any cached resources
+                var cachedObjects = [];
+                for (var _i = 0, _a = this.primaryKeys; _i < _a.length; _i++) {
+                    var id = _a[_i];
+                    // Check relation cache
+                    var cached = this.to.getCached(id);
+                    // If cache is good, add it to the list of objects to respond wtih
+                    if (cached) {
+                        cachedObjects.push(cached.resource);
+                    }
+                }
+                return cachedObjects;
+            }
+            else {
+                throw e;
+            }
+        }
     };
     /**
      * Primary function of the RelatedManager -- get some objects (`this.primaryKeys`) related to some
@@ -130,7 +165,7 @@ var RelatedManager = /** @class */ (function () {
                     case 1:
                         _a.sent();
                         this.resolved = true;
-                        return [2 /*return*/, Object.values(this.objects)];
+                        return [2 /*return*/, Object.values(this.resources)];
                 }
             });
         });
@@ -172,7 +207,7 @@ var RelatedManager = /** @class */ (function () {
                     case 2: 
                     // Still have some left
                     return [2 /*return*/, _a.sent()];
-                    case 3: return [2 /*return*/, Object.values(this.objects)];
+                    case 3: return [2 /*return*/, Object.values(this.resources)];
                 }
             });
         });
@@ -195,22 +230,26 @@ var RelatedManager = /** @class */ (function () {
         }
         ;
         this.value.push(value);
-        this._objects[resource.id] = resource;
+        this._resources[resource.id] = resource;
     };
+    /**
+     * Create a copy of `this` except with new value(s)
+     * @param value
+     */
     RelatedManager.prototype.fromValue = function (value) {
         var Ctor = this.constructor;
         return new Ctor(this.to, value);
     };
-    Object.defineProperty(RelatedManager.prototype, "objects", {
+    Object.defineProperty(RelatedManager.prototype, "resources", {
         /**
-         * Getter -- get `this._objects` but make sure we've actually retrieved the objects first
+         * Getter -- get `this._resources` but make sure we've actually retrieved the objects first
          * Throws AttributeError if `this.resolve()` hasn't finished
          */
         get: function () {
             if (!this.resolved) {
-                throw new exceptions_1.AttributeError("Can't read results of " + this.constructor.name + "[objects], " + this.to.toResourceName() + " must resolve() first");
+                throw new exceptions_1.AttributeError("Can't read results of " + this.constructor.name + "[resources], " + this.to.toResourceName() + " must resolve() first");
             }
-            var allObjects = Object.values(this._objects);
+            var allObjects = Object.values(this._resources);
             return allObjects;
         },
         enumerable: true,
