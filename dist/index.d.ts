@@ -106,13 +106,18 @@ export default class Resource {
      * You can also get all properties by not providing any arguments
      * @param? key
      */
-    get(key?: string): any;
+    get<T = any>(key?: string): T;
     /**
      * Persist getting an attribute and get related keys until a key can be found (or not found)
      * TypeError in get() will be thrown, we're just doing the resolveRelated() work for you...
      * @param key
      */
-    getAsync(key: string): Promise<any>;
+    resolveAttribute<T = any>(key: string): Promise<T>;
+    /**
+     * Alias of resource.resolveAttribute(key)
+     * @param key
+     */
+    getAsync<T = any>(key: string): Promise<T>;
     /**
      * Setter -- Translate new value into an internal value onto this._attributes[key]
      * Usually this is just setting a key/value but we want to be able to accept

@@ -81,8 +81,9 @@
 							<li>Quickly wire up your Resources and which ones they&#39;re related to</li>
 						</ul>
 					</li>
-					<li><strong><a href="#related-attribute-lookups-with-getasync">Attribute resolution on Related Resources</a></strong><ul>
-							<li>Get related attributes as easily as:<pre><code class="language-javascript"><span class="hljs-keyword">await</span> user.getAsync(<span class="hljs-string">'address.city.name'</span>)
+					<li><strong><a href="#related-attribute-lookups-with-resolveAttribute">Attribute resolution on Related Resources</a></strong><ul>
+							<li>Get related attributes as easily as:<pre><code class="language-javascript"><span class="hljs-keyword">await</span> comment.resolveAttribute(<span class="hljs-string">'user.address.city.name'</span>)
+<span class="hljs-comment">// GET /users/1</span>
 <span class="hljs-comment">// GET /addresses/1</span>
 <span class="hljs-comment">// GET /cities/1</span>
 <span class="hljs-comment">// =&gt; San Francisco, CA</span></code></pre>
@@ -190,13 +191,13 @@ user.greet()
 <span class="hljs-comment">//        groups: [1, 2] // Notice this list contains an already retrieved group (1)</span>
 <span class="hljs-comment">//    }</span>
 
-<span class="hljs-keyword">let</span> arthurTitle = arthur.getAsync(<span class="hljs-string">'role.title'</span>)
-<span class="hljs-keyword">let</span> arthurGroup = arthur.getAsync(<span class="hljs-string">'groups.name'</span>)
+<span class="hljs-keyword">let</span> arthurTitle = arthur.resolveAttribute(<span class="hljs-string">'role.title'</span>)
+<span class="hljs-keyword">let</span> arthurGroup = arthur.resolveAttribute(<span class="hljs-string">'groups.name'</span>)
 <span class="hljs-comment">// GET /roles/1</span>
 <span class="hljs-comment">// GET /groups/1</span>
 
-<span class="hljs-keyword">let</span> patsyTitle = patsy.getAsync(<span class="hljs-string">'role.title'</span>)
-<span class="hljs-keyword">let</span> patsyGroup = patsy.getAsync(<span class="hljs-string">'groups.name'</span>)
+<span class="hljs-keyword">let</span> patsyTitle = patsy.resolveAttribute(<span class="hljs-string">'role.title'</span>)
+<span class="hljs-keyword">let</span> patsyGroup = patsy.resolveAttribute(<span class="hljs-string">'groups.name'</span>)
 <span class="hljs-comment">// GET /roles/2</span>
 <span class="hljs-comment">// GET /groups/2</span>
 <span class="hljs-comment">// Does not need to GET /groups/1</span></code></pre>
@@ -321,20 +322,20 @@ user.greet()
 					<h2>Recursive resolving with <code>{ resolveRelatedDeep: true }</code></h2>
 				</a>
 				<p>To resolve all attributes recursively, you can provide <code>{ resolveRelatedDeep: true }</code> instead. This will retrieve all related resources, and any other related resources attached to those resources. Be careful when using this option as it may cause performance issues.</p>
-				<a href="#related-attribute-lookups-with-codegetasynccode" id="related-attribute-lookups-with-codegetasynccode" style="color: inherit; text-decoration: none;">
-					<h2>Related Attribute Lookups with <code>getAsync()</code></h2>
+				<a href="#related-attribute-lookups-with-coderesolveattributecode" id="related-attribute-lookups-with-coderesolveattributecode" style="color: inherit; text-decoration: none;">
+					<h2>Related Attribute Lookups with <code>resolveAttribute()</code></h2>
 				</a>
 				<p>REST Resource automatically resolves properties from related lookups, then decides what fields it needs to call <code>resource.resolveRelated()</code></p>
 				<pre><code class="language-javascript"><span class="hljs-keyword">let</span> roger = <span class="hljs-keyword">await</span> UserResource.detail(<span class="hljs-number">543</span>)
 <span class="hljs-comment">// GET /users/543</span>
 
-<span class="hljs-keyword">let</span> title = <span class="hljs-keyword">await</span> roger.getAsync(<span class="hljs-string">'role.title'</span>)
+<span class="hljs-keyword">let</span> title = <span class="hljs-keyword">await</span> roger.resolveAttribute(<span class="hljs-string">'role.title'</span>)
 <span class="hljs-comment">// GET /roles/&lt;id&gt;</span>
 
 <span class="hljs-built_in">console</span>.log(title)
 <span class="hljs-comment">// =&gt; Shrubber</span></code></pre>
-				<a href="#note-coderesourcegetasyncattributecode-is-one-of-the-most-useful-features-of-rest-resource-as-it-allows-you-to-define-the-fields-that-are-necessary-to-build-your-app-and-rest-resource-will-intelligently-request-only-the-data-it-emneedsem-from-the-api" id="note-coderesourcegetasyncattributecode-is-one-of-the-most-useful-features-of-rest-resource-as-it-allows-you-to-define-the-fields-that-are-necessary-to-build-your-app-and-rest-resource-will-intelligently-request-only-the-data-it-emneedsem-from-the-api" style="color: inherit; text-decoration: none;">
-					<h4>Note: <code>resource.getAsync(attribute)</code> is one of the most useful features of REST Resource as it allows you to define the fields that are necessary to build your app, and REST Resource will intelligently request only the data it <em>needs</em> from the API!</h4>
+				<a href="#note-coderesourceresolveattributeattributecode-is-one-of-the-most-useful-features-of-rest-resource-as-it-allows-you-to-define-the-fields-that-are-necessary-to-build-your-app-and-rest-resource-will-intelligently-request-only-the-data-it-emneedsem-from-the-api" id="note-coderesourceresolveattributeattributecode-is-one-of-the-most-useful-features-of-rest-resource-as-it-allows-you-to-define-the-fields-that-are-necessary-to-build-your-app-and-rest-resource-will-intelligently-request-only-the-data-it-emneedsem-from-the-api" style="color: inherit; text-decoration: none;">
+					<h4>Note: <code>resource.resolveAttribute(attribute)</code> is one of the most useful features of REST Resource as it allows you to define the fields that are necessary to build your app, and REST Resource will intelligently request only the data it <em>needs</em> from the API!</h4>
 				</a>
 				<a href="#acts-like-a-model" id="acts-like-a-model" style="color: inherit; text-decoration: none;">
 					<h1>Acts like a Model</h1>
