@@ -25,6 +25,10 @@ export default class RelatedManager<T extends typeof Resource = typeof Resource>
     _resources: Record<string, InstanceType<T>>;
     constructor(to: T, value: RelatedObjectValue);
     /**
+     * Check if values exist on manager
+     */
+    hasValues(): boolean;
+    /**
      * Return a constructor so we can guess the content type. For example, if an object literal
      * is passed, this function should return `Object`, and it's likely one single object literal representing attributes.
      * If the constructor is an `Array`, then all we know is that there are many of these sub items (in which case, we're
@@ -92,6 +96,10 @@ export default class RelatedManager<T extends typeof Resource = typeof Resource>
      * Throws AttributeError if `this.resolve()` hasn't finished
      */
     readonly resources: InstanceType<T>[];
+    /**
+     * Getter -- Same as manager.resources except returns first node
+     */
+    readonly resource: InstanceType<T>;
     readonly length: number;
     toJSON(): any;
 }
