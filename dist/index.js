@@ -372,16 +372,16 @@ var Resource = /** @class */ (function () {
                     throw new exceptions.ImproperlyConfiguredError("No relation found on " + this.toResourceName() + "[" + thisKey + "]. Did you define it on " + this.toResourceName() + ".related?");
                 }
                 if (manager.many) {
-                    return manager.objects.map(function (thisResource) {
+                    return manager.resources.map(function (thisResource) {
                         return thisResource.get(pieces_1.join('.'));
                     });
                 }
-                return manager.objects[0].get(pieces_1.join('.'));
+                return manager.resources[0].get(pieces_1.join('.'));
             }
             else if (Boolean(thisValue) && manager) {
                 // If the related manager is a single object and is inflated, auto resolve the resource.get(key) to that object
                 // @todo Maybe we should always return the manager? Or maybe we should always return the resolved object(s)? I am skeptical about this part
-                return !manager.many && manager.resolved ? manager.objects[0] : manager;
+                return !manager.many && manager.resolved ? manager.resources[0] : manager;
             }
             else {
                 return thisValue;
@@ -395,10 +395,10 @@ var Resource = /** @class */ (function () {
                 var key_1 = String(managers.shift());
                 var manager = this.managers[key_1];
                 if (manager.many) {
-                    obj[key_1] = manager.objects.map(function (subResource) { return subResource.get(); });
+                    obj[key_1] = manager.resources.map(function (subResource) { return subResource.get(); });
                 }
-                else if (!manager.many && manager.objects[0]) {
-                    obj[key_1] = manager.objects[0].get();
+                else if (!manager.many && manager.resources[0]) {
+                    obj[key_1] = manager.resources[0].get();
                 }
             }
             return obj;
@@ -422,7 +422,7 @@ var Resource = /** @class */ (function () {
                     var manager_1 = _this.managers[thisKey];
                     manager_1.resolve().then(function () {
                         var relatedKey = pieces_2.join('.');
-                        var promises = manager_1.objects.map(function (resource) {
+                        var promises = manager_1.resources.map(function (resource) {
                             return resource.getAsync(relatedKey);
                         });
                         Promise.all(promises).then(function (values) {
@@ -654,12 +654,10 @@ var Resource = /** @class */ (function () {
     Resource._client = new client_1.DefaultClient('/');
     Resource.queued = {};
     Resource.uniqueKey = 'id';
-    Resource.perPage = null;
     Resource.defaults = {};
     Resource.RelatedManagerClass = related_1.default;
     Resource.validation = {};
     Resource.normalization = {};
-    Resource.aliases = {};
     Resource.fields = [];
     Resource.related = {};
     return Resource;
