@@ -50,6 +50,7 @@ export const GroupResource = BaseTestingResource.extend({
 export const CommentResource = BaseTestingResource.extend({
     endpoint: '/comments',
     related: {
-        post: PostResource
+        post: PostResource,
+        user: UserResource
     }
 })

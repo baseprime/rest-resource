@@ -7,10 +7,11 @@ REST Resource is a library that makes your life simpler when working with REST A
   - Call to your resources as if they're already loaded, REST Resource sorts out which ones to GET
 - **[Related Resources](#related-resources)**
   - Quickly wire up your Resources and which ones they're related to
-- **[Attribute resolution on Related Resources](#related-attribute-lookups-with-getasync)**
+- **[Attribute resolution on Related Resources](#related-attribute-lookups-with-resolveAttribute)**
   - Get related attributes as easily as:
     ```javascript
-    await user.getAsync('address.city.name')
+    await comment.resolveAttribute('user.address.city.name')
+    // GET /users/1
     // GET /addresses/1
     // GET /cities/1
     // => San Francisco, CA
@@ -133,13 +134,13 @@ console.log(patsy.attributes)
 //        groups: [1, 2] // Notice this list contains an already retrieved group (1)
 //    }
 
-let arthurTitle = arthur.getAsync('role.title')
-let arthurGroup = arthur.getAsync('groups.name')
+let arthurTitle = arthur.resolveAttribute('role.title')
+let arthurGroup = arthur.resolveAttribute('groups.name')
 // GET /roles/1
 // GET /groups/1
 
-let patsyTitle = patsy.getAsync('role.title')
-let patsyGroup = patsy.getAsync('groups.name')
+let patsyTitle = patsy.resolveAttribute('role.title')
+let patsyGroup = patsy.resolveAttribute('groups.name')
 // GET /roles/2
 // GET /groups/2
 // Does not need to GET /groups/1
@@ -282,21 +283,21 @@ await user.resolveRelated(['role']) // Will ignore all but "role" field (notice 
 ## Recursive resolving with `{ resolveRelatedDeep: true }`
 To resolve all attributes recursively, you can provide `{ resolveRelatedDeep: true }` instead. This will retrieve all related resources, and any other related resources attached to those resources. Be careful when using this option as it may cause performance issues.
 
-## Related Attribute Lookups with `getAsync()`
+## Related Attribute Lookups with `resolveAttribute()`
 REST Resource automatically resolves properties from related lookups, then decides what fields it needs to call `resource.resolveRelated()`
 
 ```javascript
 let roger = await UserResource.detail(543)
 // GET /users/543
 
-let title = await roger.getAsync('role.title')
+let title = await roger.resolveAttribute('role.title')
 // GET /roles/<id>
 
 console.log(title)
 // => Shrubber
 ```
 
-#### Note: `resource.getAsync(attribute)` is one of the most useful features of REST Resource as it allows you to define the fields that are necessary to build your app, and REST Resource will intelligently request only the data it _needs_ from the API!
+#### Note: `resource.resolveAttribute(attribute)` is one of the most useful features of REST Resource as it allows you to define the fields that are necessary to build your app, and REST Resource will intelligently request only the data it _needs_ from the API!
 
 # Acts like a Model
 You can use REST Resource like a RESTful Model. REST Resource tracks changes in each Resource instance's attributes and uses RESTful HTTP Verbs like `GET`, `POST`, `PUT`, `PATCH`, and `DELETE` accordingly:

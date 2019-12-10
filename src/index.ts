@@ -360,13 +360,13 @@ export default class Resource {
      * You can also get all properties by not providing any arguments
      * @param? key
      */
-    get(key?: string): any {
+    get<T = any>(key?: string): T {
         if (typeof key !== 'undefined') {
             // Get a value
             const pieces = key.split('.')
             const thisKey = String(pieces.shift())
             const thisValue = this.attributes[thisKey]
-            const manager: RelatedManager = this.managers[thisKey]
+            const manager: RelatedManager = this.rel(thisKey)
 
             if (pieces.length > 0) {
                 // We need to go deeper...
@@ -374,17 +374,21 @@ export default class Resource {
                     throw new exceptions.ImproperlyConfiguredError(`No relation found on ${this.toResourceName()}[${thisKey}]. Did you define it on ${this.toResourceName()}.related?`)
                 }
 
+                if (!manager.hasValues()) {
+                    return undefined
+                }
+
                 if (manager.many) {
                     return manager.resources.map((thisResource) => {
                         return thisResource.get(pieces.join('.'))
-                    })
+                    }) as any
                 }
 
-                return manager.resources[0].get(pieces.join('.'))
+                return manager.resource.get(pieces.join('.'))
             } else if (Boolean(thisValue) && manager) {
                 // If the related manager is a single object and is inflated, auto resolve the resource.get(key) to that object
                 // @todo Maybe we should always return the manager? Or maybe we should always return the resolved object(s)? I am skeptical about this part
-                return !manager.many && manager.resolved ? manager.resources[0] : manager
+                return (!manager.many && manager.resolved ? manager.resource : manager) as any
             } else {
                 return thisValue
             }
@@ -394,14 +398,14 @@ export default class Resource {
             const obj = Object.assign({}, this.attributes)
             while (managers.length) {
                 const key = String(managers.shift())
-                const manager = this.managers[key]
+                const manager = this.rel(key)
                 if (manager.many) {
                     obj[key] = manager.resources.map((subResource) => subResource.get())
-                } else if (!manager.many && manager.resources[0]) {
-                    obj[key] = manager.resources[0].get()
+                } else if (!manager.many && manager.resource) {
+                    obj[key] = manager.resource.get()
                 }
             }
-            return obj
+            return obj as T
         }
     }
 
@@ -410,7 +414,7 @@ export default class Resource {
      * TypeError in get() will be thrown, we're just doing the resolveRelated() work for you...
      * @param key
      */
-    getAsync(key: string): Promise<any> {
+    resolveAttribute<T = any>(key: string): Promise<T> {
         return new Promise((resolve, reject) => {
             try {
                 resolve(this.get(key))
@@ -418,21 +422,21 @@ export default class Resource {
                 if (exceptions.AttributeError.isInstance(e)) {
                     const pieces = key.split('.')
                     const thisKey = String(pieces.shift())
-                    const manager = this.managers[thisKey]
+                    const manager = this.rel(thisKey)
 
                     manager.resolve().then(() => {
                         let relatedKey = pieces.join('.')
                         let promises = manager.resources.map((resource: Resource) => {
-                            return resource.getAsync(relatedKey)
+                            return resource.resolveAttribute(relatedKey)
                         })
 
                         Promise.all(promises).then((values) => {
                             if (manager.many) {
-                                resolve(values)
+                                resolve(values as any)
                             } else if (values.length === 1) {
-                                resolve(values[0])
+                                resolve(values[0] as any)
                             } else {
-                                resolve(values)
+                                resolve(values as any)
                             }
                         })
                     })
@@ -441,6 +445,14 @@ export default class Resource {
                 }
             }
         })
+    }
+
+    /**
+     * Alias of resource.resolveAttribute(key)
+     * @param key
+     */
+    getAsync<T = any>(key: string) {
+        return this.resolveAttribute<T>(key)
     }
 
     /**
@@ -459,10 +471,10 @@ export default class Resource {
 
         if (!_.isEqual(currentValue, newValue)) {
             // Also resolve any related Resources back into foreign keys
-            if (newValue && this.managers[key] instanceof RelatedManager) {
+            if (newValue && this.rel(key) instanceof RelatedManager) {
                 // newValue has an old manager -- needs a new one
                 // Create a new RelatedManager
-                let manager = this.managers[key].fromValue(newValue)
+                let manager = this.rel(key).fromValue(newValue)
                 newValue = manager.toJSON()
                 this.managers[key] = manager
             }
@@ -505,7 +517,7 @@ export default class Resource {
                 continue
             }
 
-            const manager = this.managers[resourceKey]
+            const manager = this.rel(resourceKey)
             const promise = manager.resolve().then((objects) => {
                 if (deep) {
                     let otherPromises = objects.map((resource) => resource.resolveRelated({ deep, managers }))
@@ -619,11 +631,13 @@ export default class Resource {
     }
 
     update<T extends Resource>(this: T): Promise<T> {
-        return this.getConstructor().detail(this.id, { useCache: false }).then((resource) => {
-            for(let key in resource.attributes) {
-                this.attributes[key] = resource.attributes[key]
-            }
-        }) as Promise<T>
+        return this.getConstructor()
+            .detail(this.id, { useCache: false })
+            .then((resource) => {
+                for (let key in resource.attributes) {
+                    this.attributes[key] = resource.attributes[key]
+                }
+            }) as Promise<T>
     }
 
     delete(options?: RequestConfig) {

@@ -92,12 +92,16 @@ describe('Resources', () => {
 
     it('gets properties correctly (async)', async () => {
         // This post should already be cached by this point
-        let post = await PostResource.detail('1')
-        let userName = await post.getAsync('user.name')
-        expect(userName).to.equal('Leanne Graham')
-        expect(await post.getAsync('user.propDoesNotExist')).to.be.undefined
+        let comment = await CommentResource.detail('90')
+        // Make sure resolveAttribute works
+        let userName = await comment.resolveAttribute('post.user.name')
+        // Also make sure getAsync is an alias of resolveAttribute
+        let userEmail = await comment.getAsync('post.user.email')
+        expect(userName).to.equal('Ervin Howell')
+        expect(userEmail).to.equal('Shanna@melissa.tv')
+        expect(await comment.resolveAttribute('post.user.propDoesNotExist')).to.be.undefined
         try {
-            await post.getAsync('user.nested.propDoesNotExist')
+            await comment.resolveAttribute('post.user.nested.propDoesNotExist')
         } catch (e) {
             expect(e.name).to.equal('ImproperlyConfiguredError')
         }
