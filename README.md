@@ -75,14 +75,14 @@ class UserResource extends Resource {
     }
 }
 
-// Sends a GET to /users/123
 const arthur = await UserResource.detail(123)
+// GET /users/123
 arthur.greet()
 // => I am Arthur, King of the Britons!
 
 // Or, get many resources
-// Sends a GET to /users
 const users = await UserResource.list()
+// GET /users
 
 let robin = users.resources[0]
 robin.greet()
