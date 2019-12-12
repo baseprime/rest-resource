@@ -23,12 +23,20 @@ export type ExtractorFunction<T extends Resource, U extends any = any> = (result
 
 export class BaseClient {
     axios: AxiosInstance
-    hostname: string
+    config: AxiosRequestConfig = {}
 
     constructor(baseURL: string, config: AxiosRequestConfig = {}) {
-        let opts = Object.assign({ baseURL }, config)
-        this.hostname = opts.baseURL
-        this.axios = axios.create(opts)
+        this.config = Object.assign({ baseURL }, config)
+        this.axios = axios.create(this.config)
+    }
+
+    get hostname() {
+        return this.config.baseURL
+    }
+
+    set hostname(value: string) {
+        this.config.baseURL = value
+        this.axios = axios.create(this.config)
     }
 
     static extend<T, U>(this: U, classProps: T): U & T {
