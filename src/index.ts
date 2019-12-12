@@ -12,9 +12,7 @@ const _ = require('lodash')
 export default class Resource {
     static endpoint: string = ''
     static cacheMaxAge: number = 10
-    static _cache: any = {}
-    static _client: DefaultClient = new DefaultClient('/')
-    static _uuid: string
+    static client: DefaultClient = new DefaultClient('/')
     static queued: Record<string, any> = {}
     static uniqueKey: string = 'id'
     static defaults: Record<string, any> = {}
@@ -23,6 +21,8 @@ export default class Resource {
     static normalization: NormalizerDict = {}
     static fields: string[] = []
     static related: RelatedDict = {}
+    static _cache: any = {}
+    static _uuid: string
     _attributes: Record<string, any> = {}
     uuid: string
     attributes: Record<string, any> = {}
@@ -175,25 +175,6 @@ export default class Resource {
         return Object.keys(this.cache)
             .map((cacheKey) => this.getCached(cacheKey))
             .filter((valid) => !!valid)
-    }
-
-    /**
-     * Get HTTP client for a resource Class
-     * This is meant to be overridden if we want to define a client at any time
-     */
-    static get client() {
-        if (!this._client) {
-            throw new exceptions.ImproperlyConfiguredError('Resource client class not defined. Did you try Resource.setClient or overriding Resource.getClient?')
-        }
-        return this._client
-    }
-
-    /**
-     * Set HTTP client
-     * @param client instanceof Client
-     */
-    static set client(client) {
-        this._client = client
     }
 
     /**
