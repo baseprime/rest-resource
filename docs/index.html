@@ -82,10 +82,9 @@
 						</ul>
 					</li>
 					<li><strong><a href="#related-attribute-lookups-with-resolveAttribute">Attribute resolution on Related Resources</a></strong><ul>
-							<li>Get related attributes as easily as:<pre><code class="language-javascript"><span class="hljs-keyword">await</span> comment.resolveAttribute(<span class="hljs-string">'user.address.city.name'</span>)
+							<li>Get related attributes as easily as:<pre><code class="language-javascript"><span class="hljs-keyword">await</span> comment.resolveAttribute(<span class="hljs-string">'post.author.city'</span>)
+<span class="hljs-comment">// GET /posts/1</span>
 <span class="hljs-comment">// GET /users/1</span>
-<span class="hljs-comment">// GET /addresses/1</span>
-<span class="hljs-comment">// GET /cities/1</span>
 <span class="hljs-comment">// =&gt; San Francisco, CA</span></code></pre>
 							</li>
 						</ul>
@@ -121,7 +120,7 @@
 				<a href="#examples" id="examples" style="color: inherit; text-decoration: none;">
 					<h2>Examples</h2>
 				</a>
-				<p><a href="https://jsfiddle.net/ro6fj51n/">Play around with a working example on JSFiddle</a></p>
+				<p><a href="https://jsfiddle.net/baseprime/drexLtwv/">Play around with a working example on JSFiddle</a></p>
 				<p>(assuming <code>Node &gt;= v12</code>)</p>
 				<p>Given the URIs:</p>
 				<pre><code><span class="hljs-built_in">/users
@@ -140,14 +139,14 @@
     }
 }
 
-<span class="hljs-comment">// Sends a GET to /users/123</span>
 <span class="hljs-keyword">const</span> arthur = <span class="hljs-keyword">await</span> UserResource.detail(<span class="hljs-number">123</span>)
+<span class="hljs-comment">// GET /users/123</span>
 arthur.greet()
 <span class="hljs-comment">// =&gt; I am Arthur, King of the Britons!</span>
 
 <span class="hljs-comment">// Or, get many resources</span>
-<span class="hljs-comment">// Sends a GET to /users</span>
 <span class="hljs-keyword">const</span> users = <span class="hljs-keyword">await</span> UserResource.list()
+<span class="hljs-comment">// GET /users</span>
 
 <span class="hljs-keyword">let</span> robin = users.resources[<span class="hljs-number">0</span>]
 robin.greet()

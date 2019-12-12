@@ -18,8 +18,9 @@ export interface ResourceResponse<T extends Resource, U extends any = any> exten
 export declare type ExtractorFunction<T extends Resource, U extends any = any> = (result: ResourceResponse<T, U>['response']) => ResourceResponse<T, U>;
 export declare class BaseClient {
     axios: AxiosInstance;
-    hostname: string;
+    config: AxiosRequestConfig;
     constructor(baseURL: string, config?: AxiosRequestConfig);
+    hostname: string;
     static extend<T, U>(this: U, classProps: T): U & T;
     negotiateContent<T extends typeof Resource>(ResourceClass: T): ExtractorFunction<InstanceType<T>>;
     list<T extends typeof Resource>(ResourceClass: T, options?: RequestConfig): ListResponse<T>;
