@@ -160,27 +160,6 @@ var Resource = /** @class */ (function () {
             .map(function (cacheKey) { return _this.getCached(cacheKey); })
             .filter(function (valid) { return !!valid; });
     };
-    Object.defineProperty(Resource, "client", {
-        /**
-         * Get HTTP client for a resource Class
-         * This is meant to be overridden if we want to define a client at any time
-         */
-        get: function () {
-            if (!this._client) {
-                throw new exceptions.ImproperlyConfiguredError('Resource client class not defined. Did you try Resource.setClient or overriding Resource.getClient?');
-            }
-            return this._client;
-        },
-        /**
-         * Set HTTP client
-         * @param client instanceof Client
-         */
-        set: function (client) {
-            this._client = client;
-        },
-        enumerable: true,
-        configurable: true
-    });
     Object.defineProperty(Resource, "validators", {
         /**
          * Backwards compatibility
@@ -662,8 +641,7 @@ var Resource = /** @class */ (function () {
     };
     Resource.endpoint = '';
     Resource.cacheMaxAge = 10;
-    Resource._cache = {};
-    Resource._client = new client_1.DefaultClient('/');
+    Resource.client = new client_1.DefaultClient('/');
     Resource.queued = {};
     Resource.uniqueKey = 'id';
     Resource.defaults = {};
@@ -672,6 +650,7 @@ var Resource = /** @class */ (function () {
     Resource.normalization = {};
     Resource.fields = [];
     Resource.related = {};
+    Resource._cache = {};
     return Resource;
 }());
 exports.default = Resource;

@@ -6,10 +6,21 @@ tslib_1.__exportStar(require("axios"), exports);
 var BaseClient = /** @class */ (function () {
     function BaseClient(baseURL, config) {
         if (config === void 0) { config = {}; }
-        var opts = Object.assign({ baseURL: baseURL }, config);
-        this.hostname = opts.baseURL;
-        this.axios = axios_1.default.create(opts);
+        this.config = {};
+        this.config = Object.assign({ baseURL: baseURL }, config);
+        this.axios = axios_1.default.create(this.config);
     }
+    Object.defineProperty(BaseClient.prototype, "hostname", {
+        get: function () {
+            return this.config.baseURL;
+        },
+        set: function (value) {
+            this.config.baseURL = value;
+            this.axios = axios_1.default.create(this.config);
+        },
+        enumerable: true,
+        configurable: true
+    });
     BaseClient.extend = function (classProps) {
         // @todo Figure out typings here -- this works perfectly but typings are not happy
         // @ts-ignore

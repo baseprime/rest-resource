@@ -4,7 +4,7 @@
  * 
  * @author Greg Sabia Tucker <greg@narrowlabs.com> (http://basepri.me)
  * @link undefined
- * @version 0.8.1
+ * @version 0.8.2
  * 
  * Released under MIT License. See LICENSE.txt or http://opensource.org/licenses/MIT
  */
@@ -891,27 +891,6 @@ var Resource = /** @class */function () {
             return !!valid;
         });
     };
-    Object.defineProperty(Resource, "client", {
-        /**
-         * Get HTTP client for a resource Class
-         * This is meant to be overridden if we want to define a client at any time
-         */
-        get: function get() {
-            if (!this._client) {
-                throw new exceptions.ImproperlyConfiguredError('Resource client class not defined. Did you try Resource.setClient or overriding Resource.getClient?');
-            }
-            return this._client;
-        },
-        /**
-         * Set HTTP client
-         * @param client instanceof Client
-         */
-        set: function set(client) {
-            this._client = client;
-        },
-        enumerable: true,
-        configurable: true
-    });
     Object.defineProperty(Resource, "validators", {
         /**
          * Backwards compatibility
@@ -1395,8 +1374,7 @@ var Resource = /** @class */function () {
     };
     Resource.endpoint = '';
     Resource.cacheMaxAge = 10;
-    Resource._cache = {};
-    Resource._client = new client_1.DefaultClient('/');
+    Resource.client = new client_1.DefaultClient('/');
     Resource.queued = {};
     Resource.uniqueKey = 'id';
     Resource.defaults = {};
@@ -1405,6 +1383,7 @@ var Resource = /** @class */function () {
     Resource.normalization = {};
     Resource.fields = [];
     Resource.related = {};
+    Resource._cache = {};
     return Resource;
 }();
 exports.default = Resource;
@@ -14235,10 +14214,21 @@ var BaseClient = /** @class */function () {
         if (config === void 0) {
             config = {};
         }
-        var opts = Object.assign({ baseURL: baseURL }, config);
-        this.hostname = opts.baseURL;
-        this.axios = axios_1.default.create(opts);
+        this.config = {};
+        this.config = Object.assign({ baseURL: baseURL }, config);
+        this.axios = axios_1.default.create(this.config);
     }
+    Object.defineProperty(BaseClient.prototype, "hostname", {
+        get: function get() {
+            return this.config.baseURL;
+        },
+        set: function set(value) {
+            this.config.baseURL = value;
+            this.axios = axios_1.default.create(this.config);
+        },
+        enumerable: true,
+        configurable: true
+    });
     BaseClient.extend = function (classProps) {
         // @todo Figure out typings here -- this works perfectly but typings are not happy
         // @ts-ignore

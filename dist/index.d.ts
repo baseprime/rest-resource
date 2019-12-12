@@ -5,9 +5,7 @@ import * as exceptions from './exceptions';
 export default class Resource {
     static endpoint: string;
     static cacheMaxAge: number;
-    static _cache: any;
-    static _client: DefaultClient;
-    static _uuid: string;
+    static client: DefaultClient;
     static queued: Record<string, any>;
     static uniqueKey: string;
     static defaults: Record<string, any>;
@@ -16,6 +14,8 @@ export default class Resource {
     static normalization: NormalizerDict;
     static fields: string[];
     static related: RelatedDict;
+    static _cache: any;
+    static _uuid: string;
     _attributes: Record<string, any>;
     uuid: string;
     attributes: Record<string, any>;
@@ -49,15 +49,6 @@ export default class Resource {
      */
     static getCached<T extends typeof Resource>(this: T, id: string | number): CachedResource<InstanceType<T>> | undefined;
     static getCachedAll<T extends typeof Resource>(this: T): CachedResource<InstanceType<T>>[];
-    /**
-     * Get HTTP client for a resource Class
-     * This is meant to be overridden if we want to define a client at any time
-     */
-    /**
-    * Set HTTP client
-    * @param client instanceof Client
-    */
-    static client: DefaultClient;
     /**
      * Backwards compatibility
      * Remove in next major release @todo
