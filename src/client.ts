@@ -66,42 +66,53 @@ export class BaseClient {
         }
     }
 
-    list<T extends typeof Resource>(ResourceClass: T, options: RequestConfig = {}): ListResponse<T> {
-        return this.get(ResourceClass.getListRoutePath(options.query)).then(this.negotiateContent(ResourceClass))
+    /**
+     * Client.prototype.list() and Client.prototype.detail() are the primary purpose of defining these here. Simply runs a GET on the list route path (eg. /users) and negotiates the content
+     * @param ResourceClass 
+     * @param options 
+     */
+    list<T extends typeof Resource, U = any>(ResourceClass: T, options: RequestConfig = {}): ListResponse<T> {
+        return this.get<U>(ResourceClass.getListRoutePath(options.query), options).then(this.negotiateContent(ResourceClass))
     }
 
-    detail<T extends typeof Resource>(ResourceClass: T, id: string, options: RequestConfig = {}) {
-        return this.get(ResourceClass.getDetailRoutePath(id, options.query)).then(this.negotiateContent(ResourceClass))
+    /**
+     * Client.prototype.detail() and Client.prototype.list() are the primary purpose of defining these here. Simply runs a GET on the detail route path (eg. /users/123) and negotiates the content
+     * @param ResourceClass 
+     * @param options 
+     */
+    detail<T extends typeof Resource, U = any>(ResourceClass: T, id: string, options: RequestConfig = {}) {
+        return this.get<U>(ResourceClass.getDetailRoutePath(id, options.query), options).then(this.negotiateContent(ResourceClass))
     }
 
-    get(path: string, options: any = {}): AxiosPromise<any> {
-        return this.axios.get(path, options).catch((e: Error) => this.onError(e))
+    get<T = any>(path: string, options: AxiosRequestConfig = {}): AxiosPromise<T> {
+        return this.axios.get<T>(path, options).catch((e: Error) => this.onError(e))
     }
 
-    put(path: string, body: any = {}, options: AxiosRequestConfig = {}) {
-        return this.axios.put(path, body, options).catch((e: Error) => this.onError(e))
+    put<T = any>(path: string, body: any = {}, options: AxiosRequestConfig = {}): AxiosPromise<T> {
+        return this.axios.put<T>(path, body, options).catch((e: Error) => this.onError(e))
     }
-    post(path: string, body: any = {}, options: AxiosRequestConfig = {}) {
-        return this.axios.post(path, body, options).catch((e: Error) => this.onError(e))
-    }
-
-    patch(path: string, body: any = {}, options: AxiosRequestConfig = {}) {
-        return this.axios.patch(path, body, options).catch((e: Error) => this.onError(e))
+    post<T = any>(path: string, body: any = {}, options: AxiosRequestConfig = {}): AxiosPromise<T> {
+        return this.axios.post<T>(path, body, options).catch((e: Error) => this.onError(e))
     }
 
-    delete(path: string, options: AxiosRequestConfig = {}) {
+    patch<T = any>(path: string, body: any = {}, options: AxiosRequestConfig = {}): AxiosPromise<T> {
+        return this.axios.patch<T>(path, body, options).catch((e: Error) => this.onError(e))
+    }
+
+    delete<T = any>(path: string, options: AxiosRequestConfig = {}): AxiosPromise<T> {
         return this.axios.delete(path, options).catch((e: Error) => this.onError(e))
     }
 
-    head(path: string, options: AxiosRequestConfig = {}) {
+    head<T = any>(path: string, options: AxiosRequestConfig = {}): AxiosPromise<T> {
         return this.axios.head(path, options).catch((e: Error) => this.onError(e))
     }
 
-    options(path: string, options: AxiosRequestConfig = {}) {
+    options<T = any>(path: string, options: AxiosRequestConfig = {}): AxiosPromise<T> {
         // @ts-ignore -- Axios forgot to add options to AxiosInstance interface
         return this.axios.options(path, options).catch((e: Error) => this.onError(e))
     }
 
+    // Optionally catch all errors in client class (default: rethrow)
     onError(exception: Error | AxiosError): any {
         throw exception
     }
