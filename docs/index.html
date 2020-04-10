@@ -606,6 +606,47 @@ user.validate()
         <span class="hljs-attr">user</span>: normalizerFactory(<span class="hljs-string">'NumberNormalizer'</span>)
     }
 }</code></pre>
+				<a href="#calling-other-relatednested-routes" id="calling-other-relatednested-routes" style="color: inherit; text-decoration: none;">
+					<h1>Calling Other Related/Nested Routes</h1>
+				</a>
+				<p>You can wrap routes on the Resource&#39;s endpoint by using <code>wrap(path, query)</code> methods on the class constructor and its prototype. Once you define the wrapped endpoint, you can <code>get(options)</code>, <code>post(data, options)</code>, <code>put(data, options)</code>, etc.</p>
+				<a href="#list-routes" id="list-routes" style="color: inherit; text-decoration: none;">
+					<h2>List routes</h2>
+				</a>
+				<pre><code class="language-javascript"><span class="hljs-keyword">let</span> wrappedRequest = PostResource.wrap(<span class="hljs-string">'/pending'</span>)
+<span class="hljs-keyword">let</span> comments = <span class="hljs-keyword">await</span> wrappedRequest.get()
+<span class="hljs-comment">// GET /posts/pending</span></code></pre>
+				<a href="#detail-routes" id="detail-routes" style="color: inherit; text-decoration: none;">
+					<h2>Detail routes</h2>
+				</a>
+				<pre><code class="language-javascript"><span class="hljs-keyword">let</span> firstPost = <span class="hljs-keyword">await</span> PostResource.detail(<span class="hljs-number">1</span>)
+<span class="hljs-comment">// GET /posts/1</span>
+<span class="hljs-keyword">let</span> wrappedRequest = firstPost.wrap(<span class="hljs-string">'/comments'</span>)
+<span class="hljs-keyword">let</span> comments = <span class="hljs-keyword">await</span> wrappedRequest.get()
+<span class="hljs-comment">// GET /posts/1/comments</span></code></pre>
+				<a href="#with-filterquery-params" id="with-filterquery-params" style="color: inherit; text-decoration: none;">
+					<h4>With Filter/Query Params</h4>
+				</a>
+				<p>You can provide a query on <code>wrap(path, query)</code> methods</p>
+				<pre><code class="language-javascript"><span class="hljs-keyword">let</span> firstPost = <span class="hljs-keyword">await</span> PostResource.detail(<span class="hljs-number">1</span>)
+<span class="hljs-comment">// GET /posts/1</span>
+<span class="hljs-keyword">await</span> firstPost.wrap(<span class="hljs-string">'/comments'</span>, { <span class="hljs-attr">approved</span>: <span class="hljs-literal">true</span>, <span class="hljs-attr">user</span>: <span class="hljs-number">1</span> }).get()
+<span class="hljs-comment">// GET /posts/1/comments?approved=true&amp;user=1</span></code></pre>
+				<a href="#post-put-patch-etc" id="post-put-patch-etc" style="color: inherit; text-decoration: none;">
+					<h4>POST, PUT, PATCH, etc.</h4>
+				</a>
+				<pre><code class="language-javascript"><span class="hljs-keyword">let</span> firstPost = <span class="hljs-keyword">await</span> PostResource.detail(<span class="hljs-number">1</span>)
+<span class="hljs-comment">// GET /posts/1</span>
+
+<span class="hljs-keyword">let</span> approveEndpoint = firstPost.wrap(<span class="hljs-string">'/approve'</span>)
+<span class="hljs-keyword">await</span> approveEndpoint.post({ <span class="hljs-attr">approverId</span>: <span class="hljs-number">1</span> })
+<span class="hljs-comment">// POST /posts/1/approve </span>
+<span class="hljs-comment">// {</span>
+<span class="hljs-comment">//     approverId: 1</span>
+<span class="hljs-comment">// }</span></code></pre>
+				<p><strong>Note</strong>: If the instance of the Resource does not have an ID (eg. is not saved), an error will be thrown:</p>
+				<pre><code class="language-javascript"><span class="hljs-keyword">let</span> newPost = <span class="hljs-keyword">new</span> PostResource({ <span class="hljs-attr">user</span>: <span class="hljs-number">1</span>, <span class="hljs-attr">title</span>: <span class="hljs-string">"sunt aut facere repellat"</span> })
+newPost.wrap(<span class="hljs-string">'/comments'</span>) <span class="hljs-comment">// AssertionError!! (Resource is not saved)</span></code></pre>
 				<a href="#further-reading" id="further-reading" style="color: inherit; text-decoration: none;">
 					<h1>Further Reading</h1>
 				</a>

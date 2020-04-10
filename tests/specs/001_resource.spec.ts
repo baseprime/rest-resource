@@ -167,4 +167,41 @@ describe('Resources', () => {
             expect(post.id).to.exist
         })
     })
+
+    it('calls relative list routes correctly', async () => {
+        let filteredPostResult = await PostResource.wrap('/1', { user: 1 }).get()
+        expect(filteredPostResult.config.method.toLowerCase()).to.equal('get')
+        expect(filteredPostResult.config.url).to.equal('/posts/1?user=1')
+        let optionsResult = await PostResource.wrap('/1', { user: 1 }).get({ headers: { 'X-Taco': true } })
+        expect(optionsResult.config.headers['X-Taco']).to.be.true
+        try {
+            await PostResource.wrap('/does_not_____exist', { user: 1 }).post({ someBody: true })
+        } catch(e) {
+            expect(String(e.response.status)).to.equal('404')
+            expect(e.config.method.toLowerCase()).to.equal('post')
+            expect(e.config.url).to.equal('/posts/does_not_____exist?user=1')
+            expect(JSON.parse(e.config.data)).to.eql({ someBody: true })
+        }
+
+        try {
+            await PostResource.wrap('does_not_start_with_a_/').post()
+        } catch(e) {
+            expect(e.name).to.contain('AssertionError')
+        }
+    })
+
+    it('calls relative detail routes correctly', async () => {
+        let post = await PostResource.detail(1)
+        let postResult = await post.wrap('/comments').get()
+        let data = postResult.data as any
+        expect(data).to.exist
+        expect(data[0].post).to.equal(1)
+        try {
+            // Remove ID and try to run
+            post.attributes.id = undefined
+            await post.wrap('/comments').get()
+        } catch(e) {
+            expect(e.name).to.contain('AssertionError')
+        }
+    })
 })

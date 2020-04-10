@@ -1,18 +1,36 @@
-import { DefaultClient } from '../src/client'
+import { DefaultClient, AxiosRequestConfig, RequestConfig } from '../src/client'
 import Resource from '../src/index'
 export const TEST_PORT = process.env.TEST_PORT || 8099
+
+export function axiosRequestLogger(request: AxiosRequestConfig) {
+    return new Promise((resolve) => {
+        console.log(`${request.method.toUpperCase()} ${request.url}`)
+        if (request.data) {
+            console.log(`${JSON.stringify(request.data, null, '    ')}`)
+        }
+        resolve(request)
+    })
+}
+
+export function createRequestTracker(client: TestingClient) {
+    return function(request: AxiosRequestConfig) {
+        return new Promise((resolve) => {
+            client.requestTracker[request.url] = (client.requestTracker[request.url] || 0) + 1
+            resolve(request)
+        })
+    }
+}
 
 export class TestingClient extends DefaultClient {
     requestTracker: any = {}
     logging: boolean = false
 
-    get() {
+    constructor(baseURL: string, options?: RequestConfig) {
+        super(baseURL, options)
+        this.axios.interceptors.request.use(createRequestTracker(this))
         if(this.logging) {
-            console.log('GET', arguments[0])
+            this.axios.interceptors.request.use(axiosRequestLogger)
         }
-        this.requestTracker[arguments[0]] = (this.requestTracker[arguments[0]] || 0) + 1
-        // @ts-ignore
-        return DefaultClient.prototype.get.apply(this, arguments)
     }
 }
 

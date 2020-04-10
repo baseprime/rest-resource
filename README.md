@@ -593,6 +593,53 @@ class PostResource extends Resource {
 }
 ```
 
+# Calling Other Related/Nested Routes
+You can wrap routes on the Resource's endpoint by using `wrap(path, query)` methods on the class constructor and its prototype. Once you define the wrapped endpoint, you can `get(options)`, `post(data, options)`, `put(data, options)`, etc.
+
+## List routes
+```javascript
+let wrappedRequest = PostResource.wrap('/pending')
+let comments = await wrappedRequest.get()
+// GET /posts/pending
+```
+
+## Detail routes
+```javascript
+let firstPost = await PostResource.detail(1)
+// GET /posts/1
+let wrappedRequest = firstPost.wrap('/comments')
+let comments = await wrappedRequest.get()
+// GET /posts/1/comments
+```
+
+#### With Filter/Query Params
+You can provide a query on `wrap(path, query)` methods
+```javascript
+let firstPost = await PostResource.detail(1)
+// GET /posts/1
+await firstPost.wrap('/comments', { approved: true, user: 1 }).get()
+// GET /posts/1/comments?approved=true&user=1
+```
+
+#### POST, PUT, PATCH, etc.
+```javascript
+let firstPost = await PostResource.detail(1)
+// GET /posts/1
+
+let approveEndpoint = firstPost.wrap('/approve')
+await approveEndpoint.post({ approverId: 1 })
+// POST /posts/1/approve 
+// {
+//     approverId: 1
+// }
+```
+**Note**: If the instance of the Resource does not have an ID (eg. is not saved), an error will be thrown:
+
+```javascript
+let newPost = new PostResource({ user: 1, title: "sunt aut facere repellat" })
+newPost.wrap('/comments') // AssertionError!! (Resource is not saved)
+```
+
 # Further Reading
 Please see [Documentation](https://htmlpreview.github.io/?https://raw.githubusercontent.com/baseprime/rest-resource/master/docs/classes/_index_.resource.html)
 ```
