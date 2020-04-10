@@ -287,6 +287,15 @@ var Resource = /** @class */ (function () {
             }
         });
     };
+    Resource.wrap = function (relativePath, query) {
+        assert(relativePath && relativePath[0] === '/', "Relative path \"" + relativePath + "\" must start with a \"/\"");
+        var relEndpoint = this.endpoint + relativePath;
+        if (query && Object.keys(query).length) {
+            var qs = querystring_1.stringify(query);
+            relEndpoint = relEndpoint + "?" + qs;
+        }
+        return this.client.bindMethodsToPath(relEndpoint);
+    };
     Resource.toResourceName = function () {
         return this.name;
     };
@@ -615,6 +624,13 @@ var Resource = /** @class */ (function () {
     };
     Resource.prototype.getCached = function () {
         return this.getConstructor().getCached(this.id);
+    };
+    Resource.prototype.wrap = function (relativePath, query) {
+        assert(relativePath && relativePath[0] === '/', "Relative path \"" + relativePath + "\" must start with a \"/\"");
+        assert(this.id, 'Can\'t look up a relative route on a resource that has not been created yet.');
+        var Ctor = this.getConstructor();
+        var thisPath = '/' + this.id + relativePath;
+        return Ctor.wrap(thisPath, query);
     };
     Resource.prototype.isNew = function () {
         return !this.id;

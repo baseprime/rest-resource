@@ -76,6 +76,15 @@ export default class Resource {
      */
     static list<T extends typeof Resource>(this: T, options?: ListOpts): ListResponse<T>;
     static detail<T extends typeof Resource>(this: T, id: string | number, options?: DetailOpts): Promise<InstanceType<T>>;
+    static wrap(relativePath: string, query?: any): {
+        get: (options?: import("axios").AxiosRequestConfig) => import("axios").AxiosPromise<{}>;
+        post: (body?: any, options?: import("axios").AxiosRequestConfig) => import("axios").AxiosPromise<{}>;
+        put: (body?: any, options?: import("axios").AxiosRequestConfig) => import("axios").AxiosPromise<{}>;
+        patch: (body?: any, options?: import("axios").AxiosRequestConfig) => import("axios").AxiosPromise<{}>;
+        head: (options?: import("axios").AxiosRequestConfig) => import("axios").AxiosPromise<{}>;
+        options: (options?: import("axios").AxiosRequestConfig) => import("axios").AxiosPromise<{}>;
+        delete: (options?: import("axios").AxiosRequestConfig) => import("axios").AxiosPromise<{}>;
+    };
     static toResourceName(): string;
     static makeDefaultsObject(): any;
     /**
@@ -149,9 +158,18 @@ export default class Resource {
      */
     validate(): Error[];
     update<T extends Resource>(this: T): Promise<T>;
-    delete(options?: RequestConfig): Promise<any>;
+    delete(options?: RequestConfig): import("axios").AxiosPromise<any>;
     cache<T extends Resource>(this: T, replace?: boolean): T;
     getCached<T extends Resource>(this: T): CachedResource<T>;
+    wrap(relativePath: string, query?: any): {
+        get: (options?: import("axios").AxiosRequestConfig) => import("axios").AxiosPromise<{}>;
+        post: (body?: any, options?: import("axios").AxiosRequestConfig) => import("axios").AxiosPromise<{}>;
+        put: (body?: any, options?: import("axios").AxiosRequestConfig) => import("axios").AxiosPromise<{}>;
+        patch: (body?: any, options?: import("axios").AxiosRequestConfig) => import("axios").AxiosPromise<{}>;
+        head: (options?: import("axios").AxiosRequestConfig) => import("axios").AxiosPromise<{}>;
+        options: (options?: import("axios").AxiosRequestConfig) => import("axios").AxiosPromise<{}>;
+        delete: (options?: import("axios").AxiosRequestConfig) => import("axios").AxiosPromise<{}>;
+    };
     isNew(): boolean;
     id: string;
     toString(): string;
