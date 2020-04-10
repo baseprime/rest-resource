@@ -23,15 +23,34 @@ export declare class BaseClient {
     hostname: string;
     static extend<T, U>(this: U, classProps: T): U & T;
     negotiateContent<T extends typeof Resource>(ResourceClass: T): ExtractorFunction<InstanceType<T>>;
-    list<T extends typeof Resource>(ResourceClass: T, options?: RequestConfig): ListResponse<T>;
-    detail<T extends typeof Resource>(ResourceClass: T, id: string, options?: RequestConfig): Promise<ResourceResponse<InstanceType<T>, any>>;
-    get(path: string, options?: any): AxiosPromise<any>;
-    put(path: string, body?: any, options?: AxiosRequestConfig): Promise<any>;
-    post(path: string, body?: any, options?: AxiosRequestConfig): Promise<any>;
-    patch(path: string, body?: any, options?: AxiosRequestConfig): Promise<any>;
-    delete(path: string, options?: AxiosRequestConfig): Promise<any>;
-    head(path: string, options?: AxiosRequestConfig): Promise<any>;
-    options(path: string, options?: AxiosRequestConfig): any;
+    /**
+     * Client.prototype.list() and Client.prototype.detail() are the primary purpose of defining these here. Simply runs a GET on the list route path (eg. /users) and negotiates the content
+     * @param ResourceClass
+     * @param options
+     */
+    list<T extends typeof Resource, U = any>(ResourceClass: T, options?: RequestConfig): ListResponse<T>;
+    /**
+     * Client.prototype.detail() and Client.prototype.list() are the primary purpose of defining these here. Simply runs a GET on the detail route path (eg. /users/123) and negotiates the content
+     * @param ResourceClass
+     * @param options
+     */
+    detail<T extends typeof Resource, U = any>(ResourceClass: T, id: string, options?: RequestConfig): Promise<ResourceResponse<InstanceType<T>, any>>;
+    get<T = any>(path: string, options?: AxiosRequestConfig): AxiosPromise<T>;
+    put<T = any>(path: string, body?: any, options?: AxiosRequestConfig): AxiosPromise<T>;
+    post<T = any>(path: string, body?: any, options?: AxiosRequestConfig): AxiosPromise<T>;
+    patch<T = any>(path: string, body?: any, options?: AxiosRequestConfig): AxiosPromise<T>;
+    delete<T = any>(path: string, options?: AxiosRequestConfig): AxiosPromise<T>;
+    head<T = any>(path: string, options?: AxiosRequestConfig): AxiosPromise<T>;
+    options<T = any>(path: string, options?: AxiosRequestConfig): AxiosPromise<T>;
+    bindMethodsToPath(relativePath: string): {
+        get: (options?: AxiosRequestConfig) => AxiosPromise<{}>;
+        post: (body?: any, options?: AxiosRequestConfig) => AxiosPromise<{}>;
+        put: (body?: any, options?: AxiosRequestConfig) => AxiosPromise<{}>;
+        patch: (body?: any, options?: AxiosRequestConfig) => AxiosPromise<{}>;
+        head: (options?: AxiosRequestConfig) => AxiosPromise<{}>;
+        options: (options?: AxiosRequestConfig) => AxiosPromise<{}>;
+        delete: (options?: AxiosRequestConfig) => AxiosPromise<{}>;
+    };
     onError(exception: Error | AxiosError): any;
 }
 export declare class DefaultClient extends BaseClient {

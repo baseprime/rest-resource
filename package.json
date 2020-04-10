@@ -1,6 +1,6 @@
 {
   "name": "rest-resource",
-  "version": "0.8.2",
+  "version": "0.8.3",
   "description": "Simplify your REST API resources",
   "main": "./dist/index.js",
   "unpkg": "./dist/dom/rest-resource.js",

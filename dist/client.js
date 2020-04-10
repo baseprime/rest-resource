@@ -52,13 +52,23 @@ var BaseClient = /** @class */ (function () {
             };
         };
     };
+    /**
+     * Client.prototype.list() and Client.prototype.detail() are the primary purpose of defining these here. Simply runs a GET on the list route path (eg. /users) and negotiates the content
+     * @param ResourceClass
+     * @param options
+     */
     BaseClient.prototype.list = function (ResourceClass, options) {
         if (options === void 0) { options = {}; }
-        return this.get(ResourceClass.getListRoutePath(options.query)).then(this.negotiateContent(ResourceClass));
+        return this.get(ResourceClass.getListRoutePath(options.query), options).then(this.negotiateContent(ResourceClass));
     };
+    /**
+     * Client.prototype.detail() and Client.prototype.list() are the primary purpose of defining these here. Simply runs a GET on the detail route path (eg. /users/123) and negotiates the content
+     * @param ResourceClass
+     * @param options
+     */
     BaseClient.prototype.detail = function (ResourceClass, id, options) {
         if (options === void 0) { options = {}; }
-        return this.get(ResourceClass.getDetailRoutePath(id, options.query)).then(this.negotiateContent(ResourceClass));
+        return this.get(ResourceClass.getDetailRoutePath(id, options.query), options).then(this.negotiateContent(ResourceClass));
     };
     BaseClient.prototype.get = function (path, options) {
         var _this = this;
@@ -99,6 +109,18 @@ var BaseClient = /** @class */ (function () {
         // @ts-ignore -- Axios forgot to add options to AxiosInstance interface
         return this.axios.options(path, options).catch(function (e) { return _this.onError(e); });
     };
+    BaseClient.prototype.bindMethodsToPath = function (relativePath) {
+        return {
+            get: this.get.bind(this, relativePath),
+            post: this.post.bind(this, relativePath),
+            put: this.put.bind(this, relativePath),
+            patch: this.patch.bind(this, relativePath),
+            head: this.head.bind(this, relativePath),
+            options: this.options.bind(this, relativePath),
+            delete: this.delete.bind(this, relativePath),
+        };
+    };
+    // Optionally catch all errors in client class (default: rethrow)
     BaseClient.prototype.onError = function (exception) {
         throw exception;
     };
