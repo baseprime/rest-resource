@@ -292,6 +292,18 @@ export default class Resource {
         })
     }
 
+    static wrap(relativePath: string, query?: any) {
+        assert(relativePath && relativePath[0] === '/', `Relative path "${relativePath}" must start with a "/"`)
+        let relEndpoint = this.endpoint + relativePath
+
+        if (query && Object.keys(query).length) {
+            let qs = stringify(query)
+            relEndpoint = `${relEndpoint}?${qs}`
+        }
+
+        return this.client.bindMethodsToPath(relEndpoint)
+    }
+
     static toResourceName(): string {
         return this.name
     }
@@ -632,6 +644,14 @@ export default class Resource {
 
     getCached<T extends Resource>(this: T) {
         return this.getConstructor().getCached(this.id) as CachedResource<T>
+    }
+
+    wrap(relativePath: string, query?: any) {
+        assert(relativePath && relativePath[0] === '/', `Relative path "${relativePath}" must start with a "/"`)
+        assert(this.id, 'Can\'t look up a relative route on a resource that has not been created yet.')
+        let Ctor = this.getConstructor()
+        let thisPath = '/' + this.id + relativePath
+        return Ctor.wrap(thisPath, query)
     }
 
     isNew(): boolean {

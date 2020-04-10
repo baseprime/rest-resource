@@ -112,6 +112,18 @@ export class BaseClient {
         return this.axios.options(path, options).catch((e: Error) => this.onError(e))
     }
 
+    bindMethodsToPath(relativePath: string) {
+        return {
+            get: this.get.bind(this, relativePath),
+            post: this.post.bind(this, relativePath),
+            put: this.put.bind(this, relativePath),
+            patch: this.patch.bind(this, relativePath),
+            head: this.head.bind(this, relativePath),
+            options: this.options.bind(this, relativePath),
+            delete: this.delete.bind(this, relativePath),
+        }
+    }
+
     // Optionally catch all errors in client class (default: rethrow)
     onError(exception: Error | AxiosError): any {
         throw exception
