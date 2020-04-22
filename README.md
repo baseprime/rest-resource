@@ -298,6 +298,18 @@ console.log(title)
 
 #### Note: `resource.resolveAttribute(attribute)` is one of the most useful features of REST Resource as it allows you to define the fields that are necessary to build your app, and REST Resource will intelligently request only the data it _needs_ from the API!
 
+#### Note: You can also define related resources with a function. This is useful when resolving circular dependencies:
+```javascript
+class UserResource extends Resource {
+    static endpoint = '/users'
+    static related() {
+        return {
+            role: RoleResource
+        }
+    }
+}
+```
+
 # Acts like a Model
 You can use REST Resource like a RESTful Model. REST Resource tracks changes in each Resource instance's attributes and uses RESTful HTTP Verbs like `GET`, `POST`, `PUT`, `PATCH`, and `DELETE` accordingly:
 
@@ -480,6 +492,22 @@ user.validate()
 user.set('phone', '555555x1234')
 user.validate()
 // => [{ ValidationError: phone: This field is not valid }]
+```
+
+#### Note: You can also define validations with a function. This is useful when resolving circular dependencies:
+```javascript
+class UserResource extends Resource {
+    static endpoint = '/users'
+    static validation() {
+        return {
+            phone: phoneIsValid,
+            username: [
+                isFiveChars,
+                isAlphaNumeric
+            ]
+        }
+    }
+}
 ```
 
 # Attribute Normalization 
