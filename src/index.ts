@@ -17,7 +17,7 @@ export default class Resource {
     static uniqueKey: string = 'id'
     static defaults: Record<string, any> = {}
     static RelatedManagerClass: typeof RelatedManager = RelatedManager
-    static validation: ValidatorDict = {}
+    static validation: ValidatorDictOrFunction = {}
     static normalization: NormalizerDict = {}
     static fields: string[] = []
     static related: RelatedDictOrFunction = {}
@@ -315,12 +315,20 @@ export default class Resource {
         return Buffer.from(`${this.uuid}:${String(resourceId)}`).toString('base64')
     }
 
-    static getRelatedClasses(): RelatedDict {
+    private static getRelatedClasses(): RelatedDict {
         if ('function' === typeof this.related) {
             return this.related() as RelatedDict
         }
 
         return this.related as RelatedDict
+    }
+
+    private static getValidatorObject(): ValidatorDict {
+        if ('function' === typeof this.validation) {
+            return this.validation() as ValidatorDict
+        }
+
+        return this.validation as ValidatorDict
     }
 
     static extend<T, U>(this: U, classProps: T): U & T {
@@ -475,6 +483,10 @@ export default class Resource {
             } else if ('function' === typeof normalizer) {
                 newValue = normalizer(newValue)
             }
+
+            if (this.changes[key]) {
+                this.changes[key] = newValue
+            }
         }
 
         return newValue
@@ -496,7 +508,7 @@ export default class Resource {
      * Match all related values in `attributes[key]` where key is primary key of related instance defined in `Resource.related[key]`
      * @param options resolveRelatedDict
      */
-    resolveRelated({ deep = false, managers = [] }: resolveRelatedOpts = {}): Promise<void> {
+    resolveRelated({ deep = false, managers = [] }: ResolveRelatedOpts = {}): Promise<void> {
         const promises: Promise<void>[] = []
         for (const resourceKey in this.managers) {
             if (Array.isArray(managers) && managers.length > 0 && !~managers.indexOf(resourceKey)) {
@@ -525,7 +537,7 @@ export default class Resource {
      * Same as `Resource.prototype.resolveRelated` except `options.deep` defaults to `true`
      * @param options
      */
-    resolveRelatedDeep(options?: resolveRelatedOpts): Promise<void> {
+    resolveRelatedDeep(options?: ResolveRelatedOpts): Promise<void> {
         const opts = Object.assign({ deep: true }, options || {})
         return this.resolveRelated(opts)
     }
@@ -626,7 +638,7 @@ export default class Resource {
      */
     validate(): Error[] {
         let errs: Error[] = []
-        let validators = this.getConstructor().validation
+        let validators = this.getConstructor().getValidatorObject()
 
         let tryFn = (func: ValidatorFunc, key: string) => {
             try {
@@ -709,8 +721,9 @@ export default class Resource {
     }
 }
 
+export type TypeOrFunctionReturningType<T> = (() => T) | T
 export type RelatedDict = Record<string, typeof Resource | RelatedLiteral>
-export type RelatedDictOrFunction = (() => RelatedDict) | RelatedDict
+export type RelatedDictOrFunction = TypeOrFunctionReturningType<RelatedDict>
 
 export interface RelatedLiteral {
     to: typeof Resource
@@ -721,6 +734,7 @@ export interface RelatedLiteral {
 export type ValidatorFunc = (value?: any, resource?: Resource, validationExceptionClass?: typeof exceptions.ValidationError) => void
 
 export type ValidatorDict = Record<string, ValidatorFunc | ValidatorFunc[]>
+export type ValidatorDictOrFunction = TypeOrFunctionReturningType<ValidatorDict>
 
 export interface CachedResource<T extends Resource> {
     expires: number
@@ -734,7 +748,7 @@ export interface SaveOptions {
     fields?: any
 }
 
-export interface resolveRelatedOpts {
+export interface ResolveRelatedOpts {
     managers?: string[]
     deep?: boolean
 }

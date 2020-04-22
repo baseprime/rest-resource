@@ -1,7 +1,25 @@
 import { expect } from 'chai'
+import { UserResource } from '..'
 import { BaseNormalizer, NumberNormalizer, CurrencyNormalizer, BooleanNormalizer } from '../../src/helpers/normalization'
 
 describe('Normalization', () => {
+
+    class CustomUserResource extends UserResource {
+        static normalization = {
+            followers: new NumberNormalizer()
+        }
+    }
+
+    it('normalizers work with Resources', async () => {
+        let resource = new CustomUserResource({
+            followers: '5' // Normalizes to a number
+        })
+
+        expect(typeof resource.attributes.followers).to.equal('number')
+        resource.attributes.followers = '6'
+        expect(typeof resource.attributes.followers).to.equal('number')
+        expect(resource.changes.followers).to.equal(6)
+    })
 
     it('base normalizer normalizes correctly', async () => {
         let normalizer = new BaseNormalizer()
