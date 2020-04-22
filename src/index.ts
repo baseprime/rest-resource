@@ -5,8 +5,8 @@ import { uuidWeak } from './util'
 import RelatedManager from './related'
 import { BaseNormalizer, NormalizerDict, ValidNormalizer } from './helpers/normalization'
 import * as exceptions from './exceptions'
+import assert from 'assert'
 
-const assert = require('assert')
 const _ = require('lodash')
 
 export default class Resource {
@@ -62,33 +62,11 @@ export default class Resource {
         for (let attrKey in attributes) {
             this.attributes[attrKey] = attributes[attrKey]
         }
+        // Set/Reset changes
         this.changes = {}
         // Create related managers
         for (let relAttrKey in Ctor.related) {
-            let to = Ctor.related[relAttrKey]
-            let sourceKey = relAttrKey
-            let attrAlias = undefined
-
-            try {
-                if ('object' === typeof to) {
-                    let relatedLiteral = to as RelatedLiteral
-                    to = relatedLiteral.to
-                }
-
-                let RelatedManagerCtor = to.RelatedManagerClass
-                let relatedManager = new RelatedManagerCtor(to, this._attributes[relAttrKey])
-                this.managers[sourceKey] = relatedManager
-
-                if (attrAlias) {
-                    this.managers[attrAlias] = relatedManager
-                }
-            } catch (e) {
-                if (e instanceof assert.AssertionError) {
-                    e.message = `${e.message} -- Relation: ${this.toResourceName()}.related[${relAttrKey}]`
-                }
-
-                throw e
-            }
+            this.managers[relAttrKey] = this.createManagerFor(relAttrKey)
         }
 
         if (this.id) {
@@ -305,6 +283,13 @@ export default class Resource {
     }
 
     static toResourceName(): string {
+        // In an ES5 config, Webpack will reassign class name as a function like 
+        // function class_1() { } when transpiling, so to help out with this in
+        // debugging, replace the class_1 function name with something more descriptive
+        if (this.name.match(/^class_/)) {
+            return `ResourceClass(${this.endpoint})`
+        }
+
         return this.name
     }
 
@@ -546,6 +531,41 @@ export default class Resource {
     }
 
     /**
+     * Create a manager instance on based on current attributes
+     * @param relatedKey
+     */
+    createManagerFor(relatedKey: string) {
+        let Ctor = this.getConstructor()
+        let to = Ctor.related[relatedKey]
+        let nested = false
+
+        try {
+            if ('object' === typeof to) {
+                let relatedLiteral = to as RelatedLiteral
+                to = relatedLiteral.to
+                nested = !!relatedLiteral.nested
+            }
+
+            assert('function' === typeof to, `Couldn't find RelatedResource class with key "${relatedKey}". Does it exist?`)
+
+            let RelatedManagerCtor = to.RelatedManagerClass
+            let relatedManager = new RelatedManagerCtor(to, this._attributes[relatedKey])
+
+            if (nested && relatedManager.canAutoResolve()) {
+                relatedManager.resolveFromObjectValue()
+            }
+
+            return relatedManager
+        } catch (e) {
+            if (e instanceof assert.AssertionError) {
+                e.message = `${e.message} -- Relation: ${this.toResourceName()}.related[${relatedKey}]`
+            }
+
+            throw e
+        }
+    }
+
+    /**
      * Saves the instance -- sends changes as a PATCH or sends whole object as a POST if it's new
      */
     save<T extends this>(options: SaveOptions = {}): Promise<ResourceResponse<T>> {
@@ -648,7 +668,7 @@ export default class Resource {
 
     wrap(relativePath: string, query?: any) {
         assert(relativePath && relativePath[0] === '/', `Relative path "${relativePath}" must start with a "/"`)
-        assert(this.id, 'Can\'t look up a relative route on a resource that has not been created yet.')
+        assert(this.id, "Can't look up a relative route on a resource that has not been created yet.")
         let Ctor = this.getConstructor()
         let thisPath = '/' + this.id + relativePath
         return Ctor.wrap(thisPath, query)
@@ -684,6 +704,7 @@ export type RelatedDict = Record<string, typeof Resource | RelatedLiteral>
 
 export interface RelatedLiteral {
     to: typeof Resource
+    nested?: boolean
     // To add later... Eg. "alias?: string"
 }
 

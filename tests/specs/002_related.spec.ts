@@ -68,4 +68,50 @@ describe('Related', () => {
         expect(user).to.be.instanceOf(UserResource)
     })
 
+    it('auto-resolves nested objects (single)', async () => {
+        // Copy the GroupResource and redefine related.owner
+        const CustomGroupResource = GroupResource.extend({
+            related: Object.assign(GroupResource.related, {
+                owner: {
+                    to: UserResource,
+                    nested: true // This is what we're testing
+                }
+            })
+        })
+
+        let group = await CustomGroupResource.detail(1)
+        expect(group.get('owner.username')).to.equal('Bret')
+        expect(group.managers.owner).to.exist
+        expect(group.managers.owner.resolved).to.be.true
+
+        try {
+            new CustomGroupResource({
+                id: 1,
+                name: 'Test group',
+                owner: {
+                    // No ID here
+                    name: 'Leanne Graham'
+                }
+            })
+        } catch(e) {
+            // Make sure error is thrown 
+            expect(e.name).to.contain('AssertionError')
+        }
+    })
+
+    it('auto-resolves nested objects (many)', async () => {
+        const CustomGroupResource = GroupResource.extend({
+            _cache: {},
+            related: Object.assign(GroupResource.related, {
+                todos: {
+                    to: TodoResource,
+                    nested: true
+                }
+            })
+        })
+
+        let group = await CustomGroupResource.detail(1)
+        expect(group.get('todos.id')).to.eql([1, 2])
+    })
+
 })
