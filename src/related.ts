@@ -50,6 +50,18 @@ export default class RelatedManager<T extends typeof Resource = typeof Resource>
         return Boolean(this.value)
     }
 
+    canAutoResolve() {
+        let value = this.value as any
+        let isObject = Object === this.getValueContentType()
+        let hasIds = this.primaryKeys.length > 0
+
+        if (this.many) {
+            return isObject && hasIds && this.primaryKeys.length === value.length
+        }
+
+        return isObject && hasIds
+    }
+
     /**
      * Return a constructor so we can guess the content type. For example, if an object literal
      * is passed, this function should return `Object`, and it's likely one single object literal representing attributes.
@@ -208,6 +220,35 @@ export default class RelatedManager<T extends typeof Resource = typeof Resource>
             return await this.all(options)
         } else {
             return Object.values(this.resources)
+        }
+    }
+
+    resolveFromObjectValue() {
+        let Ctor = this.to
+        let value = this.value as any
+        let contentType = this.getValueContentType()
+        let newResources: Record<string, InstanceType<T>> = {}
+
+        assert(Object === contentType, `Expected RelatedResource.value to be an Object. Received ${contentType}`)
+
+        try {
+            if (this.many) {
+                for (let i in value) {
+                    let resource = new Ctor(value[i]) as InstanceType<T>
+                    assert(!!resource.id, `RelatedResource.value[${i}] does not have an ID.`)
+                    newResources[resource.id] = resource
+                }
+            } else {
+                let resource = new Ctor(value) as InstanceType<T>
+                assert(!!resource.id, `RelatedResource value does not have an ID.`)
+                newResources[this.getIdFromObject(value)] = new Ctor(value) as InstanceType<T>
+            }
+
+            this.resolved = true
+            Object.assign(this._resources, newResources)
+            return true
+        } catch (e) {
+            throw e
         }
     }
 

@@ -5,8 +5,8 @@ import { uuidWeak } from './util'
 import RelatedManager from './related'
 import { BaseNormalizer, NormalizerDict, ValidNormalizer } from './helpers/normalization'
 import * as exceptions from './exceptions'
+import assert from 'assert'
 
-const assert = require('assert')
 const _ = require('lodash')
 
 export default class Resource {
@@ -17,10 +17,10 @@ export default class Resource {
     static uniqueKey: string = 'id'
     static defaults: Record<string, any> = {}
     static RelatedManagerClass: typeof RelatedManager = RelatedManager
-    static validation: ValidatorDict = {}
+    static validation: ValidatorDictOrFunction = {}
     static normalization: NormalizerDict = {}
     static fields: string[] = []
-    static related: RelatedDict = {}
+    static related: RelatedDictOrFunction = {}
     static _cache: any = {}
     static _uuid: string
     _attributes: Record<string, any> = {}
@@ -62,33 +62,11 @@ export default class Resource {
         for (let attrKey in attributes) {
             this.attributes[attrKey] = attributes[attrKey]
         }
+        // Set/Reset changes
         this.changes = {}
         // Create related managers
-        for (let relAttrKey in Ctor.related) {
-            let to = Ctor.related[relAttrKey]
-            let sourceKey = relAttrKey
-            let attrAlias = undefined
-
-            try {
-                if ('object' === typeof to) {
-                    let relatedLiteral = to as RelatedLiteral
-                    to = relatedLiteral.to
-                }
-
-                let RelatedManagerCtor = to.RelatedManagerClass
-                let relatedManager = new RelatedManagerCtor(to, this._attributes[relAttrKey])
-                this.managers[sourceKey] = relatedManager
-
-                if (attrAlias) {
-                    this.managers[attrAlias] = relatedManager
-                }
-            } catch (e) {
-                if (e instanceof assert.AssertionError) {
-                    e.message = `${e.message} -- Relation: ${this.toResourceName()}.related[${relAttrKey}]`
-                }
-
-                throw e
-            }
+        for (let relAttrKey in Ctor.getRelatedClasses()) {
+            this.managers[relAttrKey] = this.createManagerFor(relAttrKey)
         }
 
         if (this.id) {
@@ -305,6 +283,13 @@ export default class Resource {
     }
 
     static toResourceName(): string {
+        // In an ES5 config, Webpack will reassign class name as a function like
+        // function class_1() { } when transpiling, so to help out with this in
+        // debugging, replace the class_1 function name with something more descriptive
+        if (this.name.match(/^class_/)) {
+            return `ResourceClass(${this.endpoint})`
+        }
+
         return this.name
     }
 
@@ -328,6 +313,22 @@ export default class Resource {
     static getResourceHashKey(resourceId: string | number) {
         assert(Boolean(resourceId), "Can't generate resource hash key with an empty Resource ID. Please ensure Resource is saved first.")
         return Buffer.from(`${this.uuid}:${String(resourceId)}`).toString('base64')
+    }
+
+    private static getRelatedClasses(): RelatedDict {
+        if ('function' === typeof this.related) {
+            return this.related() as RelatedDict
+        }
+
+        return this.related as RelatedDict
+    }
+
+    private static getValidatorObject(): ValidatorDict {
+        if ('function' === typeof this.validation) {
+            return this.validation() as ValidatorDict
+        }
+
+        return this.validation as ValidatorDict
     }
 
     static extend<T, U>(this: U, classProps: T): U & T {
@@ -482,6 +483,10 @@ export default class Resource {
             } else if ('function' === typeof normalizer) {
                 newValue = normalizer(newValue)
             }
+
+            if (this.changes[key]) {
+                this.changes[key] = newValue
+            }
         }
 
         return newValue
@@ -503,7 +508,7 @@ export default class Resource {
      * Match all related values in `attributes[key]` where key is primary key of related instance defined in `Resource.related[key]`
      * @param options resolveRelatedDict
      */
-    resolveRelated({ deep = false, managers = [] }: resolveRelatedOpts = {}): Promise<void> {
+    resolveRelated({ deep = false, managers = [] }: ResolveRelatedOpts = {}): Promise<void> {
         const promises: Promise<void>[] = []
         for (const resourceKey in this.managers) {
             if (Array.isArray(managers) && managers.length > 0 && !~managers.indexOf(resourceKey)) {
@@ -532,17 +537,53 @@ export default class Resource {
      * Same as `Resource.prototype.resolveRelated` except `options.deep` defaults to `true`
      * @param options
      */
-    resolveRelatedDeep(options?: resolveRelatedOpts): Promise<void> {
+    resolveRelatedDeep(options?: ResolveRelatedOpts): Promise<void> {
         const opts = Object.assign({ deep: true }, options || {})
         return this.resolveRelated(opts)
     }
 
     /**
-     * Get related class by key
+     * Get related manager class by key
      * @param key
      */
     rel<T extends typeof Resource>(key: string) {
         return this.managers[key] as RelatedManager<T>
+    }
+
+    /**
+     * Create a manager instance on based on current attributes
+     * @param relatedKey
+     */
+    createManagerFor(relatedKey: string) {
+        let Ctor = this.getConstructor()
+        let related = Ctor.getRelatedClasses()
+        let to = related[relatedKey]
+        let nested = false
+
+        try {
+            if ('object' === typeof to) {
+                let relatedLiteral = to as RelatedLiteral
+                to = relatedLiteral.to
+                nested = !!relatedLiteral.nested
+            }
+
+            assert('function' === typeof to, `Couldn't find RelatedResource class with key "${relatedKey}". Does it exist?`)
+
+            let RelatedManagerCtor = to.RelatedManagerClass
+            let relatedManager = new RelatedManagerCtor(to, this._attributes[relatedKey])
+
+            if (nested && relatedManager.canAutoResolve()) {
+                relatedManager.resolveFromObjectValue()
+            }
+
+            return relatedManager
+        } catch (e) {
+            if (e instanceof assert.AssertionError) {
+                e.message = `${e.message} -- Relation: ${this.toResourceName()}.related[${relatedKey}]`
+            }
+
+            throw e
+        }
     }
 
     /**
@@ -597,7 +638,7 @@ export default class Resource {
      */
     validate(): Error[] {
         let errs: Error[] = []
-        let validators = this.getConstructor().validation
+        let validators = this.getConstructor().getValidatorObject()
 
         let tryFn = (func: ValidatorFunc, key: string) => {
             try {
@@ -648,7 +689,7 @@ export default class Resource {
 
     wrap(relativePath: string, query?: any) {
         assert(relativePath && relativePath[0] === '/', `Relative path "${relativePath}" must start with a "/"`)
-        assert(this.id, 'Can\'t look up a relative route on a resource that has not been created yet.')
+        assert(this.id, "Can't look up a relative route on a resource that has not been created yet.")
         let Ctor = this.getConstructor()
         let thisPath = '/' + this.id + relativePath
         return Ctor.wrap(thisPath, query)
@@ -680,16 +721,20 @@ export default class Resource {
     }
 }
 
+export type TypeOrFunctionReturningType<T> = (() => T) | T
 export type RelatedDict = Record<string, typeof Resource | RelatedLiteral>
+export type RelatedDictOrFunction = TypeOrFunctionReturningType<RelatedDict>
 
 export interface RelatedLiteral {
     to: typeof Resource
+    nested?: boolean
     // To add later... Eg. "alias?: string"
 }
 
 export type ValidatorFunc = (value?: any, resource?: Resource, validationExceptionClass?: typeof exceptions.ValidationError) => void
 
 export type ValidatorDict = Record<string, ValidatorFunc | ValidatorFunc[]>
+export type ValidatorDictOrFunction = TypeOrFunctionReturningType<ValidatorDict>
 
 export interface CachedResource<T extends Resource> {
     expires: number
@@ -703,7 +748,7 @@ export interface SaveOptions {
     fields?: any
 }
 
-export interface resolveRelatedOpts {
+export interface ResolveRelatedOpts {
     managers?: string[]
     deep?: boolean
 }
