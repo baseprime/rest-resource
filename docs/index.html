@@ -336,6 +336,47 @@ user.greet()
 				<a href="#note-coderesourceresolveattributeattributecode-is-one-of-the-most-useful-features-of-rest-resource-as-it-allows-you-to-define-the-fields-that-are-necessary-to-build-your-app-and-rest-resource-will-intelligently-request-only-the-data-it-emneedsem-from-the-api" id="note-coderesourceresolveattributeattributecode-is-one-of-the-most-useful-features-of-rest-resource-as-it-allows-you-to-define-the-fields-that-are-necessary-to-build-your-app-and-rest-resource-will-intelligently-request-only-the-data-it-emneedsem-from-the-api" style="color: inherit; text-decoration: none;">
 					<h4>Note: <code>resource.resolveAttribute(attribute)</code> is one of the most useful features of REST Resource as it allows you to define the fields that are necessary to build your app, and REST Resource will intelligently request only the data it <em>needs</em> from the API!</h4>
 				</a>
+				<a href="#coderesourcerelatedcode-as-a-function" id="coderesourcerelatedcode-as-a-function" style="color: inherit; text-decoration: none;">
+					<h2><code>Resource.related</code> as a function</h2>
+				</a>
+				<p>You can also define related resources with a function. This is useful when lazy loading modules or resolving circular dependencies:</p>
+				<pre><code class="language-javascript"><span class="hljs-class"><span class="hljs-keyword">class</span> <span class="hljs-title">UserResource</span> <span class="hljs-keyword">extends</span> <span class="hljs-title">Resource</span> </span>{
+    <span class="hljs-keyword">static</span> endpoint = <span class="hljs-string">'/users'</span>
+    <span class="hljs-keyword">static</span> related() {
+        <span class="hljs-keyword">return</span> {
+            <span class="hljs-attr">role</span>: <span class="hljs-built_in">require</span>(<span class="hljs-string">'./resources/role'</span>).default
+        }
+    }
+}</code></pre>
+				<a href="#working-with-nested-objects" id="working-with-nested-objects" style="color: inherit; text-decoration: none;">
+					<h2>Working with Nested Objects</h2>
+				</a>
+				<p>The response from the API might be returning nested objects. For example:</p>
+				<pre><code class="language-javascript"><span class="hljs-comment">// GET /posts/1</span>
+{
+    <span class="hljs-string">"title"</span>: <span class="hljs-string">"Nullam nibh enim, ultrices quis"</span>,
+    <span class="hljs-string">"body"</span>: <span class="hljs-string">"Pellentesque ultrices augue eleifend augue posuere pretium. Nulla sodales turpis eget pretium efficitur."</span>,
+    <span class="hljs-string">"user"</span>: {
+        <span class="hljs-string">"id"</span>: <span class="hljs-number">123</span>,
+        <span class="hljs-string">"name"</span>: <span class="hljs-string">"King Arthur"</span>,
+        <span class="hljs-string">"weapon"</span>: <span class="hljs-string">"Sword"</span>,
+        <span class="hljs-string">"role"</span>: <span class="hljs-number">1</span>,
+        <span class="hljs-string">"groups"</span>: [<span class="hljs-number">1</span>]
+    }
+}</code></pre>
+				<p>In the response body above, the <code>post</code> object contains a nested <code>user</code> object that you may want to cache. You can do so by setting <code>nested: true</code> when defining a relationship.</p>
+				<pre><code class="language-javascript"><span class="hljs-class"><span class="hljs-keyword">class</span> <span class="hljs-title">PostResource</span> <span class="hljs-keyword">extends</span> <span class="hljs-title">Resource</span> </span>{
+    <span class="hljs-keyword">static</span> endpoint = <span class="hljs-string">'/posts'</span>
+    <span class="hljs-keyword">static</span> related = {
+        <span class="hljs-attr">user</span>: {
+            <span class="hljs-attr">to</span>: UserResource,
+            <span class="hljs-attr">nested</span>: <span class="hljs-literal">true</span>
+        }
+    }
+}</code></pre>
+				<a href="#note-if-for-any-reason-you39d-like-to-translate-that-nested-object-into-a-primary-key-please-see-a-hrefattribute-normalizationattribute-normalizationa" id="note-if-for-any-reason-you39d-like-to-translate-that-nested-object-into-a-primary-key-please-see-a-hrefattribute-normalizationattribute-normalizationa" style="color: inherit; text-decoration: none;">
+					<h4>Note: If for any reason you&#39;d like to translate that nested object into a Primary Key, please see <a href="#attribute-normalization">Attribute Normalization</a></h4>
+				</a>
 				<a href="#acts-like-a-model" id="acts-like-a-model" style="color: inherit; text-decoration: none;">
 					<h1>Acts like a Model</h1>
 				</a>
@@ -396,12 +437,12 @@ robin.delete()
 				</a>
 				<p>For requests, REST Resource uses a basic <a href="https://www.npmjs.com/package/axios">Axios</a> client (<code>JWTBearerClient</code> class in <code>src/client</code>). You can override this by creating a custom client.</p>
 				<p>For more information on how Axios works, <a href="https://github.com/axios/axios">please refer to Axios documentation</a></p>
-				<a href="#creating-a-custom-client" id="creating-a-custom-client" style="color: inherit; text-decoration: none;">
-					<h2>Creating a custom client</h2>
+				<a href="#creating-a-client" id="creating-a-client" style="color: inherit; text-decoration: none;">
+					<h2>Creating a client</h2>
 				</a>
 				<p>When creating a custom client, you can override any methods you&#39;d like. One method in particular you&#39;ll need to focus on is <code>negotiateContent()</code> which should return a function that parses the body of the response into a list of objects.</p>
-				<a href="#assigning-a-custom-client" id="assigning-a-custom-client" style="color: inherit; text-decoration: none;">
-					<h2>Assigning a Custom Client</h2>
+				<a href="#assigning-a-client" id="assigning-a-client" style="color: inherit; text-decoration: none;">
+					<h2>Assigning a Client</h2>
 				</a>
 				<p>There are a number of ways you can set the client:</p>
 				<pre><code class="language-javascript"><span class="hljs-keyword">import</span> Resource <span class="hljs-keyword">from</span> <span class="hljs-string">'rest-resource'</span>
@@ -507,6 +548,21 @@ user.validate()
 user.set(<span class="hljs-string">'phone'</span>, <span class="hljs-string">'555555x1234'</span>)
 user.validate()
 <span class="hljs-comment">// =&gt; [{ ValidationError: phone: This field is not valid }]</span></code></pre>
+				<a href="#note-you-can-also-define-validations-with-a-function-this-is-useful-when-resolving-circular-dependencies" id="note-you-can-also-define-validations-with-a-function-this-is-useful-when-resolving-circular-dependencies" style="color: inherit; text-decoration: none;">
+					<h4>Note: You can also define validations with a function. This is useful when resolving circular dependencies:</h4>
+				</a>
+				<pre><code class="language-javascript"><span class="hljs-class"><span class="hljs-keyword">class</span> <span class="hljs-title">UserResource</span> <span class="hljs-keyword">extends</span> <span class="hljs-title">Resource</span> </span>{
+    <span class="hljs-keyword">static</span> endpoint = <span class="hljs-string">'/users'</span>
+    <span class="hljs-keyword">static</span> validation() {
+        <span class="hljs-keyword">return</span> {
+            <span class="hljs-attr">phone</span>: phoneIsValid,
+            <span class="hljs-attr">username</span>: [
+                isFiveChars,
+                isAlphaNumeric
+            ]
+        }
+    }
+}</code></pre>
 				<a href="#attribute-normalization" id="attribute-normalization" style="color: inherit; text-decoration: none;">
 					<h1>Attribute Normalization</h1>
 				</a>
@@ -606,6 +662,9 @@ user.validate()
         <span class="hljs-attr">user</span>: normalizerFactory(<span class="hljs-string">'NumberNormalizer'</span>)
     }
 }</code></pre>
+				<a href="#note-if-for-any-reason-you39d-like-to-automatically-cache-the-nested-object-instead-of-translating-it-into-a-primary-key-please-see-a-hrefworking-with-nested-objectsworking-with-nested-objectsa" id="note-if-for-any-reason-you39d-like-to-automatically-cache-the-nested-object-instead-of-translating-it-into-a-primary-key-please-see-a-hrefworking-with-nested-objectsworking-with-nested-objectsa" style="color: inherit; text-decoration: none;">
+					<h4>Note: If for any reason you&#39;d like to automatically cache the nested object instead of translating it into a Primary Key, please see <a href="#working-with-nested-objects">Working with Nested Objects</a></h4>
+				</a>
 				<a href="#calling-other-relatednested-routes" id="calling-other-relatednested-routes" style="color: inherit; text-decoration: none;">
 					<h1>Calling Other Related/Nested Routes</h1>
 				</a>
