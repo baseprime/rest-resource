@@ -40,6 +40,15 @@ var RelatedManager = /** @class */ (function () {
         }
         return Boolean(this.value);
     };
+    RelatedManager.prototype.canAutoResolve = function () {
+        var value = this.value;
+        var isObject = Object === this.getValueContentType();
+        var hasIds = this.primaryKeys.length > 0;
+        if (this.many) {
+            return isObject && hasIds && this.primaryKeys.length === value.length;
+        }
+        return isObject && hasIds;
+    };
     /**
      * Return a constructor so we can guess the content type. For example, if an object literal
      * is passed, this function should return `Object`, and it's likely one single object literal representing attributes.
@@ -220,6 +229,33 @@ var RelatedManager = /** @class */ (function () {
                 }
             });
         });
+    };
+    RelatedManager.prototype.resolveFromObjectValue = function () {
+        var Ctor = this.to;
+        var value = this.value;
+        var contentType = this.getValueContentType();
+        var newResources = {};
+        assert_1.default(Object === contentType, "Expected RelatedResource.value to be an Object. Received " + contentType);
+        try {
+            if (this.many) {
+                for (var i in value) {
+                    var resource = new Ctor(value[i]);
+                    assert_1.default(!!resource.id, "RelatedResource.value[" + i + "] does not have an ID.");
+                    newResources[resource.id] = resource;
+                }
+            }
+            else {
+                var resource = new Ctor(value);
+                assert_1.default(!!resource.id, "RelatedResource value does not have an ID.");
+                newResources[this.getIdFromObject(value)] = new Ctor(value);
+            }
+            this.resolved = true;
+            Object.assign(this._resources, newResources);
+            return true;
+        }
+        catch (e) {
+            throw e;
+        }
     };
     /**
      * Add a resource to the manager

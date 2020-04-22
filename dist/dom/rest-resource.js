@@ -4,7 +4,7 @@
  * 
  * @author Greg Sabia Tucker <greg@narrowlabs.com> (http://basepri.me)
  * @link undefined
- * @version 0.8.3
+ * @version 0.9.1
  * 
  * Released under MIT License. See LICENSE.txt or http://opensource.org/licenses/MIT
  */
@@ -770,7 +770,7 @@ var client_1 = __webpack_require__(26);
 var util_1 = __webpack_require__(15);
 var related_1 = tslib_1.__importDefault(__webpack_require__(44));
 var exceptions = tslib_1.__importStar(__webpack_require__(19));
-var assert = __webpack_require__(18);
+var assert_1 = tslib_1.__importDefault(__webpack_require__(18));
 var _ = __webpack_require__(16);
 var Resource = /** @class */function () {
     function Resource(attributes, options) {
@@ -816,29 +816,11 @@ var Resource = /** @class */function () {
         for (var attrKey in attributes) {
             this.attributes[attrKey] = attributes[attrKey];
         }
+        // Set/Reset changes
         this.changes = {};
         // Create related managers
-        for (var relAttrKey in Ctor.related) {
-            var to = Ctor.related[relAttrKey];
-            var sourceKey = relAttrKey;
-            var attrAlias = undefined;
-            try {
-                if ('object' === (typeof to === "undefined" ? "undefined" : _typeof(to))) {
-                    var relatedLiteral = to;
-                    to = relatedLiteral.to;
-                }
-                var RelatedManagerCtor = to.RelatedManagerClass;
-                var relatedManager = new RelatedManagerCtor(to, this._attributes[relAttrKey]);
-                this.managers[sourceKey] = relatedManager;
-                if (attrAlias) {
-                    this.managers[attrAlias] = relatedManager;
-                }
-            } catch (e) {
-                if (e instanceof assert.AssertionError) {
-                    e.message = e.message + " -- Relation: " + this.toResourceName() + ".related[" + relAttrKey + "]";
-                }
-                throw e;
-            }
+        for (var relAttrKey in Ctor.getRelatedClasses()) {
+            this.managers[relAttrKey] = this.createManagerFor(relAttrKey);
         }
         if (this.id) {
             Ctor.cacheResource(this);
@@ -1062,7 +1044,7 @@ var Resource = /** @class */function () {
         });
     };
     Resource.wrap = function (relativePath, query) {
-        assert(relativePath && relativePath[0] === '/', "Relative path \"" + relativePath + "\" must start with a \"/\"");
+        assert_1.default(relativePath && relativePath[0] === '/', "Relative path \"" + relativePath + "\" must start with a \"/\"");
         var relEndpoint = this.endpoint + relativePath;
         if (query && Object.keys(query).length) {
             var qs = querystring_1.stringify(query);
@@ -1071,6 +1053,12 @@ var Resource = /** @class */function () {
         return this.client.bindMethodsToPath(relEndpoint);
     };
     Resource.toResourceName = function () {
+        // In an ES5 config, Webpack will reassign class name as a function like
+        // function class_1() { } when transpiling, so to help out with this in
+        // debugging, replace the class_1 function name with something more descriptive
+        if (this.name.match(/^class_/)) {
+            return "ResourceClass(" + this.endpoint + ")";
+        }
         return this.name;
     };
     Resource.makeDefaultsObject = function () {
@@ -1090,8 +1078,20 @@ var Resource = /** @class */function () {
      * @param resourceId
      */
     Resource.getResourceHashKey = function (resourceId) {
-        assert(Boolean(resourceId), "Can't generate resource hash key with an empty Resource ID. Please ensure Resource is saved first.");
+        assert_1.default(Boolean(resourceId), "Can't generate resource hash key with an empty Resource ID. Please ensure Resource is saved first.");
         return Buffer.from(this.uuid + ":" + String(resourceId)).toString('base64');
+    };
+    Resource.getRelatedClasses = function () {
+        if ('function' === typeof this.related) {
+            return this.related();
+        }
+        return this.related;
+    };
+    Resource.getValidatorObject = function () {
+        if ('function' === typeof this.validation) {
+            return this.validation();
+        }
+        return this.validation;
     };
     Resource.extend = function (classProps) {
         // @todo Figure out typings here -- this works perfectly but typings are not happy
@@ -1240,6 +1240,9 @@ var Resource = /** @class */function () {
             } else if ('function' === typeof normalizer) {
                 newValue = normalizer(newValue);
             }
+            if (this.changes[key]) {
+                this.changes[key] = newValue;
+            }
         }
         return newValue;
     };
@@ -1297,11 +1300,40 @@ var Resource = /** @class */function () {
         return this.resolveRelated(opts);
     };
     /**
-     * Get related class by key
+     * Get related manager class by key
      * @param key
      */
     Resource.prototype.rel = function (key) {
         return this.managers[key];
+    };
+    /**
+     * Create a manager instance on based on current attributes
+     * @param relatedKey
+     */
+    Resource.prototype.createManagerFor = function (relatedKey) {
+        var Ctor = this.getConstructor();
+        var related = Ctor.getRelatedClasses();
+        var to = related[relatedKey];
+        var nested = false;
+        try {
+            if ('object' === (typeof to === "undefined" ? "undefined" : _typeof(to))) {
+                var relatedLiteral = to;
+                to = relatedLiteral.to;
+                nested = !!relatedLiteral.nested;
+            }
+            assert_1.default('function' === typeof to, "Couldn't find RelatedResource class with key \"" + relatedKey + "\". Does it exist?");
+            var RelatedManagerCtor = to.RelatedManagerClass;
+            var relatedManager = new RelatedManagerCtor(to, this._attributes[relatedKey]);
+            if (nested && relatedManager.canAutoResolve()) {
+                relatedManager.resolveFromObjectValue();
+            }
+            return relatedManager;
+        } catch (e) {
+            if (e instanceof assert_1.default.AssertionError) {
+                e.message = e.message + " -- Relation: " + this.toResourceName() + ".related[" + relatedKey + "]";
+            }
+            throw e;
+        }
     };
     /**
      * Saves the instance -- sends changes as a PATCH or sends whole object as a POST if it's new
@@ -1353,7 +1385,7 @@ var Resource = /** @class */function () {
     Resource.prototype.validate = function () {
         var _this = this;
         var errs = [];
-        var validators = this.getConstructor().validation;
+        var validators = this.getConstructor().getValidatorObject();
         var tryFn = function tryFn(func, key) {
             try {
                 // Declare call of validator with params:
@@ -1397,8 +1429,8 @@ var Resource = /** @class */function () {
         return this.getConstructor().getCached(this.id);
     };
     Resource.prototype.wrap = function (relativePath, query) {
-        assert(relativePath && relativePath[0] === '/', "Relative path \"" + relativePath + "\" must start with a \"/\"");
-        assert(this.id, 'Can\'t look up a relative route on a resource that has not been created yet.');
+        assert_1.default(relativePath && relativePath[0] === '/', "Relative path \"" + relativePath + "\" must start with a \"/\"");
+        assert_1.default(this.id, "Can't look up a relative route on a resource that has not been created yet.");
         var Ctor = this.getConstructor();
         var thisPath = '/' + this.id + relativePath;
         return Ctor.wrap(thisPath, query);
@@ -15476,6 +15508,15 @@ var RelatedManager = /** @class */function () {
         }
         return Boolean(this.value);
     };
+    RelatedManager.prototype.canAutoResolve = function () {
+        var value = this.value;
+        var isObject = Object === this.getValueContentType();
+        var hasIds = this.primaryKeys.length > 0;
+        if (this.many) {
+            return isObject && hasIds && this.primaryKeys.length === value.length;
+        }
+        return isObject && hasIds;
+    };
     /**
      * Return a constructor so we can guess the content type. For example, if an object literal
      * is passed, this function should return `Object`, and it's likely one single object literal representing attributes.
@@ -15656,6 +15697,31 @@ var RelatedManager = /** @class */function () {
                 }
             });
         });
+    };
+    RelatedManager.prototype.resolveFromObjectValue = function () {
+        var Ctor = this.to;
+        var value = this.value;
+        var contentType = this.getValueContentType();
+        var newResources = {};
+        assert_1.default(Object === contentType, "Expected RelatedResource.value to be an Object. Received " + contentType);
+        try {
+            if (this.many) {
+                for (var i in value) {
+                    var resource = new Ctor(value[i]);
+                    assert_1.default(!!resource.id, "RelatedResource.value[" + i + "] does not have an ID.");
+                    newResources[resource.id] = resource;
+                }
+            } else {
+                var resource = new Ctor(value);
+                assert_1.default(!!resource.id, "RelatedResource value does not have an ID.");
+                newResources[this.getIdFromObject(value)] = new Ctor(value);
+            }
+            this.resolved = true;
+            Object.assign(this._resources, newResources);
+            return true;
+        } catch (e) {
+            throw e;
+        }
     };
     /**
      * Add a resource to the manager

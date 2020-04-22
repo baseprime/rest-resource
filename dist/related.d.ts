@@ -28,6 +28,7 @@ export default class RelatedManager<T extends typeof Resource = typeof Resource>
      * Check if values exist on manager
      */
     hasValues(): boolean;
+    canAutoResolve(): boolean;
     /**
      * Return a constructor so we can guess the content type. For example, if an object literal
      * is passed, this function should return `Object`, and it's likely one single object literal representing attributes.
@@ -81,6 +82,7 @@ export default class RelatedManager<T extends typeof Resource = typeof Resource>
      * @param options DetailOpts
      */
     all(options?: DetailOpts): Promise<InstanceType<T>[]>;
+    resolveFromObjectValue(): boolean;
     /**
      * Add a resource to the manager
      * @param resource Resource instance
