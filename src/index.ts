@@ -20,7 +20,7 @@ export default class Resource {
     static validation: ValidatorDict = {}
     static normalization: NormalizerDict = {}
     static fields: string[] = []
-    static related: RelatedDict = {}
+    static related: RelatedDictOrFunction = {}
     static _cache: any = {}
     static _uuid: string
     _attributes: Record<string, any> = {}
@@ -65,7 +65,7 @@ export default class Resource {
         // Set/Reset changes
         this.changes = {}
         // Create related managers
-        for (let relAttrKey in Ctor.related) {
+        for (let relAttrKey in this.getRelatedClasses()) {
             this.managers[relAttrKey] = this.createManagerFor(relAttrKey)
         }
 
@@ -283,7 +283,7 @@ export default class Resource {
     }
 
     static toResourceName(): string {
-        // In an ES5 config, Webpack will reassign class name as a function like 
+        // In an ES5 config, Webpack will reassign class name as a function like
         // function class_1() { } when transpiling, so to help out with this in
         // debugging, replace the class_1 function name with something more descriptive
         if (this.name.match(/^class_/)) {
@@ -313,6 +313,14 @@ export default class Resource {
     static getResourceHashKey(resourceId: string | number) {
         assert(Boolean(resourceId), "Can't generate resource hash key with an empty Resource ID. Please ensure Resource is saved first.")
         return Buffer.from(`${this.uuid}:${String(resourceId)}`).toString('base64')
+    }
+
+    static getRelatedClasses(): RelatedDict {
+        if ('function' === typeof this.related) {
+            return this.related() as RelatedDict
+        }
+
+        return this.related as RelatedDict
     }
 
     static extend<T, U>(this: U, classProps: T): U & T {
@@ -523,7 +531,7 @@ export default class Resource {
     }
 
     /**
-     * Get related class by key
+     * Get related manager class by key
      * @param key
      */
     rel<T extends typeof Resource>(key: string) {
@@ -536,7 +544,8 @@ export default class Resource {
      */
     createManagerFor(relatedKey: string) {
         let Ctor = this.getConstructor()
-        let to = Ctor.related[relatedKey]
+        let related = Ctor.getRelatedClasses()
+        let to = related[relatedKey]
         let nested = false
 
         try {
@@ -701,6 +710,7 @@ export default class Resource {
 }
 
 export type RelatedDict = Record<string, typeof Resource | RelatedLiteral>
+export type RelatedDictOrFunction = (() => RelatedDict) | RelatedDict
 
 export interface RelatedLiteral {
     to: typeof Resource

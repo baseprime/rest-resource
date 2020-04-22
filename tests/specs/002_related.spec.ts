@@ -1,9 +1,7 @@
 import { expect } from 'chai'
 import { GroupResource, TodoResource, PostResource, UserResource, CommentResource } from '..'
 
-
 describe('Related', () => {
-    
     it('managers next() all() and resolve() work correctly', async () => {
         const group = await GroupResource.detail('2')
         const todosManager = group.managers.todos
@@ -68,15 +66,32 @@ describe('Related', () => {
         expect(user).to.be.instanceOf(UserResource)
     })
 
+    it('can define Resource.related with a function', async () => {
+        let relatedFuncRan = false
+        const CustomTodoResource = TodoResource.extend({
+            _cache: {},
+            related() {
+                relatedFuncRan = true
+                return {
+                    user: UserResource,
+                }
+            },
+        })
+
+        const todo = await CustomTodoResource.detail(55)
+        expect(relatedFuncRan).to.be.true
+        expect(await todo.resolveAttribute('user.username')).to.equal('Samantha')
+    })
+
     it('auto-resolves nested objects (single)', async () => {
         // Copy the GroupResource and redefine related.owner
         const CustomGroupResource = GroupResource.extend({
             related: Object.assign(GroupResource.related, {
                 owner: {
                     to: UserResource,
-                    nested: true // This is what we're testing
-                }
-            })
+                    nested: true, // This is what we're testing
+                },
+            }),
         })
 
         let group = await CustomGroupResource.detail(1)
@@ -90,11 +105,11 @@ describe('Related', () => {
                 name: 'Test group',
                 owner: {
                     // No ID here
-                    name: 'Leanne Graham'
-                }
+                    name: 'Leanne Graham',
+                },
             })
-        } catch(e) {
-            // Make sure error is thrown 
+        } catch (e) {
+            // Make sure error is thrown
             expect(e.name).to.contain('AssertionError')
         }
     })
@@ -105,13 +120,12 @@ describe('Related', () => {
             related: Object.assign(GroupResource.related, {
                 todos: {
                     to: TodoResource,
-                    nested: true
-                }
-            })
+                    nested: true,
+                },
+            }),
         })
 
         let group = await CustomGroupResource.detail(1)
         expect(group.get('todos.id')).to.eql([1, 2])
     })
-
 })
