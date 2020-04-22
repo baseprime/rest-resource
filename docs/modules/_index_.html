@@ -79,8 +79,8 @@
 							<ul class="tsd-index-list">
 								<li class="tsd-kind-interface tsd-parent-kind-external-module tsd-has-type-parameter"><a href="../interfaces/_index_.cachedresource.html" class="tsd-kind-icon">Cached<wbr>Resource</a></li>
 								<li class="tsd-kind-interface tsd-parent-kind-external-module"><a href="../interfaces/_index_.relatedliteral.html" class="tsd-kind-icon">Related<wbr>Literal</a></li>
+								<li class="tsd-kind-interface tsd-parent-kind-external-module"><a href="../interfaces/_index_.resolverelatedopts.html" class="tsd-kind-icon">Resolve<wbr>Related<wbr>Opts</a></li>
 								<li class="tsd-kind-interface tsd-parent-kind-external-module"><a href="../interfaces/_index_.saveoptions.html" class="tsd-kind-icon">Save<wbr>Options</a></li>
-								<li class="tsd-kind-interface tsd-parent-kind-external-module"><a href="../interfaces/_index_.resolverelatedopts.html" class="tsd-kind-icon">resolve<wbr>Related<wbr>Opts</a></li>
 							</ul>
 						</section>
 						<section class="tsd-index-section ">
@@ -90,7 +90,10 @@
 								<li class="tsd-kind-type-alias tsd-parent-kind-external-module"><a href="_index_.html#listopts" class="tsd-kind-icon">List<wbr>Opts</a></li>
 								<li class="tsd-kind-type-alias tsd-parent-kind-external-module tsd-has-type-parameter"><a href="_index_.html#listresponse" class="tsd-kind-icon">List<wbr>Response</a></li>
 								<li class="tsd-kind-type-alias tsd-parent-kind-external-module"><a href="_index_.html#relateddict" class="tsd-kind-icon">Related<wbr>Dict</a></li>
+								<li class="tsd-kind-type-alias tsd-parent-kind-external-module"><a href="_index_.html#relateddictorfunction" class="tsd-kind-icon">Related<wbr>Dict<wbr>OrFunction</a></li>
+								<li class="tsd-kind-type-alias tsd-parent-kind-external-module tsd-has-type-parameter"><a href="_index_.html#typeorfunctionreturningtype" class="tsd-kind-icon">Type<wbr>OrFunction<wbr>Returning<wbr>Type</a></li>
 								<li class="tsd-kind-type-alias tsd-parent-kind-external-module"><a href="_index_.html#validatordict" class="tsd-kind-icon">Validator<wbr>Dict</a></li>
+								<li class="tsd-kind-type-alias tsd-parent-kind-external-module"><a href="_index_.html#validatordictorfunction" class="tsd-kind-icon">Validator<wbr>Dict<wbr>OrFunction</a></li>
 								<li class="tsd-kind-type-alias tsd-parent-kind-external-module"><a href="_index_.html#validatorfunc" class="tsd-kind-icon">Validator<wbr>Func</a></li>
 							</ul>
 						</section>
@@ -105,7 +108,7 @@
 					<div class="tsd-signature tsd-kind-icon">Detail<wbr>Opts<span class="tsd-signature-symbol">:</span> <a href="../interfaces/_client_.requestconfig.html" class="tsd-signature-type">RequestConfig</a><span class="tsd-signature-symbol"> &amp; </span><span class="tsd-signature-type">object</span></div>
 					<aside class="tsd-sources">
 						<ul>
-							<li>Defined in <a href="https://github.com/baseprime/rest-resource/blob/2d7aac6/src/index.ts#L718">index.ts:718</a></li>
+							<li>Defined in <a href="https://github.com/baseprime/rest-resource/blob/205ea4e/src/index.ts#L763">index.ts:763</a></li>
 						</ul>
 					</aside>
 				</section>
@@ -115,7 +118,7 @@
 					<div class="tsd-signature tsd-kind-icon">List<wbr>Opts<span class="tsd-signature-symbol">:</span> <a href="../interfaces/_client_.requestconfig.html" class="tsd-signature-type">RequestConfig</a><span class="tsd-signature-symbol"> &amp; </span><span class="tsd-signature-type">object</span></div>
 					<aside class="tsd-sources">
 						<ul>
-							<li>Defined in <a href="https://github.com/baseprime/rest-resource/blob/2d7aac6/src/index.ts#L711">index.ts:711</a></li>
+							<li>Defined in <a href="https://github.com/baseprime/rest-resource/blob/205ea4e/src/index.ts#L756">index.ts:756</a></li>
 						</ul>
 					</aside>
 				</section>
@@ -125,7 +128,7 @@
 					<div class="tsd-signature tsd-kind-icon">List<wbr>Response&lt;T&gt;<span class="tsd-signature-symbol">:</span> <span class="tsd-signature-type">Promise</span><span class="tsd-signature-symbol">&lt;</span><a href="../interfaces/_client_.resourceresponse.html" class="tsd-signature-type">ResourceResponse</a><span class="tsd-signature-symbol">&lt;</span><span class="tsd-signature-type">InstanceType</span><span class="tsd-signature-symbol">&lt;</span><span class="tsd-signature-type">T</span><span class="tsd-signature-symbol">&gt;</span><span class="tsd-signature-symbol">, </span><span class="tsd-signature-type">any</span><span class="tsd-signature-symbol">&gt;</span><span class="tsd-signature-symbol">&gt;</span></div>
 					<aside class="tsd-sources">
 						<ul>
-							<li>Defined in <a href="https://github.com/baseprime/rest-resource/blob/2d7aac6/src/index.ts#L716">index.ts:716</a></li>
+							<li>Defined in <a href="https://github.com/baseprime/rest-resource/blob/205ea4e/src/index.ts#L761">index.ts:761</a></li>
 						</ul>
 					</aside>
 					<h4 class="tsd-type-parameters-title">Type parameters</h4>
@@ -141,9 +144,35 @@
 					<div class="tsd-signature tsd-kind-icon">Related<wbr>Dict<span class="tsd-signature-symbol">:</span> <span class="tsd-signature-type">Record</span><span class="tsd-signature-symbol">&lt;</span><span class="tsd-signature-type">string</span><span class="tsd-signature-symbol">, </span><a href="../classes/_index_.resource.html" class="tsd-signature-type">Resource</a><span class="tsd-signature-symbol"> | </span><a href="../interfaces/_index_.relatedliteral.html" class="tsd-signature-type">RelatedLiteral</a><span class="tsd-signature-symbol">&gt;</span></div>
 					<aside class="tsd-sources">
 						<ul>
-							<li>Defined in <a href="https://github.com/baseprime/rest-resource/blob/2d7aac6/src/index.ts#L683">index.ts:683</a></li>
+							<li>Defined in <a href="https://github.com/baseprime/rest-resource/blob/205ea4e/src/index.ts#L725">index.ts:725</a></li>
 						</ul>
 					</aside>
+				</section>
+				<section class="tsd-panel tsd-member tsd-kind-type-alias tsd-parent-kind-external-module">
+					<a name="relateddictorfunction" class="tsd-anchor"></a>
+					<h3>Related<wbr>Dict<wbr>OrFunction</h3>
+					<div class="tsd-signature tsd-kind-icon">Related<wbr>Dict<wbr>OrFunction<span class="tsd-signature-symbol">:</span> <a href="_index_.html#typeorfunctionreturningtype" class="tsd-signature-type">TypeOrFunctionReturningType</a><span class="tsd-signature-symbol">&lt;</span><a href="_index_.html#relateddict" class="tsd-signature-type">RelatedDict</a><span class="tsd-signature-symbol">&gt;</span></div>
+					<aside class="tsd-sources">
+						<ul>
+							<li>Defined in <a href="https://github.com/baseprime/rest-resource/blob/205ea4e/src/index.ts#L726">index.ts:726</a></li>
+						</ul>
+					</aside>
+				</section>
+				<section class="tsd-panel tsd-member tsd-kind-type-alias tsd-parent-kind-external-module tsd-has-type-parameter">
+					<a name="typeorfunctionreturningtype" class="tsd-anchor"></a>
+					<h3>Type<wbr>OrFunction<wbr>Returning<wbr>Type</h3>
+					<div class="tsd-signature tsd-kind-icon">Type<wbr>OrFunction<wbr>Returning<wbr>Type&lt;T&gt;<span class="tsd-signature-symbol">:</span> <span class="tsd-signature-type">function</span><span class="tsd-signature-symbol"> | </span><span class="tsd-signature-type">T</span></div>
+					<aside class="tsd-sources">
+						<ul>
+							<li>Defined in <a href="https://github.com/baseprime/rest-resource/blob/205ea4e/src/index.ts#L724">index.ts:724</a></li>
+						</ul>
+					</aside>
+					<h4 class="tsd-type-parameters-title">Type parameters</h4>
+					<ul class="tsd-type-parameters">
+						<li>
+							<h4>T</h4>
+						</li>
+					</ul>
 				</section>
 				<section class="tsd-panel tsd-member tsd-kind-type-alias tsd-parent-kind-external-module">
 					<a name="validatordict" class="tsd-anchor"></a>
@@ -151,7 +180,17 @@
 					<div class="tsd-signature tsd-kind-icon">Validator<wbr>Dict<span class="tsd-signature-symbol">:</span> <span class="tsd-signature-type">Record</span><span class="tsd-signature-symbol">&lt;</span><span class="tsd-signature-type">string</span><span class="tsd-signature-symbol">, </span><a href="_index_.html#validatorfunc" class="tsd-signature-type">ValidatorFunc</a><span class="tsd-signature-symbol"> | </span><a href="_index_.html#validatorfunc" class="tsd-signature-type">ValidatorFunc</a><span class="tsd-signature-symbol">[]</span><span class="tsd-signature-symbol">&gt;</span></div>
 					<aside class="tsd-sources">
 						<ul>
-							<li>Defined in <a href="https://github.com/baseprime/rest-resource/blob/2d7aac6/src/index.ts#L692">index.ts:692</a></li>
+							<li>Defined in <a href="https://github.com/baseprime/rest-resource/blob/205ea4e/src/index.ts#L736">index.ts:736</a></li>
+						</ul>
+					</aside>
+				</section>
+				<section class="tsd-panel tsd-member tsd-kind-type-alias tsd-parent-kind-external-module">
+					<a name="validatordictorfunction" class="tsd-anchor"></a>
+					<h3>Validator<wbr>Dict<wbr>OrFunction</h3>
+					<div class="tsd-signature tsd-kind-icon">Validator<wbr>Dict<wbr>OrFunction<span class="tsd-signature-symbol">:</span> <a href="_index_.html#typeorfunctionreturningtype" class="tsd-signature-type">TypeOrFunctionReturningType</a><span class="tsd-signature-symbol">&lt;</span><a href="_index_.html#validatordict" class="tsd-signature-type">ValidatorDict</a><span class="tsd-signature-symbol">&gt;</span></div>
+					<aside class="tsd-sources">
+						<ul>
+							<li>Defined in <a href="https://github.com/baseprime/rest-resource/blob/205ea4e/src/index.ts#L737">index.ts:737</a></li>
 						</ul>
 					</aside>
 				</section>
@@ -161,7 +200,7 @@
 					<div class="tsd-signature tsd-kind-icon">Validator<wbr>Func<span class="tsd-signature-symbol">:</span> <span class="tsd-signature-type">function</span></div>
 					<aside class="tsd-sources">
 						<ul>
-							<li>Defined in <a href="https://github.com/baseprime/rest-resource/blob/2d7aac6/src/index.ts#L690">index.ts:690</a></li>
+							<li>Defined in <a href="https://github.com/baseprime/rest-resource/blob/205ea4e/src/index.ts#L734">index.ts:734</a></li>
 						</ul>
 					</aside>
 					<div class="tsd-type-declaration">
@@ -238,10 +277,10 @@
 						<a href="../interfaces/_index_.relatedliteral.html" class="tsd-kind-icon">Related<wbr>Literal</a>
 					</li>
 					<li class=" tsd-kind-interface tsd-parent-kind-external-module">
-						<a href="../interfaces/_index_.saveoptions.html" class="tsd-kind-icon">Save<wbr>Options</a>
+						<a href="../interfaces/_index_.resolverelatedopts.html" class="tsd-kind-icon">Resolve<wbr>Related<wbr>Opts</a>
 					</li>
 					<li class=" tsd-kind-interface tsd-parent-kind-external-module">
-						<a href="../interfaces/_index_.resolverelatedopts.html" class="tsd-kind-icon">resolve<wbr>Related<wbr>Opts</a>
+						<a href="../interfaces/_index_.saveoptions.html" class="tsd-kind-icon">Save<wbr>Options</a>
 					</li>
 					<li class=" tsd-kind-type-alias tsd-parent-kind-external-module">
 						<a href="_index_.html#detailopts" class="tsd-kind-icon">Detail<wbr>Opts</a>
@@ -256,7 +295,16 @@
 						<a href="_index_.html#relateddict" class="tsd-kind-icon">Related<wbr>Dict</a>
 					</li>
 					<li class=" tsd-kind-type-alias tsd-parent-kind-external-module">
+						<a href="_index_.html#relateddictorfunction" class="tsd-kind-icon">Related<wbr>Dict<wbr>OrFunction</a>
+					</li>
+					<li class=" tsd-kind-type-alias tsd-parent-kind-external-module tsd-has-type-parameter">
+						<a href="_index_.html#typeorfunctionreturningtype" class="tsd-kind-icon">Type<wbr>OrFunction<wbr>Returning<wbr>Type</a>
+					</li>
+					<li class=" tsd-kind-type-alias tsd-parent-kind-external-module">
 						<a href="_index_.html#validatordict" class="tsd-kind-icon">Validator<wbr>Dict</a>
+					</li>
+					<li class=" tsd-kind-type-alias tsd-parent-kind-external-module">
+						<a href="_index_.html#validatordictorfunction" class="tsd-kind-icon">Validator<wbr>Dict<wbr>OrFunction</a>
 					</li>
 					<li class=" tsd-kind-type-alias tsd-parent-kind-external-module">
 						<a href="_index_.html#validatorfunc" class="tsd-kind-icon">Validator<wbr>Func</a>

@@ -10,10 +10,10 @@ export default class Resource {
     static uniqueKey: string;
     static defaults: Record<string, any>;
     static RelatedManagerClass: typeof RelatedManager;
-    static validation: ValidatorDict;
+    static validation: ValidatorDictOrFunction;
     static normalization: NormalizerDict;
     static fields: string[];
-    static related: RelatedDict;
+    static related: RelatedDictOrFunction;
     static _cache: any;
     static _uuid: string;
     _attributes: Record<string, any>;
@@ -92,6 +92,8 @@ export default class Resource {
      * @param resourceId
      */
     static getResourceHashKey(resourceId: string | number): string;
+    private static getRelatedClasses;
+    private static getValidatorObject;
     static extend<T, U>(this: U, classProps: T): U & T;
     /**
      * Set an attribute of Resource instance and apply getters/setters
@@ -137,17 +139,22 @@ export default class Resource {
      * Match all related values in `attributes[key]` where key is primary key of related instance defined in `Resource.related[key]`
      * @param options resolveRelatedDict
      */
-    resolveRelated({ deep, managers }?: resolveRelatedOpts): Promise<void>;
+    resolveRelated({ deep, managers }?: ResolveRelatedOpts): Promise<void>;
     /**
      * Same as `Resource.prototype.resolveRelated` except `options.deep` defaults to `true`
      * @param options
      */
-    resolveRelatedDeep(options?: resolveRelatedOpts): Promise<void>;
+    resolveRelatedDeep(options?: ResolveRelatedOpts): Promise<void>;
     /**
-     * Get related class by key
+     * Get related manager class by key
      * @param key
      */
     rel<T extends typeof Resource>(key: string): RelatedManager<T>;
+    /**
+     * Create a manager instance on based on current attributes
+     * @param relatedKey
+     */
+    createManagerFor(relatedKey: string): RelatedManager<typeof Resource>;
     /**
      * Saves the instance -- sends changes as a PATCH or sends whole object as a POST if it's new
      */
@@ -176,12 +183,16 @@ export default class Resource {
     toResourceName(): string;
     toJSON(): any;
 }
+export declare type TypeOrFunctionReturningType<T> = (() => T) | T;
 export declare type RelatedDict = Record<string, typeof Resource | RelatedLiteral>;
+export declare type RelatedDictOrFunction = TypeOrFunctionReturningType<RelatedDict>;
 export interface RelatedLiteral {
     to: typeof Resource;
+    nested?: boolean;
 }
 export declare type ValidatorFunc = (value?: any, resource?: Resource, validationExceptionClass?: typeof exceptions.ValidationError) => void;
 export declare type ValidatorDict = Record<string, ValidatorFunc | ValidatorFunc[]>;
+export declare type ValidatorDictOrFunction = TypeOrFunctionReturningType<ValidatorDict>;
 export interface CachedResource<T extends Resource> {
     expires: number;
     resource: T;
@@ -192,7 +203,7 @@ export interface SaveOptions {
     force?: boolean;
     fields?: any;
 }
-export interface resolveRelatedOpts {
+export interface ResolveRelatedOpts {
     managers?: string[];
     deep?: boolean;
 }

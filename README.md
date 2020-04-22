@@ -298,6 +298,50 @@ console.log(title)
 
 #### Note: `resource.resolveAttribute(attribute)` is one of the most useful features of REST Resource as it allows you to define the fields that are necessary to build your app, and REST Resource will intelligently request only the data it _needs_ from the API!
 
+## `Resource.related` as a function
+You can also define related resources with a function. This is useful when lazy loading modules or resolving circular dependencies:
+
+```javascript
+class UserResource extends Resource {
+    static endpoint = '/users'
+    static related() {
+        return {
+            role: require('./resources/role').default
+        }
+    }
+}
+```
+
+## Working with Nested Objects
+The response from the API might be returning nested objects. For example:
+```javascript
+// GET /posts/1
+{
+    "title": "Nullam nibh enim, ultrices quis",
+    "body": "Pellentesque ultrices augue eleifend augue posuere pretium. Nulla sodales turpis eget pretium efficitur.",
+    "user": {
+        "id": 123,
+        "name": "King Arthur",
+        "weapon": "Sword",
+        "role": 1,
+        "groups": [1]
+    }
+}
+```
+In the response body above, the `post` object contains a nested `user` object that you may want to cache. You can do so by setting `nested: true` when defining a relationship.
+```javascript
+class PostResource extends Resource {
+    static endpoint = '/posts'
+    static related = {
+        user: {
+            to: UserResource,
+            nested: true
+        }
+    }
+}
+```
+#### Note: If for any reason you'd like to translate that nested object into a Primary Key, please see [Attribute Normalization](#attribute-normalization)
+
 # Acts like a Model
 You can use REST Resource like a RESTful Model. REST Resource tracks changes in each Resource instance's attributes and uses RESTful HTTP Verbs like `GET`, `POST`, `PUT`, `PATCH`, and `DELETE` accordingly:
 
@@ -363,10 +407,10 @@ For requests, REST Resource uses a basic [Axios](https://www.npmjs.com/package/a
 
 For more information on how Axios works, [please refer to Axios documentation](https://github.com/axios/axios)
 
-## Creating a custom client
+## Creating a client
 When creating a custom client, you can override any methods you'd like. One method in particular you'll need to focus on is `negotiateContent()` which should return a function that parses the body of the response into a list of objects.
 
-## Assigning a Custom Client
+## Assigning a Client
 There are a number of ways you can set the client:
 
 ```javascript
@@ -482,6 +526,22 @@ user.validate()
 // => [{ ValidationError: phone: This field is not valid }]
 ```
 
+#### Note: You can also define validations with a function. This is useful when resolving circular dependencies:
+```javascript
+class UserResource extends Resource {
+    static endpoint = '/users'
+    static validation() {
+        return {
+            phone: phoneIsValid,
+            username: [
+                isFiveChars,
+                isAlphaNumeric
+            ]
+        }
+    }
+}
+```
+
 # Attribute Normalization 
 Whenever an attribute is defined, you can normalize its value into a desired output (think of it as a unidirectional serializer). The built-in normalizers are:
 - `StringNormalizer`
@@ -592,6 +652,8 @@ class PostResource extends Resource {
     }
 }
 ```
+
+#### Note: If for any reason you'd like to automatically cache the nested object instead of translating it into a Primary Key, please see [Working with Nested Objects](#working-with-nested-objects)
 
 # Calling Other Related/Nested Routes
 You can wrap routes on the Resource's endpoint by using `wrap(path, query)` methods on the class constructor and its prototype. Once you define the wrapped endpoint, you can `get(options)`, `post(data, options)`, `put(data, options)`, etc.
