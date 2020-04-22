@@ -328,7 +328,7 @@ The response from the API might be returning nested objects. For example:
     }
 }
 ```
-In the response body above, the `post` object contains a nested `user` object that you may want to cache:
+In the response body above, the `post` object contains a nested `user` object that you may want to cache. You can do so by setting `nested: true` when defining a relationship.
 ```javascript
 class PostResource extends Resource {
     static endpoint = '/posts'
@@ -340,6 +340,7 @@ class PostResource extends Resource {
     }
 }
 ```
+#### Note: If for any reason you'd like to translate that nested object into a Primary Key, please see [Attribute Normalization](#attribute-normalization)
 
 # Acts like a Model
 You can use REST Resource like a RESTful Model. REST Resource tracks changes in each Resource instance's attributes and uses RESTful HTTP Verbs like `GET`, `POST`, `PUT`, `PATCH`, and `DELETE` accordingly:
@@ -651,6 +652,8 @@ class PostResource extends Resource {
     }
 }
 ```
+
+#### Note: If for any reason you'd like to automatically cache the nested object instead of translating it into a Primary Key, please see [Working with Nested Objects](#working-with-nested-objects)
 
 # Calling Other Related/Nested Routes
 You can wrap routes on the Resource's endpoint by using `wrap(path, query)` methods on the class constructor and its prototype. Once you define the wrapped endpoint, you can `get(options)`, `post(data, options)`, `put(data, options)`, etc.
