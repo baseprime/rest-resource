@@ -298,13 +298,44 @@ console.log(title)
 
 #### Note: `resource.resolveAttribute(attribute)` is one of the most useful features of REST Resource as it allows you to define the fields that are necessary to build your app, and REST Resource will intelligently request only the data it _needs_ from the API!
 
-#### Note: You can also define related resources with a function. This is useful when resolving circular dependencies:
+## `Resource.related` as a function
+You can also define related resources with a function. This is useful when lazy loading modules or resolving circular dependencies:
+
 ```javascript
 class UserResource extends Resource {
     static endpoint = '/users'
     static related() {
         return {
-            role: RoleResource
+            role: require('./resources/role').default
+        }
+    }
+}
+```
+
+## Working with Nested Objects
+The response from the API might be returning nested objects. For example:
+```javascript
+// GET /posts/1
+{
+    "title": "Nullam nibh enim, ultrices quis",
+    "body": "Pellentesque ultrices augue eleifend augue posuere pretium. Nulla sodales turpis eget pretium efficitur.",
+    "user": {
+        "id": 123,
+        "name": "King Arthur",
+        "weapon": "Sword",
+        "role": 1,
+        "groups": [1]
+    }
+}
+```
+In the response body above, the `post` object contains a nested `user` object that you may want to cache:
+```javascript
+class PostResource extends Resource {
+    static endpoint = '/posts'
+    static related = {
+        user: {
+            to: UserResource,
+            nested: true
         }
     }
 }
@@ -375,10 +406,10 @@ For requests, REST Resource uses a basic [Axios](https://www.npmjs.com/package/a
 
 For more information on how Axios works, [please refer to Axios documentation](https://github.com/axios/axios)
 
-## Creating a custom client
+## Creating a client
 When creating a custom client, you can override any methods you'd like. One method in particular you'll need to focus on is `negotiateContent()` which should return a function that parses the body of the response into a list of objects.
 
-## Assigning a Custom Client
+## Assigning a Client
 There are a number of ways you can set the client:
 
 ```javascript
