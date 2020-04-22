@@ -65,7 +65,7 @@ export default class Resource {
         // Set/Reset changes
         this.changes = {}
         // Create related managers
-        for (let relAttrKey in this.getRelatedClasses()) {
+        for (let relAttrKey in Ctor.getRelatedClasses()) {
             this.managers[relAttrKey] = this.createManagerFor(relAttrKey)
         }
 
