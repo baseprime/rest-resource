@@ -612,12 +612,10 @@ export default class Resource {
         }
 
         return promise.then((response: AxiosResponse<T>) => {
+            this.changes = {}
+
             for (const resKey in response.data) {
                 this.set(resKey, response.data[resKey])
-            }
-
-            for (let fieldKey of fields) {
-                delete this.changes[fieldKey]
             }
 
             if (this.id) {
