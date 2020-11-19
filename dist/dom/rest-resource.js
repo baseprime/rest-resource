@@ -4,7 +4,7 @@
  * 
  * @author Greg Sabia Tucker <greg@narrowlabs.com> (http://basepri.me)
  * @link undefined
- * @version 0.9.1
+ * @version 0.9.2
  * 
  * Released under MIT License. See LICENSE.txt or http://opensource.org/licenses/MIT
  */
@@ -831,11 +831,23 @@ var Resource = /** @class */function () {
          * Cache getter
          */
         get: function get() {
-            if (!this._cache || this._cache === Resource._cache) {
+            var ParentClass = Object.getPrototypeOf(this);
+            // FooResource.cache === BarResource.cache should always return false where BarResource extends FooResource
+            if (!this._cache || this._cache === ParentClass._cache) {
                 this._cache = {};
-                return this._cache;
             }
-            return this._cache;
+            return new Proxy(this._cache, {
+                set: function set(receiver, key, value) {
+                    receiver[key] = value;
+                    return true;
+                },
+                get: function get(receiver, key) {
+                    return receiver[key];
+                },
+                defineProperty: function defineProperty(target, prop, descriptor) {
+                    return Reflect.defineProperty(target, prop, descriptor);
+                }
+            });
         },
         enumerable: true,
         configurable: true
@@ -1361,12 +1373,9 @@ var Resource = /** @class */function () {
             promise = Ctor.client.patch(Ctor.getDetailRoutePath(this.id), attrs);
         }
         return promise.then(function (response) {
+            _this.changes = {};
             for (var resKey in response.data) {
                 _this.set(resKey, response.data[resKey]);
-            }
-            for (var _i = 0, fields_1 = fields; _i < fields_1.length; _i++) {
-                var fieldKey = fields_1[_i];
-                delete _this.changes[fieldKey];
             }
             if (_this.id) {
                 // Replace cache
