@@ -82,7 +82,10 @@ export default class Resource {
         put: (body?: any, options?: import("axios").AxiosRequestConfig) => import("axios").AxiosPromise<{}>;
         patch: (body?: any, options?: import("axios").AxiosRequestConfig) => import("axios").AxiosPromise<{}>;
         head: (options?: import("axios").AxiosRequestConfig) => import("axios").AxiosPromise<{}>;
-        options: (options?: import("axios").AxiosRequestConfig) => import("axios").AxiosPromise<{}>;
+        options: (options?: import("axios").AxiosRequestConfig) => import("axios").AxiosPromise<{}>; /**
+         * Get a cached resource by ID
+         * @param id
+         */
         delete: (options?: import("axios").AxiosRequestConfig) => import("axios").AxiosPromise<{}>;
     };
     static toResourceName(): string;
@@ -174,7 +177,10 @@ export default class Resource {
         put: (body?: any, options?: import("axios").AxiosRequestConfig) => import("axios").AxiosPromise<{}>;
         patch: (body?: any, options?: import("axios").AxiosRequestConfig) => import("axios").AxiosPromise<{}>;
         head: (options?: import("axios").AxiosRequestConfig) => import("axios").AxiosPromise<{}>;
-        options: (options?: import("axios").AxiosRequestConfig) => import("axios").AxiosPromise<{}>;
+        options: (options?: import("axios").AxiosRequestConfig) => import("axios").AxiosPromise<{}>; /**
+         * Get a cached resource by ID
+         * @param id
+         */
         delete: (options?: import("axios").AxiosRequestConfig) => import("axios").AxiosPromise<{}>;
     };
     isNew(): boolean;
