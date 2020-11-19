@@ -78,11 +78,24 @@ export default class Resource {
      * Cache getter
      */
     static get cache() {
-        if (!this._cache || this._cache === Resource._cache) {
+        let ParentClass = Object.getPrototypeOf(this)
+        // FooResource.cache === BarResource.cache should always return false where BarResource extends FooResource
+        if (!this._cache || this._cache === ParentClass._cache) {
             this._cache = {}
-            return this._cache
         }
-        return this._cache
+
+        return new Proxy(this._cache, {
+            set: (receiver: any, key: string, value: any) => {
+                receiver[key] = value
+                return true
+            },
+            get: (receiver: any, key: string) => {
+                return receiver[key]
+            },
+            defineProperty: (target, prop, descriptor) => {
+                return Reflect.defineProperty(target, prop, descriptor)
+            },
+        })
     }
 
     static get uuid() {

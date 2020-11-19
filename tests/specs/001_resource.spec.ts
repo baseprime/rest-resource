@@ -92,6 +92,17 @@ describe('Resources', () => {
         expect(PostResource.client.requestTracker[PostResource.getDetailRoutePath('1')]).to.equal(1)
     })
 
+    it('should never allow extended classes to share the same cache', async () => {
+        class A extends PostResource {}
+        class B extends A {}
+        class C extends B {}
+        expect(C.cache === A.cache).to.be.false
+        expect(C.cache === B.cache).to.be.false
+        expect(C._cache === B._cache).to.be.false
+        expect(C._cache === A._cache).to.be.false
+        expect(C._cache === PostResource._cache).to.be.false
+    })
+
     it('gets properties correctly (async)', async () => {
         // This post should already be cached by this point
         let comment = await CommentResource.detail('90')
