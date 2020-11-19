@@ -6,7 +6,7 @@
   "unpkg": "./dist/dom/rest-resource.js",
   "types": "./dist/index.d.ts",
   "scripts": {
-    "test": "mocha -r ts-node/register ./tests/**/*.spec.ts",
+    "test": "mocha -t 8000 -r ts-node/register ./tests/**/*.spec.ts",
     "test-standalone": "npm run serve-tests & (sleep 5 && npm test)",
     "build": "tsc && webpack && npm run generate-docs",
     "dev": "tsc --watch",
@@ -15,7 +15,7 @@
     "generate-docs": "./node_modules/typedoc/bin/typedoc --out ./docs ./src/index.ts --excludeNotExported --excludePrivate",
     "reset-ts": "rm -r ./dist && ./node_modules/.bin/tsc",
     "scratch": "LOG_LEVEL=info ts-node -T --pretty ./tests/scratch.ts",
-    "serve-tests": "cp ./tests/fixtures.json ./tests/fixtures-local.json && json-server -p ${TEST_PORT:-8099} --quiet --delay 300 ./tests/fixtures-local.json",
+    "serve-tests": "cp ./tests/fixtures.json ./tests/fixtures-local.json && json-server -p ${TEST_PORT:-8099} --quiet --delay ${TEST_DELAY_MS:-0} ./tests/fixtures-local.json",
     "serve-docs": "./node_modules/serve/bin/serve.js ./docs/"
   },
   "repository": {
