@@ -1,5 +1,5 @@
 import { expect } from 'chai'
-import { GroupResource, TodoResource, PostResource, UserResource, CommentResource } from '..'
+import { GroupResource, TodoResource, PostResource, UserResource, CommentResource, CommentMetaMetaMetaMeta } from '..'
 
 describe('Related', () => {
     it('managers next() all() and resolve() work correctly', async () => {
@@ -127,5 +127,10 @@ describe('Related', () => {
 
         let group = await CustomGroupResource.detail(1)
         expect(group.get('todos.id')).to.eql([1, 2])
+    })
+
+    it('can resolve really really deeply nested attributes', async () => {
+        let meta = await CommentMetaMetaMetaMeta.detail(1)
+        expect('Leanne Graham' === await meta.resolveAttribute('commentmetametameta.commentmetameta.commentmeta.comment.post.user.name'))
     })
 })

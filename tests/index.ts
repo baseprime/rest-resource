@@ -72,3 +72,31 @@ export const CommentResource = BaseTestingResource.extend({
         user: UserResource
     }
 })
+
+export const CommentMeta = BaseTestingResource.extend({
+    endpoint: '/commentmeta',
+    related: {
+        comment: CommentResource
+    }
+})
+
+export const CommentMetaMeta = BaseTestingResource.extend({
+    endpoint: '/commentmetameta',
+    related: {
+        commentmeta: CommentMeta
+    }
+})
+
+export const CommentMetaMetaMeta = BaseTestingResource.extend({
+    endpoint: '/commentmetametameta',
+    related: {
+        commentmetameta: CommentMetaMeta
+    }
+})
+
+export const CommentMetaMetaMetaMeta = BaseTestingResource.extend({
+    endpoint: '/commentmetametametameta',
+    related: {
+        commentmetametameta: CommentMetaMetaMeta
+    }
+})

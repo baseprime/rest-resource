@@ -74,6 +74,8 @@ describe('Resources', () => {
         expect(changingUser.changes.name).to.equal('Test User (Changed)')
         expect(changingUser.attributes.name).to.equal('Test User (Changed)')
         expect(typeof changingUser.get()).to.equal('object')
+        changingUser.set('name', 'Test User (Changed again)')
+        expect(changingUser.get('name')).to.equal('Test User (Changed again)')
     })
 
     it('correctly gets a cached related item', async () => {
@@ -88,6 +90,17 @@ describe('Resources', () => {
         await PostResource.detail('1')
         // Then check how many requests it sent to it (should be only 1)
         expect(PostResource.client.requestTracker[PostResource.getDetailRoutePath('1')]).to.equal(1)
+    })
+
+    it('should never allow extended classes to share the same cache', async () => {
+        class A extends PostResource {}
+        class B extends A {}
+        class C extends B {}
+        expect(C.cache === A.cache).to.be.false
+        expect(C.cache === B.cache).to.be.false
+        expect(C._cache === B._cache).to.be.false
+        expect(C._cache === A._cache).to.be.false
+        expect(C._cache === PostResource._cache).to.be.false
     })
 
     it('gets properties correctly (async)', async () => {
@@ -203,5 +216,16 @@ describe('Resources', () => {
         } catch(e) {
             expect(e.name).to.contain('AssertionError')
         }
+    })
+
+    it('can accept resource instances as value', async () => {
+        let post = await PostResource.detail(80)
+        let userDoesNotEqualPostUserId = post.attributes.user + 1
+        let otherUser = await UserResource.detail(userDoesNotEqualPostUserId)
+        post.set('user', otherUser)
+        // Normalization should be turned off for PostResource, so newly set user should be an object
+        expect('object' === typeof post.attributes.user).to.be.true
+        expect(post.attributes.user).to.eql(otherUser.toJSON())
+        expect(post.rel('user').canAutoResolve()).to.be.false
     })
 })
