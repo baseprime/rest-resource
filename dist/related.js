@@ -136,7 +136,7 @@ var RelatedManager = /** @class */ (function () {
             return this.resources;
         }
         catch (e) {
-            if (exceptions_1.AttributeError.isInstance(e)) {
+            if (e.name === 'AttributeError') {
                 // Some resources aren't loaded -- just return any cached resources
                 var cachedObjects = [];
                 for (var _i = 0, _a = this.primaryKeys; _i < _a.length; _i++) {

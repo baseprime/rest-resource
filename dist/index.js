@@ -418,7 +418,7 @@ var Resource = /** @class */ (function () {
                 resolve(_this.get(key));
             }
             catch (e) {
-                if (exceptions.AttributeError.isInstance(e)) {
+                if (e.name === 'AttributeError') {
                     var pieces_2 = key.split('.');
                     var thisKey = String(pieces_2.shift());
                     var manager_1 = _this.rel(thisKey);

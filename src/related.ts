@@ -149,7 +149,7 @@ export default class RelatedManager<T extends typeof Resource = typeof Resource>
         try {
             return this.resources
         } catch (e) {
-            if (AttributeError.isInstance(e)) {
+            if (e.name === 'AttributeError') {
                 // Some resources aren't loaded -- just return any cached resources
                 let cachedObjects = []
                 for (let id of this.primaryKeys) {
