@@ -426,7 +426,7 @@ export default class Resource {
             try {
                 resolve(this.get(key))
             } catch (e) {
-                if (exceptions.AttributeError.isInstance(e)) {
+                if (e.name === 'AttributeError') {
                     const pieces = key.split('.')
                     const thisKey = String(pieces.shift())
                     const manager = this.rel(thisKey)
