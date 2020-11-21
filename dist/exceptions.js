@@ -6,16 +6,6 @@ var BaseError = /** @class */ (function (_super) {
     function BaseError() {
         return _super !== null && _super.apply(this, arguments) || this;
     }
-    /**
-     * This exists because Webpack creates a whole new copy of this class, except when you're
-     *   comparing types in memory (eg. exception instanceof ValidationError) where exception is
-     *   a transpiled instance of this class, and ValidationError is imported via non-transpiled
-     *   methods (TypeScript). We need a way to check if either are instanceof ValidationError
-     * @param exception
-     */
-    BaseError.isInstance = function (exception) {
-        return (exception.name && exception.name === this.name) || exception instanceof this;
-    };
     return BaseError;
 }(Error));
 exports.BaseError = BaseError;

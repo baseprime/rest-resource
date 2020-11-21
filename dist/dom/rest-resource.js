@@ -1189,7 +1189,7 @@ var Resource = /** @class */function () {
             try {
                 resolve(_this.get(key));
             } catch (e) {
-                if (exceptions.AttributeError.isInstance(e)) {
+                if (e.name === 'AttributeError') {
                     var pieces_2 = key.split('.');
                     var thisKey = String(pieces_2.shift());
                     var manager_1 = _this.rel(thisKey);
@@ -13956,16 +13956,6 @@ var BaseError = /** @class */function (_super) {
     function BaseError() {
         return _super !== null && _super.apply(this, arguments) || this;
     }
-    /**
-     * This exists because Webpack creates a whole new copy of this class, except when you're
-     *   comparing types in memory (eg. exception instanceof ValidationError) where exception is
-     *   a transpiled instance of this class, and ValidationError is imported via non-transpiled
-     *   methods (TypeScript). We need a way to check if either are instanceof ValidationError
-     * @param exception
-     */
-    BaseError.isInstance = function (exception) {
-        return exception.name && exception.name === this.name || exception instanceof this;
-    };
     return BaseError;
 }(Error);
 exports.BaseError = BaseError;
@@ -15611,7 +15601,7 @@ var RelatedManager = /** @class */function () {
         try {
             return this.resources;
         } catch (e) {
-            if (exceptions_1.AttributeError.isInstance(e)) {
+            if (e.name === 'AttributeError') {
                 // Some resources aren't loaded -- just return any cached resources
                 var cachedObjects = [];
                 for (var _i = 0, _a = this.primaryKeys; _i < _a.length; _i++) {
