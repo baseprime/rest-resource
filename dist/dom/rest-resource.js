@@ -4,7 +4,7 @@
  * 
  * @author Greg Sabia Tucker <greg@narrowlabs.com> (http://basepri.me)
  * @link undefined
- * @version 0.9.2
+ * @version 0.9.4
  * 
  * Released under MIT License. See LICENSE.txt or http://opensource.org/licenses/MIT
  */
@@ -15781,6 +15781,9 @@ var RelatedManager = /** @class */function () {
         enumerable: true,
         configurable: true
     });
+    RelatedManager.prototype.toString = function () {
+        return this.primaryKeys.join(', ');
+    };
     RelatedManager.prototype.toJSON = function () {
         return JSON.parse(JSON.stringify(this.value));
     };
