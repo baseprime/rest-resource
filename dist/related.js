@@ -317,6 +317,9 @@ var RelatedManager = /** @class */ (function () {
         enumerable: true,
         configurable: true
     });
+    RelatedManager.prototype.toString = function () {
+        return this.primaryKeys.join(', ');
+    };
     RelatedManager.prototype.toJSON = function () {
         return JSON.parse(JSON.stringify(this.value));
     };
