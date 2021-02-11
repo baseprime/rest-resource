@@ -103,5 +103,6 @@ export default class RelatedManager<T extends typeof Resource = typeof Resource>
      */
     readonly resource: InstanceType<T>;
     readonly length: number;
+    toString(): string;
     toJSON(): any;
 }

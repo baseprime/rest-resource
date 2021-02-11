@@ -306,6 +306,10 @@ export default class RelatedManager<T extends typeof Resource = typeof Resource>
         return this.primaryKeys.length
     }
 
+    toString() {
+        return this.primaryKeys.join(', ')
+    }
+
     toJSON() {
         return JSON.parse(JSON.stringify(this.value))
     }

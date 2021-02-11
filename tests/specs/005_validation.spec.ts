@@ -63,7 +63,7 @@ describe('Validation', () => {
     it('raises exceptions', async () => {
         let phoneErrors = failsPhoneValidation.validate()
         phoneErrors.forEach((e) => {
-            expect(ValidationErrorOriginal.isInstance(e)).to.be.true
+            expect(ValidationErrorOriginal.name === 'ValidationError').to.be.true
         })
     })
 })
