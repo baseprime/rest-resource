@@ -55,7 +55,7 @@
   },
   "dependencies": {
     "@types/lodash": "4.14.177",
-    "@types/node": "^10.12.19",
+    "@types/node": "16.11.7",
     "assert": "^1.4.1",
     "axios": "^0.19.2",
     "lodash": "^4.17.15",
