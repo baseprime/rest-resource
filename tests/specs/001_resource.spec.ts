@@ -115,7 +115,7 @@ describe('Resources', () => {
         expect(await comment.resolveAttribute('post.user.propDoesNotExist')).to.be.undefined
         try {
             await comment.resolveAttribute('post.user.nested.propDoesNotExist')
-        } catch (e) {
+        } catch(e: any) {
             expect(e.name).to.equal('ImproperlyConfiguredError')
         }
     })
@@ -189,7 +189,7 @@ describe('Resources', () => {
         expect(optionsResult.config.headers['X-Taco']).to.be.true
         try {
             await PostResource.wrap('/does_not_____exist', { user: 1 }).post({ someBody: true })
-        } catch(e) {
+        } catch(e: any) {
             expect(String(e.response.status)).to.equal('404')
             expect(e.config.method.toLowerCase()).to.equal('post')
             expect(e.config.url).to.equal('/posts/does_not_____exist?user=1')
@@ -198,7 +198,7 @@ describe('Resources', () => {
 
         try {
             await PostResource.wrap('does_not_start_with_a_/').post()
-        } catch(e) {
+        } catch(e: any) {
             expect(e.name).to.contain('AssertionError')
         }
     })
@@ -213,7 +213,7 @@ describe('Resources', () => {
             // Remove ID and try to run
             post.attributes.id = undefined
             await post.wrap('/comments').get()
-        } catch(e) {
+        } catch(e: any) {
             expect(e.name).to.contain('AssertionError')
         }
     })

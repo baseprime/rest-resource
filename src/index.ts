@@ -425,7 +425,7 @@ export default class Resource {
         return new Promise((resolve, reject) => {
             try {
                 resolve(this.get(key))
-            } catch (e) {
+            } catch (e: any) {
                 if (e.name === 'AttributeError') {
                     const pieces = key.split('.')
                     const thisKey = String(pieces.shift())
@@ -490,11 +490,11 @@ export default class Resource {
         }
 
         if ('undefined' !== typeof Ctor.normalization[key]) {
-            let normalizer = <BaseNormalizer | Function & { normalize: () => any }>Ctor.normalization[key]
-            if ('function' === typeof normalizer.normalize) {
-                newValue = normalizer.normalize(newValue)
-            } else if ('function' === typeof normalizer) {
+            let normalizer = <BaseNormalizer | Function >Ctor.normalization[key]
+            if ('function' === typeof normalizer) {
                 newValue = normalizer(newValue)
+            } else if ('function' === typeof normalizer.normalize) {
+                newValue = normalizer.normalize(newValue)
             }
 
             if (this.changes[key]) {
@@ -590,7 +590,7 @@ export default class Resource {
             }
 
             return relatedManager
-        } catch (e) {
+        } catch (e: any) {
             if (e instanceof assert.AssertionError) {
                 e.message = `${e.message} -- Relation: ${this.toResourceName()}.related[${relatedKey}]`
             }
@@ -656,7 +656,7 @@ export default class Resource {
                 // Declare call of validator with params:
                 //    attribute, resource, ValidationError class
                 func.call(null, this.attributes[key], this, exceptions.ValidationError)
-            } catch (e) {
+            } catch (e: any) {
                 errs.push(e)
             }
         }

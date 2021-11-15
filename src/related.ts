@@ -148,7 +148,7 @@ export default class RelatedManager<T extends typeof Resource = typeof Resource>
     getAllLoaded(): InstanceType<T>[] {
         try {
             return this.resources
-        } catch (e) {
+        } catch (e: any) {
             if (e.name === 'AttributeError') {
                 // Some resources aren't loaded -- just return any cached resources
                 let cachedObjects = []

@@ -108,7 +108,7 @@ describe('Related', () => {
                     name: 'Leanne Graham',
                 },
             })
-        } catch (e) {
+        } catch (e: any) {
             // Make sure error is thrown
             expect(e.name).to.contain('AssertionError')
         }
