@@ -58,7 +58,7 @@
     "@types/node": "16.11.7",
     "assert": "2.0.0",
     "axios": "^0.19.2",
-    "lodash": "^4.17.15",
+    "lodash": "4.17.21",
     "tslib": "^1.9.3",
     "typescript": "^3.3.3"
   }
