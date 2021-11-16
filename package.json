@@ -39,7 +39,7 @@
   },
   "homepage": "https://github.com/baseprime/rest-resource#readme",
   "devDependencies": {
-    "@types/chai": "^4.1.7",
+    "@types/chai": "4.2.22",
     "@types/mocha": "^5.2.5",
     "babel-core": "6.26.3",
     "babel-loader": "^6.4.1",
