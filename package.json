@@ -50,7 +50,7 @@
     "prettier": "^1.16.2",
     "serve": "^11.2.0",
     "ts-node": "10.4.0",
-    "typedoc": "^0.15.0",
+    "typedoc": "0.22.9",
     "webpack": "^3.4.1"
   },
   "dependencies": {
