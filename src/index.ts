@@ -490,7 +490,7 @@ export default class Resource {
         }
 
         if ('undefined' !== typeof Ctor.normalization[key]) {
-            let normalizer = <BaseNormalizer | Function >Ctor.normalization[key]
+            let normalizer = <BaseNormalizer | Function>Ctor.normalization[key]
             if ('function' === typeof normalizer) {
                 newValue = normalizer(newValue)
             } else if ('function' === typeof normalizer.normalize) {

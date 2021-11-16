@@ -68,8 +68,8 @@ export class BaseClient {
 
     /**
      * Client.prototype.list() and Client.prototype.detail() are the primary purpose of defining these here. Simply runs a GET on the list route path (eg. /users) and negotiates the content
-     * @param ResourceClass 
-     * @param options 
+     * @param ResourceClass
+     * @param options
      */
     list<T extends typeof Resource, U = any>(ResourceClass: T, options: RequestConfig = {}): ListResponse<T> {
         return this.get<U>(ResourceClass.getListRoutePath(options.query), options).then(this.negotiateContent(ResourceClass))
@@ -77,8 +77,8 @@ export class BaseClient {
 
     /**
      * Client.prototype.detail() and Client.prototype.list() are the primary purpose of defining these here. Simply runs a GET on the detail route path (eg. /users/123) and negotiates the content
-     * @param ResourceClass 
-     * @param options 
+     * @param ResourceClass
+     * @param options
      */
     detail<T extends typeof Resource, U = any>(ResourceClass: T, id: string, options: RequestConfig = {}) {
         return this.get<U>(ResourceClass.getDetailRoutePath(id, options.query), options).then(this.negotiateContent(ResourceClass))
