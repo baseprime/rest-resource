@@ -136,6 +136,7 @@ var RelatedManager = /** @class */ (function () {
             return this.resources;
         }
         catch (e) {
+            // @ts-ignore See the reason why we do this in index file
             if (e.name === 'AttributeError') {
                 // Some resources aren't loaded -- just return any cached resources
                 var cachedObjects = [];

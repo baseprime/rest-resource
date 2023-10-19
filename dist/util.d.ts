@@ -10,3 +10,4 @@ export declare function camelize(str: string): string;
  */
 export declare function uuidWeak(): string;
 export declare function getContentTypeWeak(value: any): any;
+export declare function urlStringify(object: any): string;
