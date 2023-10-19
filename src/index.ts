@@ -1,9 +1,9 @@
-import { stringify } from 'querystring'
 import { DefaultClient, RequestConfig, ResourceResponse } from './client'
 import { AxiosResponse } from 'axios'
-import { uuidWeak } from './util'
+import { uuidWeak, urlStringify } from './util'
 import RelatedManager from './related'
 import { BaseNormalizer, NormalizerDict, ValidNormalizer } from './helpers/normalization'
+import { Buffer } from 'buffer'
 import * as exceptions from './exceptions'
 import assert from 'assert'
 
@@ -190,7 +190,7 @@ export default class Resource {
      */
     static getListRoutePath(query?: any): string {
         if (query && Object.keys(query).length) {
-            let qs = stringify(query)
+            let qs = urlStringify(query)
             return `${this.endpoint}?${qs}`
         }
         return this.endpoint
@@ -202,7 +202,7 @@ export default class Resource {
      * @param query Querystring
      */
     static getDetailRoutePath(id: string | number, query?: any): string {
-        let qs = stringify(query)
+        let qs = urlStringify(query)
         return `${this.endpoint}/${String(id)}${query && Object.keys(query).length ? '?' : ''}${qs}`
     }
 
@@ -288,7 +288,7 @@ export default class Resource {
         let relEndpoint = this.endpoint + relativePath
 
         if (query && Object.keys(query).length) {
-            let qs = stringify(query)
+            let qs = urlStringify(query)
             relEndpoint = `${relEndpoint}?${qs}`
         }
 
@@ -426,6 +426,10 @@ export default class Resource {
             try {
                 resolve(this.get(key))
             } catch (e) {
+                // This is an annoying issue and why I hate using transpilers -- for some reason, we cannot 
+                // use e instanceof AttributeError here, because the transpiled AttributeError !== AttributeError
+                // at runtime! (faceOfDisapproval.jpg)
+                // @ts-ignore 
                 if (e.name === 'AttributeError') {
                     const pieces = key.split('.')
                     const thisKey = String(pieces.shift())
@@ -657,7 +661,7 @@ export default class Resource {
                 //    attribute, resource, ValidationError class
                 func.call(null, this.attributes[key], this, exceptions.ValidationError)
             } catch (e) {
-                errs.push(e)
+                errs.push(e as Error)
             }
         }
 
