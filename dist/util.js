@@ -3,6 +3,7 @@ Object.defineProperty(exports, "__esModule", { value: true });
 var tslib_1 = require("tslib");
 var index_1 = tslib_1.__importDefault(require("./index"));
 var lodash_1 = require("lodash");
+var url_shim_1 = require("url-shim");
 /**
  * Takes an input and camelizes it
  * @param str
@@ -39,4 +40,8 @@ function getContentTypeWeak(value) {
     }
 }
 exports.getContentTypeWeak = getContentTypeWeak;
+function urlStringify(object) {
+    return (new url_shim_1.URLSearchParams(object)).toString();
+}
+exports.urlStringify = urlStringify;
 //# sourceMappingURL=util.js.map

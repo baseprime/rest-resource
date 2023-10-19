@@ -48,7 +48,7 @@ npm run serve-docs
 ```
 
 ## Examples
-[Play around with a working example on JSFiddle](https://jsfiddle.net/baseprime/drexLtwv/)
+[Play around with a working example on CodePen](https://codepen.io/baseprime/pen/OJBzaNN)
 
 (assuming `Node >= v12`)
 
