@@ -1,10 +1,10 @@
 "use strict";
 Object.defineProperty(exports, "__esModule", { value: true });
 var tslib_1 = require("tslib");
-var querystring_1 = require("querystring");
 var client_1 = require("./client");
 var util_1 = require("./util");
 var related_1 = tslib_1.__importDefault(require("./related"));
+var buffer_1 = require("buffer");
 var exceptions = tslib_1.__importStar(require("./exceptions"));
 var assert_1 = tslib_1.__importDefault(require("assert"));
 var _ = require('lodash');
@@ -177,7 +177,7 @@ var Resource = /** @class */ (function () {
      */
     Resource.getListRoutePath = function (query) {
         if (query && Object.keys(query).length) {
-            var qs = querystring_1.stringify(query);
+            var qs = util_1.urlStringify(query);
             return this.endpoint + "?" + qs;
         }
         return this.endpoint;
@@ -188,7 +188,7 @@ var Resource = /** @class */ (function () {
      * @param query Querystring
      */
     Resource.getDetailRoutePath = function (id, query) {
-        var qs = querystring_1.stringify(query);
+        var qs = util_1.urlStringify(query);
         return this.endpoint + "/" + String(id) + (query && Object.keys(query).length ? '?' : '') + qs;
     };
     /**
@@ -284,7 +284,7 @@ var Resource = /** @class */ (function () {
         assert_1.default(relativePath && relativePath[0] === '/', "Relative path \"" + relativePath + "\" must start with a \"/\"");
         var relEndpoint = this.endpoint + relativePath;
         if (query && Object.keys(query).length) {
-            var qs = querystring_1.stringify(query);
+            var qs = util_1.urlStringify(query);
             relEndpoint = relEndpoint + "?" + qs;
         }
         return this.client.bindMethodsToPath(relEndpoint);
@@ -317,7 +317,7 @@ var Resource = /** @class */ (function () {
      */
     Resource.getResourceHashKey = function (resourceId) {
         assert_1.default(Boolean(resourceId), "Can't generate resource hash key with an empty Resource ID. Please ensure Resource is saved first.");
-        return Buffer.from(this.uuid + ":" + String(resourceId)).toString('base64');
+        return buffer_1.Buffer.from(this.uuid + ":" + String(resourceId)).toString('base64');
     };
     Resource.getRelatedClasses = function () {
         if ('function' === typeof this.related) {
@@ -418,6 +418,10 @@ var Resource = /** @class */ (function () {
                 resolve(_this.get(key));
             }
             catch (e) {
+                // This is an annoying issue and why I hate using transpilers -- for some reason, we cannot 
+                // use e instanceof AttributeError here, because the transpiled AttributeError !== AttributeError
+                // at runtime! (faceOfDisapproval.jpg)
+                // @ts-ignore 
                 if (e.name === 'AttributeError') {
                     var pieces_2 = key.split('.');
                     var thisKey = String(pieces_2.shift());

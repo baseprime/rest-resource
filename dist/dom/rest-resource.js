@@ -4,7 +4,7 @@
  * 
  * @author Greg Sabia Tucker <greg@narrowlabs.com> (http://basepri.me)
  * @link undefined
- * @version 0.9.4
+ * @version 0.11.0
  * 
  * Released under MIT License. See LICENSE.txt or http://opensource.org/licenses/MIT
  */
@@ -764,16 +764,16 @@ function __importDefault(mod) {
 /***/ (function(module, exports, __webpack_require__) {
 
 "use strict";
-/* WEBPACK VAR INJECTION */(function(Buffer) {
+
 
 var _typeof = typeof Symbol === "function" && typeof Symbol.iterator === "symbol" ? function (obj) { return typeof obj; } : function (obj) { return obj && typeof Symbol === "function" && obj.constructor === Symbol && obj !== Symbol.prototype ? "symbol" : typeof obj; };
 
 Object.defineProperty(exports, "__esModule", { value: true });
 var tslib_1 = __webpack_require__(1);
-var querystring_1 = __webpack_require__(24);
-var client_1 = __webpack_require__(27);
+var client_1 = __webpack_require__(21);
 var util_1 = __webpack_require__(16);
-var related_1 = tslib_1.__importDefault(__webpack_require__(47));
+var related_1 = tslib_1.__importDefault(__webpack_require__(45));
+var buffer_1 = __webpack_require__(5);
 var exceptions = tslib_1.__importStar(__webpack_require__(20));
 var assert_1 = tslib_1.__importDefault(__webpack_require__(19));
 var _ = __webpack_require__(17);
@@ -952,7 +952,7 @@ var Resource = /** @class */function () {
      */
     Resource.getListRoutePath = function (query) {
         if (query && Object.keys(query).length) {
-            var qs = querystring_1.stringify(query);
+            var qs = util_1.urlStringify(query);
             return this.endpoint + "?" + qs;
         }
         return this.endpoint;
@@ -963,7 +963,7 @@ var Resource = /** @class */function () {
      * @param query Querystring
      */
     Resource.getDetailRoutePath = function (id, query) {
-        var qs = querystring_1.stringify(query);
+        var qs = util_1.urlStringify(query);
         return this.endpoint + "/" + String(id) + (query && Object.keys(query).length ? '?' : '') + qs;
     };
     /**
@@ -1064,7 +1064,7 @@ var Resource = /** @class */function () {
         assert_1.default(relativePath && relativePath[0] === '/', "Relative path \"" + relativePath + "\" must start with a \"/\"");
         var relEndpoint = this.endpoint + relativePath;
         if (query && Object.keys(query).length) {
-            var qs = querystring_1.stringify(query);
+            var qs = util_1.urlStringify(query);
             relEndpoint = relEndpoint + "?" + qs;
         }
         return this.client.bindMethodsToPath(relEndpoint);
@@ -1096,7 +1096,7 @@ var Resource = /** @class */function () {
      */
     Resource.getResourceHashKey = function (resourceId) {
         assert_1.default(Boolean(resourceId), "Can't generate resource hash key with an empty Resource ID. Please ensure Resource is saved first.");
-        return Buffer.from(this.uuid + ":" + String(resourceId)).toString('base64');
+        return buffer_1.Buffer.from(this.uuid + ":" + String(resourceId)).toString('base64');
     };
     Resource.getRelatedClasses = function () {
         if ('function' === typeof this.related) {
@@ -1194,6 +1194,10 @@ var Resource = /** @class */function () {
             try {
                 resolve(_this.get(key));
             } catch (e) {
+                // This is an annoying issue and why I hate using transpilers -- for some reason, we cannot 
+                // use e instanceof AttributeError here, because the transpiled AttributeError !== AttributeError
+                // at runtime! (faceOfDisapproval.jpg)
+                // @ts-ignore 
                 if (e.name === 'AttributeError') {
                     var pieces_2 = key.split('.');
                     var thisKey = String(pieces_2.shift());
@@ -1488,7 +1492,6 @@ var Resource = /** @class */function () {
 }();
 exports.default = Resource;
 //# sourceMappingURL=index.js.map
-/* WEBPACK VAR INJECTION */}.call(exports, __webpack_require__(5).Buffer))
 
 /***/ }),
 /* 3 */
@@ -1528,7 +1531,7 @@ module.exports = g;
 /* WEBPACK VAR INJECTION */(function(process) {
 
 var utils = __webpack_require__(0);
-var normalizeHeaderName = __webpack_require__(33);
+var normalizeHeaderName = __webpack_require__(30);
 var enhanceError = __webpack_require__(10);
 
 var DEFAULT_CONTENT_TYPE = {
@@ -1670,9 +1673,9 @@ module.exports = defaults;
 
 
 
-var base64 = __webpack_require__(21);
-var ieee754 = __webpack_require__(22);
-var isArray = __webpack_require__(23);
+var base64 = __webpack_require__(22);
+var ieee754 = __webpack_require__(23);
+var isArray = __webpack_require__(24);
 
 exports.Buffer = Buffer;
 exports.SlowBuffer = SlowBuffer;
@@ -3406,7 +3409,7 @@ function isnan(val) {
 "use strict";
 
 
-module.exports = __webpack_require__(28);
+module.exports = __webpack_require__(25);
 
 /***/ }),
 /* 7 */
@@ -3745,12 +3748,12 @@ module.exports = function enhanceError(error, config, code, request, response) {
 
 
 var utils = __webpack_require__(0);
-var settle = __webpack_require__(34);
-var cookies = __webpack_require__(35);
+var settle = __webpack_require__(31);
+var cookies = __webpack_require__(32);
 var buildURL = __webpack_require__(8);
-var buildFullPath = __webpack_require__(36);
-var parseHeaders = __webpack_require__(39);
-var isURLSameOrigin = __webpack_require__(40);
+var buildFullPath = __webpack_require__(33);
+var parseHeaders = __webpack_require__(36);
+var isURLSameOrigin = __webpack_require__(37);
 var createError = __webpack_require__(12);
 
 module.exports = function xhrAdapter(config) {
@@ -4078,6 +4081,7 @@ Object.defineProperty(exports, "__esModule", { value: true });
 var tslib_1 = __webpack_require__(1);
 var index_1 = tslib_1.__importDefault(__webpack_require__(2));
 var lodash_1 = __webpack_require__(17);
+var url_shim_1 = __webpack_require__(44);
 /**
  * Takes an input and camelizes it
  * @param str
@@ -4112,6 +4116,10 @@ function getContentTypeWeak(value) {
     }
 }
 exports.getContentTypeWeak = getContentTypeWeak;
+function urlStringify(object) {
+    return new url_shim_1.URLSearchParams(object).toString();
+}
+exports.urlStringify = urlStringify;
 //# sourceMappingURL=util.js.map
 
 /***/ }),
@@ -13546,7 +13554,7 @@ else if(freeModule){// Export for Node.js.
 (freeModule.exports=_)._=_;// Export for CommonJS support.
 freeExports._=_;}else{// Export to the global object.
 root._=_;}}).call(undefined);
-/* WEBPACK VAR INJECTION */}.call(exports, __webpack_require__(3), __webpack_require__(46)(module)))
+/* WEBPACK VAR INJECTION */}.call(exports, __webpack_require__(3), __webpack_require__(43)(module)))
 
 /***/ }),
 /* 18 */
@@ -13566,7 +13574,7 @@ module.exports = __webpack_amd_options__;
 
 var _typeof = typeof Symbol === "function" && typeof Symbol.iterator === "symbol" ? function (obj) { return typeof obj; } : function (obj) { return obj && typeof Symbol === "function" && obj.constructor === Symbol && obj !== Symbol.prototype ? "symbol" : typeof obj; };
 
-var objectAssign = __webpack_require__(48);
+var objectAssign = __webpack_require__(46);
 
 // compare and isBuffer taken from https://github.com/feross/buffer/blob/680e9e5e488f22aac27599a57dc844a6315928dd/index.js
 // original notice:
@@ -13636,7 +13644,7 @@ function isBuffer(b) {
 // ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM, OUT OF OR IN CONNECTION
 // WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
 
-var util = __webpack_require__(49);
+var util = __webpack_require__(47);
 var hasOwn = Object.prototype.hasOwnProperty;
 var pSlice = Array.prototype.slice;
 var functionsHaveNames = function () {
@@ -14126,434 +14134,6 @@ exports.ValidationError = ValidationError;
 /***/ (function(module, exports, __webpack_require__) {
 
 "use strict";
-
-
-exports.byteLength = byteLength;
-exports.toByteArray = toByteArray;
-exports.fromByteArray = fromByteArray;
-
-var lookup = [];
-var revLookup = [];
-var Arr = typeof Uint8Array !== 'undefined' ? Uint8Array : Array;
-
-var code = 'ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789+/';
-for (var i = 0, len = code.length; i < len; ++i) {
-  lookup[i] = code[i];
-  revLookup[code.charCodeAt(i)] = i;
-}
-
-// Support decoding URL-safe base64 strings, as Node.js does.
-// See: https://en.wikipedia.org/wiki/Base64#URL_applications
-revLookup['-'.charCodeAt(0)] = 62;
-revLookup['_'.charCodeAt(0)] = 63;
-
-function getLens(b64) {
-  var len = b64.length;
-
-  if (len % 4 > 0) {
-    throw new Error('Invalid string. Length must be a multiple of 4');
-  }
-
-  // Trim off extra bytes after placeholder bytes are found
-  // See: https://github.com/beatgammit/base64-js/issues/42
-  var validLen = b64.indexOf('=');
-  if (validLen === -1) validLen = len;
-
-  var placeHoldersLen = validLen === len ? 0 : 4 - validLen % 4;
-
-  return [validLen, placeHoldersLen];
-}
-
-// base64 is 4/3 + up to two characters of the original data
-function byteLength(b64) {
-  var lens = getLens(b64);
-  var validLen = lens[0];
-  var placeHoldersLen = lens[1];
-  return (validLen + placeHoldersLen) * 3 / 4 - placeHoldersLen;
-}
-
-function _byteLength(b64, validLen, placeHoldersLen) {
-  return (validLen + placeHoldersLen) * 3 / 4 - placeHoldersLen;
-}
-
-function toByteArray(b64) {
-  var tmp;
-  var lens = getLens(b64);
-  var validLen = lens[0];
-  var placeHoldersLen = lens[1];
-
-  var arr = new Arr(_byteLength(b64, validLen, placeHoldersLen));
-
-  var curByte = 0;
-
-  // if there are placeholders, only get up to the last complete 4 chars
-  var len = placeHoldersLen > 0 ? validLen - 4 : validLen;
-
-  var i;
-  for (i = 0; i < len; i += 4) {
-    tmp = revLookup[b64.charCodeAt(i)] << 18 | revLookup[b64.charCodeAt(i + 1)] << 12 | revLookup[b64.charCodeAt(i + 2)] << 6 | revLookup[b64.charCodeAt(i + 3)];
-    arr[curByte++] = tmp >> 16 & 0xFF;
-    arr[curByte++] = tmp >> 8 & 0xFF;
-    arr[curByte++] = tmp & 0xFF;
-  }
-
-  if (placeHoldersLen === 2) {
-    tmp = revLookup[b64.charCodeAt(i)] << 2 | revLookup[b64.charCodeAt(i + 1)] >> 4;
-    arr[curByte++] = tmp & 0xFF;
-  }
-
-  if (placeHoldersLen === 1) {
-    tmp = revLookup[b64.charCodeAt(i)] << 10 | revLookup[b64.charCodeAt(i + 1)] << 4 | revLookup[b64.charCodeAt(i + 2)] >> 2;
-    arr[curByte++] = tmp >> 8 & 0xFF;
-    arr[curByte++] = tmp & 0xFF;
-  }
-
-  return arr;
-}
-
-function tripletToBase64(num) {
-  return lookup[num >> 18 & 0x3F] + lookup[num >> 12 & 0x3F] + lookup[num >> 6 & 0x3F] + lookup[num & 0x3F];
-}
-
-function encodeChunk(uint8, start, end) {
-  var tmp;
-  var output = [];
-  for (var i = start; i < end; i += 3) {
-    tmp = (uint8[i] << 16 & 0xFF0000) + (uint8[i + 1] << 8 & 0xFF00) + (uint8[i + 2] & 0xFF);
-    output.push(tripletToBase64(tmp));
-  }
-  return output.join('');
-}
-
-function fromByteArray(uint8) {
-  var tmp;
-  var len = uint8.length;
-  var extraBytes = len % 3; // if we have 1 byte left, pad 2 bytes
-  var parts = [];
-  var maxChunkLength = 16383; // must be multiple of 3
-
-  // go through the array every three bytes, we'll deal with trailing stuff later
-  for (var i = 0, len2 = len - extraBytes; i < len2; i += maxChunkLength) {
-    parts.push(encodeChunk(uint8, i, i + maxChunkLength > len2 ? len2 : i + maxChunkLength));
-  }
-
-  // pad the end with zeros, but make sure to not forget the extra bytes
-  if (extraBytes === 1) {
-    tmp = uint8[len - 1];
-    parts.push(lookup[tmp >> 2] + lookup[tmp << 4 & 0x3F] + '==');
-  } else if (extraBytes === 2) {
-    tmp = (uint8[len - 2] << 8) + uint8[len - 1];
-    parts.push(lookup[tmp >> 10] + lookup[tmp >> 4 & 0x3F] + lookup[tmp << 2 & 0x3F] + '=');
-  }
-
-  return parts.join('');
-}
-
-/***/ }),
-/* 22 */
-/***/ (function(module, exports, __webpack_require__) {
-
-"use strict";
-
-
-exports.read = function (buffer, offset, isLE, mLen, nBytes) {
-  var e, m;
-  var eLen = nBytes * 8 - mLen - 1;
-  var eMax = (1 << eLen) - 1;
-  var eBias = eMax >> 1;
-  var nBits = -7;
-  var i = isLE ? nBytes - 1 : 0;
-  var d = isLE ? -1 : 1;
-  var s = buffer[offset + i];
-
-  i += d;
-
-  e = s & (1 << -nBits) - 1;
-  s >>= -nBits;
-  nBits += eLen;
-  for (; nBits > 0; e = e * 256 + buffer[offset + i], i += d, nBits -= 8) {}
-
-  m = e & (1 << -nBits) - 1;
-  e >>= -nBits;
-  nBits += mLen;
-  for (; nBits > 0; m = m * 256 + buffer[offset + i], i += d, nBits -= 8) {}
-
-  if (e === 0) {
-    e = 1 - eBias;
-  } else if (e === eMax) {
-    return m ? NaN : (s ? -1 : 1) * Infinity;
-  } else {
-    m = m + Math.pow(2, mLen);
-    e = e - eBias;
-  }
-  return (s ? -1 : 1) * m * Math.pow(2, e - mLen);
-};
-
-exports.write = function (buffer, value, offset, isLE, mLen, nBytes) {
-  var e, m, c;
-  var eLen = nBytes * 8 - mLen - 1;
-  var eMax = (1 << eLen) - 1;
-  var eBias = eMax >> 1;
-  var rt = mLen === 23 ? Math.pow(2, -24) - Math.pow(2, -77) : 0;
-  var i = isLE ? 0 : nBytes - 1;
-  var d = isLE ? 1 : -1;
-  var s = value < 0 || value === 0 && 1 / value < 0 ? 1 : 0;
-
-  value = Math.abs(value);
-
-  if (isNaN(value) || value === Infinity) {
-    m = isNaN(value) ? 1 : 0;
-    e = eMax;
-  } else {
-    e = Math.floor(Math.log(value) / Math.LN2);
-    if (value * (c = Math.pow(2, -e)) < 1) {
-      e--;
-      c *= 2;
-    }
-    if (e + eBias >= 1) {
-      value += rt / c;
-    } else {
-      value += rt * Math.pow(2, 1 - eBias);
-    }
-    if (value * c >= 2) {
-      e++;
-      c /= 2;
-    }
-
-    if (e + eBias >= eMax) {
-      m = 0;
-      e = eMax;
-    } else if (e + eBias >= 1) {
-      m = (value * c - 1) * Math.pow(2, mLen);
-      e = e + eBias;
-    } else {
-      m = value * Math.pow(2, eBias - 1) * Math.pow(2, mLen);
-      e = 0;
-    }
-  }
-
-  for (; mLen >= 8; buffer[offset + i] = m & 0xff, i += d, m /= 256, mLen -= 8) {}
-
-  e = e << mLen | m;
-  eLen += mLen;
-  for (; eLen > 0; buffer[offset + i] = e & 0xff, i += d, e /= 256, eLen -= 8) {}
-
-  buffer[offset + i - d] |= s * 128;
-};
-
-/***/ }),
-/* 23 */
-/***/ (function(module, exports, __webpack_require__) {
-
-"use strict";
-
-
-var toString = {}.toString;
-
-module.exports = Array.isArray || function (arr) {
-  return toString.call(arr) == '[object Array]';
-};
-
-/***/ }),
-/* 24 */
-/***/ (function(module, exports, __webpack_require__) {
-
-"use strict";
-
-
-exports.decode = exports.parse = __webpack_require__(25);
-exports.encode = exports.stringify = __webpack_require__(26);
-
-/***/ }),
-/* 25 */
-/***/ (function(module, exports, __webpack_require__) {
-
-"use strict";
-// Copyright Joyent, Inc. and other Node contributors.
-//
-// Permission is hereby granted, free of charge, to any person obtaining a
-// copy of this software and associated documentation files (the
-// "Software"), to deal in the Software without restriction, including
-// without limitation the rights to use, copy, modify, merge, publish,
-// distribute, sublicense, and/or sell copies of the Software, and to permit
-// persons to whom the Software is furnished to do so, subject to the
-// following conditions:
-//
-// The above copyright notice and this permission notice shall be included
-// in all copies or substantial portions of the Software.
-//
-// THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS
-// OR IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF
-// MERCHANTABILITY, FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN
-// NO EVENT SHALL THE AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM,
-// DAMAGES OR OTHER LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR
-// OTHERWISE, ARISING FROM, OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE
-// USE OR OTHER DEALINGS IN THE SOFTWARE.
-
-
-
-// If obj.hasOwnProperty has been overridden, then calling
-// obj.hasOwnProperty(prop) will break.
-// See: https://github.com/joyent/node/issues/1707
-
-function hasOwnProperty(obj, prop) {
-  return Object.prototype.hasOwnProperty.call(obj, prop);
-}
-
-module.exports = function (qs, sep, eq, options) {
-  sep = sep || '&';
-  eq = eq || '=';
-  var obj = {};
-
-  if (typeof qs !== 'string' || qs.length === 0) {
-    return obj;
-  }
-
-  var regexp = /\+/g;
-  qs = qs.split(sep);
-
-  var maxKeys = 1000;
-  if (options && typeof options.maxKeys === 'number') {
-    maxKeys = options.maxKeys;
-  }
-
-  var len = qs.length;
-  // maxKeys <= 0 means that we should not limit keys count
-  if (maxKeys > 0 && len > maxKeys) {
-    len = maxKeys;
-  }
-
-  for (var i = 0; i < len; ++i) {
-    var x = qs[i].replace(regexp, '%20'),
-        idx = x.indexOf(eq),
-        kstr,
-        vstr,
-        k,
-        v;
-
-    if (idx >= 0) {
-      kstr = x.substr(0, idx);
-      vstr = x.substr(idx + 1);
-    } else {
-      kstr = x;
-      vstr = '';
-    }
-
-    k = decodeURIComponent(kstr);
-    v = decodeURIComponent(vstr);
-
-    if (!hasOwnProperty(obj, k)) {
-      obj[k] = v;
-    } else if (isArray(obj[k])) {
-      obj[k].push(v);
-    } else {
-      obj[k] = [obj[k], v];
-    }
-  }
-
-  return obj;
-};
-
-var isArray = Array.isArray || function (xs) {
-  return Object.prototype.toString.call(xs) === '[object Array]';
-};
-
-/***/ }),
-/* 26 */
-/***/ (function(module, exports, __webpack_require__) {
-
-"use strict";
-// Copyright Joyent, Inc. and other Node contributors.
-//
-// Permission is hereby granted, free of charge, to any person obtaining a
-// copy of this software and associated documentation files (the
-// "Software"), to deal in the Software without restriction, including
-// without limitation the rights to use, copy, modify, merge, publish,
-// distribute, sublicense, and/or sell copies of the Software, and to permit
-// persons to whom the Software is furnished to do so, subject to the
-// following conditions:
-//
-// The above copyright notice and this permission notice shall be included
-// in all copies or substantial portions of the Software.
-//
-// THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS
-// OR IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF
-// MERCHANTABILITY, FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN
-// NO EVENT SHALL THE AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM,
-// DAMAGES OR OTHER LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR
-// OTHERWISE, ARISING FROM, OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE
-// USE OR OTHER DEALINGS IN THE SOFTWARE.
-
-
-
-var _typeof = typeof Symbol === "function" && typeof Symbol.iterator === "symbol" ? function (obj) { return typeof obj; } : function (obj) { return obj && typeof Symbol === "function" && obj.constructor === Symbol && obj !== Symbol.prototype ? "symbol" : typeof obj; };
-
-var stringifyPrimitive = function stringifyPrimitive(v) {
-  switch (typeof v === 'undefined' ? 'undefined' : _typeof(v)) {
-    case 'string':
-      return v;
-
-    case 'boolean':
-      return v ? 'true' : 'false';
-
-    case 'number':
-      return isFinite(v) ? v : '';
-
-    default:
-      return '';
-  }
-};
-
-module.exports = function (obj, sep, eq, name) {
-  sep = sep || '&';
-  eq = eq || '=';
-  if (obj === null) {
-    obj = undefined;
-  }
-
-  if ((typeof obj === 'undefined' ? 'undefined' : _typeof(obj)) === 'object') {
-    return map(objectKeys(obj), function (k) {
-      var ks = encodeURIComponent(stringifyPrimitive(k)) + eq;
-      if (isArray(obj[k])) {
-        return map(obj[k], function (v) {
-          return ks + encodeURIComponent(stringifyPrimitive(v));
-        }).join(sep);
-      } else {
-        return ks + encodeURIComponent(stringifyPrimitive(obj[k]));
-      }
-    }).join(sep);
-  }
-
-  if (!name) return '';
-  return encodeURIComponent(stringifyPrimitive(name)) + eq + encodeURIComponent(stringifyPrimitive(obj));
-};
-
-var isArray = Array.isArray || function (xs) {
-  return Object.prototype.toString.call(xs) === '[object Array]';
-};
-
-function map(xs, f) {
-  if (xs.map) return xs.map(f);
-  var res = [];
-  for (var i = 0; i < xs.length; i++) {
-    res.push(f(xs[i], i));
-  }
-  return res;
-}
-
-var objectKeys = Object.keys || function (obj) {
-  var res = [];
-  for (var key in obj) {
-    if (Object.prototype.hasOwnProperty.call(obj, key)) res.push(key);
-  }
-  return res;
-};
-
-/***/ }),
-/* 27 */
-/***/ (function(module, exports, __webpack_require__) {
-
-"use strict";
 /* WEBPACK VAR INJECTION */(function(Buffer) {
 
 Object.defineProperty(exports, "__esModule", { value: true });
@@ -14789,7 +14369,240 @@ exports.JWTBearerClient = JWTBearerClient;
 /* WEBPACK VAR INJECTION */}.call(exports, __webpack_require__(5).Buffer))
 
 /***/ }),
-/* 28 */
+/* 22 */
+/***/ (function(module, exports, __webpack_require__) {
+
+"use strict";
+
+
+exports.byteLength = byteLength;
+exports.toByteArray = toByteArray;
+exports.fromByteArray = fromByteArray;
+
+var lookup = [];
+var revLookup = [];
+var Arr = typeof Uint8Array !== 'undefined' ? Uint8Array : Array;
+
+var code = 'ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789+/';
+for (var i = 0, len = code.length; i < len; ++i) {
+  lookup[i] = code[i];
+  revLookup[code.charCodeAt(i)] = i;
+}
+
+// Support decoding URL-safe base64 strings, as Node.js does.
+// See: https://en.wikipedia.org/wiki/Base64#URL_applications
+revLookup['-'.charCodeAt(0)] = 62;
+revLookup['_'.charCodeAt(0)] = 63;
+
+function getLens(b64) {
+  var len = b64.length;
+
+  if (len % 4 > 0) {
+    throw new Error('Invalid string. Length must be a multiple of 4');
+  }
+
+  // Trim off extra bytes after placeholder bytes are found
+  // See: https://github.com/beatgammit/base64-js/issues/42
+  var validLen = b64.indexOf('=');
+  if (validLen === -1) validLen = len;
+
+  var placeHoldersLen = validLen === len ? 0 : 4 - validLen % 4;
+
+  return [validLen, placeHoldersLen];
+}
+
+// base64 is 4/3 + up to two characters of the original data
+function byteLength(b64) {
+  var lens = getLens(b64);
+  var validLen = lens[0];
+  var placeHoldersLen = lens[1];
+  return (validLen + placeHoldersLen) * 3 / 4 - placeHoldersLen;
+}
+
+function _byteLength(b64, validLen, placeHoldersLen) {
+  return (validLen + placeHoldersLen) * 3 / 4 - placeHoldersLen;
+}
+
+function toByteArray(b64) {
+  var tmp;
+  var lens = getLens(b64);
+  var validLen = lens[0];
+  var placeHoldersLen = lens[1];
+
+  var arr = new Arr(_byteLength(b64, validLen, placeHoldersLen));
+
+  var curByte = 0;
+
+  // if there are placeholders, only get up to the last complete 4 chars
+  var len = placeHoldersLen > 0 ? validLen - 4 : validLen;
+
+  var i;
+  for (i = 0; i < len; i += 4) {
+    tmp = revLookup[b64.charCodeAt(i)] << 18 | revLookup[b64.charCodeAt(i + 1)] << 12 | revLookup[b64.charCodeAt(i + 2)] << 6 | revLookup[b64.charCodeAt(i + 3)];
+    arr[curByte++] = tmp >> 16 & 0xFF;
+    arr[curByte++] = tmp >> 8 & 0xFF;
+    arr[curByte++] = tmp & 0xFF;
+  }
+
+  if (placeHoldersLen === 2) {
+    tmp = revLookup[b64.charCodeAt(i)] << 2 | revLookup[b64.charCodeAt(i + 1)] >> 4;
+    arr[curByte++] = tmp & 0xFF;
+  }
+
+  if (placeHoldersLen === 1) {
+    tmp = revLookup[b64.charCodeAt(i)] << 10 | revLookup[b64.charCodeAt(i + 1)] << 4 | revLookup[b64.charCodeAt(i + 2)] >> 2;
+    arr[curByte++] = tmp >> 8 & 0xFF;
+    arr[curByte++] = tmp & 0xFF;
+  }
+
+  return arr;
+}
+
+function tripletToBase64(num) {
+  return lookup[num >> 18 & 0x3F] + lookup[num >> 12 & 0x3F] + lookup[num >> 6 & 0x3F] + lookup[num & 0x3F];
+}
+
+function encodeChunk(uint8, start, end) {
+  var tmp;
+  var output = [];
+  for (var i = start; i < end; i += 3) {
+    tmp = (uint8[i] << 16 & 0xFF0000) + (uint8[i + 1] << 8 & 0xFF00) + (uint8[i + 2] & 0xFF);
+    output.push(tripletToBase64(tmp));
+  }
+  return output.join('');
+}
+
+function fromByteArray(uint8) {
+  var tmp;
+  var len = uint8.length;
+  var extraBytes = len % 3; // if we have 1 byte left, pad 2 bytes
+  var parts = [];
+  var maxChunkLength = 16383; // must be multiple of 3
+
+  // go through the array every three bytes, we'll deal with trailing stuff later
+  for (var i = 0, len2 = len - extraBytes; i < len2; i += maxChunkLength) {
+    parts.push(encodeChunk(uint8, i, i + maxChunkLength > len2 ? len2 : i + maxChunkLength));
+  }
+
+  // pad the end with zeros, but make sure to not forget the extra bytes
+  if (extraBytes === 1) {
+    tmp = uint8[len - 1];
+    parts.push(lookup[tmp >> 2] + lookup[tmp << 4 & 0x3F] + '==');
+  } else if (extraBytes === 2) {
+    tmp = (uint8[len - 2] << 8) + uint8[len - 1];
+    parts.push(lookup[tmp >> 10] + lookup[tmp >> 4 & 0x3F] + lookup[tmp << 2 & 0x3F] + '=');
+  }
+
+  return parts.join('');
+}
+
+/***/ }),
+/* 23 */
+/***/ (function(module, exports, __webpack_require__) {
+
+"use strict";
+
+
+exports.read = function (buffer, offset, isLE, mLen, nBytes) {
+  var e, m;
+  var eLen = nBytes * 8 - mLen - 1;
+  var eMax = (1 << eLen) - 1;
+  var eBias = eMax >> 1;
+  var nBits = -7;
+  var i = isLE ? nBytes - 1 : 0;
+  var d = isLE ? -1 : 1;
+  var s = buffer[offset + i];
+
+  i += d;
+
+  e = s & (1 << -nBits) - 1;
+  s >>= -nBits;
+  nBits += eLen;
+  for (; nBits > 0; e = e * 256 + buffer[offset + i], i += d, nBits -= 8) {}
+
+  m = e & (1 << -nBits) - 1;
+  e >>= -nBits;
+  nBits += mLen;
+  for (; nBits > 0; m = m * 256 + buffer[offset + i], i += d, nBits -= 8) {}
+
+  if (e === 0) {
+    e = 1 - eBias;
+  } else if (e === eMax) {
+    return m ? NaN : (s ? -1 : 1) * Infinity;
+  } else {
+    m = m + Math.pow(2, mLen);
+    e = e - eBias;
+  }
+  return (s ? -1 : 1) * m * Math.pow(2, e - mLen);
+};
+
+exports.write = function (buffer, value, offset, isLE, mLen, nBytes) {
+  var e, m, c;
+  var eLen = nBytes * 8 - mLen - 1;
+  var eMax = (1 << eLen) - 1;
+  var eBias = eMax >> 1;
+  var rt = mLen === 23 ? Math.pow(2, -24) - Math.pow(2, -77) : 0;
+  var i = isLE ? 0 : nBytes - 1;
+  var d = isLE ? 1 : -1;
+  var s = value < 0 || value === 0 && 1 / value < 0 ? 1 : 0;
+
+  value = Math.abs(value);
+
+  if (isNaN(value) || value === Infinity) {
+    m = isNaN(value) ? 1 : 0;
+    e = eMax;
+  } else {
+    e = Math.floor(Math.log(value) / Math.LN2);
+    if (value * (c = Math.pow(2, -e)) < 1) {
+      e--;
+      c *= 2;
+    }
+    if (e + eBias >= 1) {
+      value += rt / c;
+    } else {
+      value += rt * Math.pow(2, 1 - eBias);
+    }
+    if (value * c >= 2) {
+      e++;
+      c /= 2;
+    }
+
+    if (e + eBias >= eMax) {
+      m = 0;
+      e = eMax;
+    } else if (e + eBias >= 1) {
+      m = (value * c - 1) * Math.pow(2, mLen);
+      e = e + eBias;
+    } else {
+      m = value * Math.pow(2, eBias - 1) * Math.pow(2, mLen);
+      e = 0;
+    }
+  }
+
+  for (; mLen >= 8; buffer[offset + i] = m & 0xff, i += d, m /= 256, mLen -= 8) {}
+
+  e = e << mLen | m;
+  eLen += mLen;
+  for (; eLen > 0; buffer[offset + i] = e & 0xff, i += d, e /= 256, eLen -= 8) {}
+
+  buffer[offset + i - d] |= s * 128;
+};
+
+/***/ }),
+/* 24 */
+/***/ (function(module, exports, __webpack_require__) {
+
+"use strict";
+
+
+var toString = {}.toString;
+
+module.exports = Array.isArray || function (arr) {
+  return toString.call(arr) == '[object Array]';
+};
+
+/***/ }),
+/* 25 */
 /***/ (function(module, exports, __webpack_require__) {
 
 "use strict";
@@ -14797,7 +14610,7 @@ exports.JWTBearerClient = JWTBearerClient;
 
 var utils = __webpack_require__(0);
 var bind = __webpack_require__(7);
-var Axios = __webpack_require__(29);
+var Axios = __webpack_require__(26);
 var mergeConfig = __webpack_require__(14);
 var defaults = __webpack_require__(4);
 
@@ -14833,17 +14646,17 @@ axios.create = function create(instanceConfig) {
 
 // Expose Cancel & CancelToken
 axios.Cancel = __webpack_require__(15);
-axios.CancelToken = __webpack_require__(43);
+axios.CancelToken = __webpack_require__(40);
 axios.isCancel = __webpack_require__(13);
 
 // Expose all/spread
 axios.all = function all(promises) {
   return Promise.all(promises);
 };
-axios.spread = __webpack_require__(44);
+axios.spread = __webpack_require__(41);
 
 // Expose isAxiosError
-axios.isAxiosError = __webpack_require__(45);
+axios.isAxiosError = __webpack_require__(42);
 
 module.exports = axios;
 
@@ -14851,7 +14664,7 @@ module.exports = axios;
 module.exports.default = axios;
 
 /***/ }),
-/* 29 */
+/* 26 */
 /***/ (function(module, exports, __webpack_require__) {
 
 "use strict";
@@ -14859,10 +14672,10 @@ module.exports.default = axios;
 
 var utils = __webpack_require__(0);
 var buildURL = __webpack_require__(8);
-var InterceptorManager = __webpack_require__(30);
-var dispatchRequest = __webpack_require__(31);
+var InterceptorManager = __webpack_require__(27);
+var dispatchRequest = __webpack_require__(28);
 var mergeConfig = __webpack_require__(14);
-var validator = __webpack_require__(41);
+var validator = __webpack_require__(38);
 
 var validators = validator.validators;
 /**
@@ -15004,7 +14817,7 @@ utils.forEach(['post', 'put', 'patch'], function forEachMethodWithData(method) {
 module.exports = Axios;
 
 /***/ }),
-/* 30 */
+/* 27 */
 /***/ (function(module, exports, __webpack_require__) {
 
 "use strict";
@@ -15064,14 +14877,14 @@ InterceptorManager.prototype.forEach = function forEach(fn) {
 module.exports = InterceptorManager;
 
 /***/ }),
-/* 31 */
+/* 28 */
 /***/ (function(module, exports, __webpack_require__) {
 
 "use strict";
 
 
 var utils = __webpack_require__(0);
-var transformData = __webpack_require__(32);
+var transformData = __webpack_require__(29);
 var isCancel = __webpack_require__(13);
 var defaults = __webpack_require__(4);
 
@@ -15130,7 +14943,7 @@ module.exports = function dispatchRequest(config) {
 };
 
 /***/ }),
-/* 32 */
+/* 29 */
 /***/ (function(module, exports, __webpack_require__) {
 
 "use strict";
@@ -15158,7 +14971,7 @@ module.exports = function transformData(data, headers, fns) {
 };
 
 /***/ }),
-/* 33 */
+/* 30 */
 /***/ (function(module, exports, __webpack_require__) {
 
 "use strict";
@@ -15176,7 +14989,7 @@ module.exports = function normalizeHeaderName(headers, normalizedName) {
 };
 
 /***/ }),
-/* 34 */
+/* 31 */
 /***/ (function(module, exports, __webpack_require__) {
 
 "use strict";
@@ -15201,7 +15014,7 @@ module.exports = function settle(resolve, reject, response) {
 };
 
 /***/ }),
-/* 35 */
+/* 32 */
 /***/ (function(module, exports, __webpack_require__) {
 
 "use strict";
@@ -15260,14 +15073,14 @@ function nonStandardBrowserEnv() {
 }();
 
 /***/ }),
-/* 36 */
+/* 33 */
 /***/ (function(module, exports, __webpack_require__) {
 
 "use strict";
 
 
-var isAbsoluteURL = __webpack_require__(37);
-var combineURLs = __webpack_require__(38);
+var isAbsoluteURL = __webpack_require__(34);
+var combineURLs = __webpack_require__(35);
 
 /**
  * Creates a new URL by combining the baseURL with the requestedURL,
@@ -15286,7 +15099,7 @@ module.exports = function buildFullPath(baseURL, requestedURL) {
 };
 
 /***/ }),
-/* 37 */
+/* 34 */
 /***/ (function(module, exports, __webpack_require__) {
 
 "use strict";
@@ -15308,7 +15121,7 @@ module.exports = function isAbsoluteURL(url) {
 };
 
 /***/ }),
-/* 38 */
+/* 35 */
 /***/ (function(module, exports, __webpack_require__) {
 
 "use strict";
@@ -15327,7 +15140,7 @@ module.exports = function combineURLs(baseURL, relativeURL) {
 };
 
 /***/ }),
-/* 39 */
+/* 36 */
 /***/ (function(module, exports, __webpack_require__) {
 
 "use strict";
@@ -15383,7 +15196,7 @@ module.exports = function parseHeaders(headers) {
 };
 
 /***/ }),
-/* 40 */
+/* 37 */
 /***/ (function(module, exports, __webpack_require__) {
 
 "use strict";
@@ -15452,7 +15265,7 @@ function nonStandardBrowserEnv() {
 }();
 
 /***/ }),
-/* 41 */
+/* 38 */
 /***/ (function(module, exports, __webpack_require__) {
 
 "use strict";
@@ -15460,7 +15273,7 @@ function nonStandardBrowserEnv() {
 
 var _typeof = typeof Symbol === "function" && typeof Symbol.iterator === "symbol" ? function (obj) { return typeof obj; } : function (obj) { return obj && typeof Symbol === "function" && obj.constructor === Symbol && obj !== Symbol.prototype ? "symbol" : typeof obj; };
 
-var pkg = __webpack_require__(42);
+var pkg = __webpack_require__(39);
 
 var validators = {};
 
@@ -15560,13 +15373,13 @@ module.exports = {
 };
 
 /***/ }),
-/* 42 */
+/* 39 */
 /***/ (function(module, exports) {
 
-module.exports = {"_args":[["axios@0.21.4","/Users/gstucker/Repositories/rest-resource"]],"_from":"axios@0.21.4","_id":"axios@0.21.4","_inBundle":false,"_integrity":"sha512-ut5vewkiu8jjGBdqpM44XxjuCjq9LAKeHVmoVfHVzy8eHgxxq8SbAVQNovDA8mVi05kP0Ea/n/UzcSHcTJQfNg==","_location":"/axios","_phantomChildren":{},"_requested":{"type":"version","registry":true,"raw":"axios@0.21.4","name":"axios","escapedName":"axios","rawSpec":"0.21.4","saveSpec":null,"fetchSpec":"0.21.4"},"_requiredBy":["/"],"_resolved":"https://registry.npmjs.org/axios/-/axios-0.21.4.tgz","_spec":"0.21.4","_where":"/Users/gstucker/Repositories/rest-resource","author":{"name":"Matt Zabriskie"},"browser":{"./lib/adapters/http.js":"./lib/adapters/xhr.js"},"bugs":{"url":"https://github.com/axios/axios/issues"},"bundlesize":[{"path":"./dist/axios.min.js","threshold":"5kB"}],"dependencies":{"follow-redirects":"^1.14.0"},"description":"Promise based HTTP client for the browser and node.js","devDependencies":{"coveralls":"^3.0.0","es6-promise":"^4.2.4","grunt":"^1.3.0","grunt-banner":"^0.6.0","grunt-cli":"^1.2.0","grunt-contrib-clean":"^1.1.0","grunt-contrib-watch":"^1.0.0","grunt-eslint":"^23.0.0","grunt-karma":"^4.0.0","grunt-mocha-test":"^0.13.3","grunt-ts":"^6.0.0-beta.19","grunt-webpack":"^4.0.2","istanbul-instrumenter-loader":"^1.0.0","jasmine-core":"^2.4.1","karma":"^6.3.2","karma-chrome-launcher":"^3.1.0","karma-firefox-launcher":"^2.1.0","karma-jasmine":"^1.1.1","karma-jasmine-ajax":"^0.1.13","karma-safari-launcher":"^1.0.0","karma-sauce-launcher":"^4.3.6","karma-sinon":"^1.0.5","karma-sourcemap-loader":"^0.3.8","karma-webpack":"^4.0.2","load-grunt-tasks":"^3.5.2","minimist":"^1.2.0","mocha":"^8.2.1","sinon":"^4.5.0","terser-webpack-plugin":"^4.2.3","typescript":"^4.0.5","url-search-params":"^0.10.0","webpack":"^4.44.2","webpack-dev-server":"^3.11.0"},"homepage":"https://axios-http.com","jsdelivr":"dist/axios.min.js","keywords":["xhr","http","ajax","promise","node"],"license":"MIT","main":"index.js","name":"axios","repository":{"type":"git","url":"git+https://github.com/axios/axios.git"},"scripts":{"build":"NODE_ENV=production grunt build","coveralls":"cat coverage/lcov.info | ./node_modules/coveralls/bin/coveralls.js","examples":"node ./examples/server.js","fix":"eslint --fix lib/**/*.js","postversion":"git push && git push --tags","preversion":"npm test","start":"node ./sandbox/server.js","test":"grunt test","version":"npm run build && grunt version && git add -A dist && git add CHANGELOG.md bower.json package.json"},"typings":"./index.d.ts","unpkg":"dist/axios.min.js","version":"0.21.4"}
+module.exports = {"name":"axios","version":"0.21.4","description":"Promise based HTTP client for the browser and node.js","main":"index.js","scripts":{"test":"grunt test","start":"node ./sandbox/server.js","build":"NODE_ENV=production grunt build","preversion":"npm test","version":"npm run build && grunt version && git add -A dist && git add CHANGELOG.md bower.json package.json","postversion":"git push && git push --tags","examples":"node ./examples/server.js","coveralls":"cat coverage/lcov.info | ./node_modules/coveralls/bin/coveralls.js","fix":"eslint --fix lib/**/*.js"},"repository":{"type":"git","url":"https://github.com/axios/axios.git"},"keywords":["xhr","http","ajax","promise","node"],"author":"Matt Zabriskie","license":"MIT","bugs":{"url":"https://github.com/axios/axios/issues"},"homepage":"https://axios-http.com","devDependencies":{"coveralls":"^3.0.0","es6-promise":"^4.2.4","grunt":"^1.3.0","grunt-banner":"^0.6.0","grunt-cli":"^1.2.0","grunt-contrib-clean":"^1.1.0","grunt-contrib-watch":"^1.0.0","grunt-eslint":"^23.0.0","grunt-karma":"^4.0.0","grunt-mocha-test":"^0.13.3","grunt-ts":"^6.0.0-beta.19","grunt-webpack":"^4.0.2","istanbul-instrumenter-loader":"^1.0.0","jasmine-core":"^2.4.1","karma":"^6.3.2","karma-chrome-launcher":"^3.1.0","karma-firefox-launcher":"^2.1.0","karma-jasmine":"^1.1.1","karma-jasmine-ajax":"^0.1.13","karma-safari-launcher":"^1.0.0","karma-sauce-launcher":"^4.3.6","karma-sinon":"^1.0.5","karma-sourcemap-loader":"^0.3.8","karma-webpack":"^4.0.2","load-grunt-tasks":"^3.5.2","minimist":"^1.2.0","mocha":"^8.2.1","sinon":"^4.5.0","terser-webpack-plugin":"^4.2.3","typescript":"^4.0.5","url-search-params":"^0.10.0","webpack":"^4.44.2","webpack-dev-server":"^3.11.0"},"browser":{"./lib/adapters/http.js":"./lib/adapters/xhr.js"},"jsdelivr":"dist/axios.min.js","unpkg":"dist/axios.min.js","typings":"./index.d.ts","dependencies":{"follow-redirects":"^1.14.0"},"bundlesize":[{"path":"./dist/axios.min.js","threshold":"5kB"}]}
 
 /***/ }),
-/* 43 */
+/* 40 */
 /***/ (function(module, exports, __webpack_require__) {
 
 "use strict";
@@ -15629,7 +15442,7 @@ CancelToken.source = function source() {
 module.exports = CancelToken;
 
 /***/ }),
-/* 44 */
+/* 41 */
 /***/ (function(module, exports, __webpack_require__) {
 
 "use strict";
@@ -15663,7 +15476,7 @@ module.exports = function spread(callback) {
 };
 
 /***/ }),
-/* 45 */
+/* 42 */
 /***/ (function(module, exports, __webpack_require__) {
 
 "use strict";
@@ -15683,7 +15496,7 @@ module.exports = function isAxiosError(payload) {
 };
 
 /***/ }),
-/* 46 */
+/* 43 */
 /***/ (function(module, exports, __webpack_require__) {
 
 "use strict";
@@ -15713,7 +15526,296 @@ module.exports = function (module) {
 };
 
 /***/ }),
-/* 47 */
+/* 44 */
+/***/ (function(module, __webpack_exports__, __webpack_require__) {
+
+"use strict";
+Object.defineProperty(__webpack_exports__, "__esModule", { value: true });
+/* harmony export (immutable) */ __webpack_exports__["URLSearchParams"] = URLSearchParams;
+/* harmony export (immutable) */ __webpack_exports__["URL"] = URL;
+function toErr(msg, code, err) {
+	err = new TypeError(msg);
+	err.code = code;
+	throw err;
+}
+
+function invalid(str) {
+	toErr('Invalid URL: ' + str, 'ERR_INVALID_URL');
+}
+
+function args(both, len, x, y) {
+	x = 'The "name" ';
+	y = 'argument';
+
+	if (both) {
+		x += 'and "value" ';
+		y += 's';
+	}
+
+	if (len < ++both) {
+		toErr(x + y + ' must be specified', 'ERR_MISSING_ARGS');
+	}
+}
+
+function toIter(arr, supported) {
+	var val, j=0, iter = {
+		next: function () {
+			val = arr[j++];
+			return {
+				value: val,
+				done: j > arr.length
+			}
+		}
+	};
+
+	if (supported) {
+		iter[Symbol.iterator] = function () {
+			return iter;
+		};
+	}
+
+	return iter;
+}
+
+function URLSearchParams(init, ref) {
+	var k, i, x, supp, tmp, $=this, list=[];
+
+	try {
+		supp = !!Symbol.iterator;
+	} catch (e) {
+		supp = false;
+	}
+
+	if (init) {
+		if (!!init.keys && !!init.getAll) {
+			init.forEach(function (v, k) {
+				toAppend(k, v);
+			});
+		} else if (!!init.pop) {
+			for (i=0; i < init.length; i++) {
+				toAppend.apply(0, init[i]);
+			}
+		} else if (typeof init == 'object') {
+			for (k in init) toSet(k, init[k]);
+		} else if (typeof init == 'string') {
+			if (init[0] == '?') init = init.substring(1);
+			x = decodeURIComponent(init).split('&');
+			while (k = x.shift()) {
+				i = k.indexOf('=');
+				if (!~i) i = k.length;
+				toAppend(
+					k.substring(0, i),
+					k.substring(++i)
+				);
+			}
+		}
+	}
+
+	function toSet(key, val) {
+		args(1, arguments.length);
+		val = String(val);
+		x = false; // found?
+		for (i=list.length; i--;) {
+			tmp = list[i];
+			if (tmp[0] == key) {
+				if (x) {
+					list.splice(i, 1);
+				} else {
+					tmp[1] = val;
+					x = true;
+				}
+			}
+		}
+		x || list.push([key, val]);
+		cascade();
+	}
+
+	function toAppend(key, val) {
+		args(1, arguments.length);
+		list.push([key, String(val)]);
+		cascade();
+	}
+
+	function toStr() {
+		tmp = '';
+		for (i=0; i < list.length; i++) {
+			if (tmp) tmp += '&';
+			tmp += encodeURIComponent(list[i][0]) + '=' + encodeURIComponent(list[i][1]);
+		}
+		return tmp.replace(/%20/g, '+');
+	}
+
+	function cascade() {
+		if (ref) ref.search = list.length ? ('?' + toStr().replace(/=$/, '')) : '';
+	}
+
+	$.append = toAppend;
+	$.delete = function (key) {
+		args(0, arguments.length);
+		for (i=list.length; i--;) {
+			if (list[i][0] == key) list.splice(i, 1);
+		}
+		cascade();
+	};
+	$.entries = function () {
+		return toIter(list, supp);
+	};
+	$.forEach = function (fn) {
+		if (typeof fn != 'function') {
+			toErr('Callback must be a function', 'ERR_INVALID_CALLBACK');
+		}
+		for (i=0; i < list.length; i++) {
+			fn(list[i][1], list[i][0]); // (val,key)
+		}
+	};
+	$.get = function (key) {
+		args(0, arguments.length);
+		for (i=0; i < list.length; i++) {
+			if (list[i][0] == key) return list[i][1];
+		}
+		return null;
+	};
+	$.getAll = function (key) {
+		args(0, arguments.length);
+		tmp = [];
+		for (i=0; i < list.length; i++) {
+			if (list[i][0] == key) {
+				tmp.push(list[i][1]);
+			}
+		}
+		return tmp;
+	};
+	$.has = function (key) {
+		args(0, arguments.length);
+		for (i=0; i < list.length; i++) {
+			if (list[i][0] == key) return true;
+		}
+		return false;
+	};
+	$.keys = function () {
+		tmp = [];
+		for (i=0; i < list.length; i++) {
+			tmp.push(list[i][0]);
+		}
+		return toIter(tmp, supp);
+	},
+	$.set = toSet;
+	$.sort = function () {
+		x = []; tmp = [];
+		for (i=0; i < list.length; x.push(list[i++][0]));
+		for (x.sort(); k = x.shift();) {
+			for (i=0; i < list.length; i++) {
+				if (list[i][0] == k) {
+					tmp.push(list.splice(i, 1).shift());
+					break;
+				}
+			}
+		}
+		list = tmp;
+		cascade();
+	};
+	$.toString = toStr;
+	$.values = function () {
+		tmp = [];
+		for (i=0; i < list.length; i++) {
+			tmp.push(list[i][1]);
+		}
+		return toIter(tmp, supp);
+	};
+
+	if (supp) {
+		$[Symbol.iterator] = $.entries;
+	}
+
+	return $;
+}
+
+function URL(url, base) {
+	var tmp = document.createElement('a');
+	var link = document.createElement('a');
+	var input = document.createElement('input');
+	var segs, usp, $=this, rgx=/(blob|ftp|wss?|https?):/;
+
+	input.type = 'url';
+	base = String(base || '').trim();
+	if ((input.value = base) && !input.checkValidity()) return invalid(base);
+
+	url = String(url).trim();
+	input.value = url || 0;
+
+	if (input.checkValidity()) {
+		link.href = url; // full
+	} else if (base) {
+		link.href = base;
+		if (url) { // non-empty string
+			usp = url.match(/^\/+/);
+			if (usp && usp[0].length == 2) {
+				link.href = link.protocol + url;
+			} else if (/[?#]/.test(url[0])) {
+				link.href += url;
+			} else if (url[0] == '/' || link.pathname == '/') {
+				link.href = link.origin + '/' + url.replace(/^\/+/, '');
+			} else {
+				segs = link.pathname.split('/');
+				base = url.replace(/^(\.\/)?/, '').split('../');
+				link.href = link.origin + segs.slice(0, Math.max(1, segs.length - base.length)).concat(base.pop()).join('/')
+			}
+		}
+	} else {
+		return invalid(url);
+	}
+
+	function proxy(key) {
+		tmp.href=link.href; tmp.protocol='http:';
+		if (key == 'protocol' || key == 'href' || rgx.test(link.protocol)) return link[key];
+		// @see https://url.spec.whatwg.org/#concept-url-origin
+		if (key == 'origin') return rgx.test(link.protocol) ? link[key] : 'null';
+		return tmp[key];
+	}
+
+	function block(key, readonly, getter, out) {
+		out = { enumerable: true };
+		if (!readonly) {
+			out.set = function (val) {
+				if (val != null) {
+					link[key] = String(val);
+					if (key == 'href' || key == 'search') {
+						usp = new URLSearchParams(link.search, link);
+					}
+				}
+			}
+		}
+		out.get = getter || function () {
+			return proxy(key);
+		};
+		return out;
+	}
+
+	usp = new URLSearchParams(link.search, link);
+
+	$.toString = $.toJSON = link.toString.bind(link);
+
+	return Object.defineProperties($, {
+		href: block('href'),
+		protocol: block('protocol'),
+		username: block('username'),
+		password: block('password'),
+		hostname: block('hostname'),
+		host: block('host'),
+		port: block('port'),
+		search: block('search'),
+		hash: block('hash'),
+		pathname: block('pathname'),
+		origin: block('origin', 1),
+		searchParams: block('searchParams', 1, function () {
+			return usp;
+		})
+	});
+}
+
+
+/***/ }),
+/* 45 */
 /***/ (function(module, exports, __webpack_require__) {
 
 "use strict";
@@ -15854,6 +15956,7 @@ var RelatedManager = /** @class */function () {
         try {
             return this.resources;
         } catch (e) {
+            // @ts-ignore See the reason why we do this in index file
             if (e.name === 'AttributeError') {
                 // Some resources aren't loaded -- just return any cached resources
                 var cachedObjects = [];
@@ -16046,7 +16149,7 @@ exports.default = RelatedManager;
 //# sourceMappingURL=related.js.map
 
 /***/ }),
-/* 48 */
+/* 46 */
 /***/ (function(module, exports, __webpack_require__) {
 
 "use strict";
@@ -16142,7 +16245,7 @@ module.exports = shouldUseNative() ? Object.assign : function (target, source) {
 };
 
 /***/ }),
-/* 49 */
+/* 47 */
 /***/ (function(module, exports, __webpack_require__) {
 
 "use strict";
@@ -16649,7 +16752,7 @@ function isPrimitive(arg) {
 }
 exports.isPrimitive = isPrimitive;
 
-exports.isBuffer = __webpack_require__(50);
+exports.isBuffer = __webpack_require__(48);
 
 function objectToString(o) {
   return Object.prototype.toString.call(o);
@@ -16686,7 +16789,7 @@ exports.log = function () {
  *     prototype.
  * @param {function} superCtor Constructor function to inherit prototype from.
  */
-exports.inherits = __webpack_require__(51);
+exports.inherits = __webpack_require__(49);
 
 exports._extend = function (origin, add) {
   // Don't do anything if add isn't an object
@@ -16810,7 +16913,7 @@ exports.callbackify = callbackify;
 /* WEBPACK VAR INJECTION */}.call(exports, __webpack_require__(9)))
 
 /***/ }),
-/* 50 */
+/* 48 */
 /***/ (function(module, exports, __webpack_require__) {
 
 "use strict";
@@ -16823,7 +16926,7 @@ module.exports = function isBuffer(arg) {
 };
 
 /***/ }),
-/* 51 */
+/* 49 */
 /***/ (function(module, exports, __webpack_require__) {
 
 "use strict";

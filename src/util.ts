@@ -1,5 +1,6 @@
 import Resource from './index'
 import { first as _first } from 'lodash'
+import { URLSearchParams } from 'url-shim'
 
 /**
  * Takes an input and camelizes it
@@ -33,4 +34,8 @@ export function getContentTypeWeak(value: any): any {
     } else {
         return Ctor
     }
+}
+
+export function urlStringify(object: any): string {
+    return (new URLSearchParams(object)).toString()
 }
